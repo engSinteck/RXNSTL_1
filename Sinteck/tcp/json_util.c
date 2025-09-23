@@ -72,15 +72,9 @@ size_t json_config( char* dest)
 	dest = json_int( dest, "Source", cfg.AudioSource );
 	dest = json_bool( dest, "Emphase", cfg.Emphase );
 	dest = json_bool( dest, "Processor", cfg.Processor );
-	dest = json_bool( dest, "Toslink", cfg.Toslink );
 	dest = json_bool( dest, "AES192", cfg.AES192 );
-	dest = json_bool( dest, "Impedance", cfg.Imp_600_10K );
 	dest = json_int( dest, "VolMPX1", cfg.Vol_MPX1);
 	dest = json_int( dest, "VolMPX2", cfg.Vol_MPX2 );
-	dest = json_int( dest, "VolMPX3", cfg.Vol_MPX3 );
-	dest = json_int( dest, "VolSCA", cfg.Vol_SCA );
-	dest = json_int( dest, "VolLeft", cfg.Vol_Left );
-	dest = json_int( dest, "VolRight", cfg.Vol_Right );
 	dest = json_objClose( dest );
 	// RDS
 	dest = json_objOpen( dest, "rds" );
@@ -152,7 +146,6 @@ size_t json_config( char* dest)
 	dest = json_objClose( dest );
 	//
 	dest = json_int( dest, "Frequency", cfg.Frequencia );
-	dest = json_int( dest, "TransmitterPower", cfg.RFEnable );
 	dest = json_bool( dest, "ConfigInHold", cfg.ConfigHold );
 	dest = json_bool( dest, "VSWRNULL", cfg.VSWR_Null );
 	dest = json_float( dest, "VSWR_Value", cfg.VSWR_Null_Value );
@@ -217,7 +210,6 @@ size_t json_central( char* dest)
 	dest = json_objOpen( dest, NULL );
 	dest = json_float( dest, "FWD", Realtime.Forward );
 	dest = json_float( dest, "REF", Realtime.Reflected );
-	dest = json_int( dest, "RFEnable", cfg.RFEnable );
 	dest = json_float( dest, "Temp", Realtime.Temperature );
 	dest = json_float( dest, "VPA", Realtime.VPA );
 	dest = json_float( dest, "IPA1", Realtime.IPA );

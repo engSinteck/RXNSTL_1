@@ -16,6 +16,8 @@
 #include "../Sinteck/src/defines.h"
 #include "../Sinteck/src/PowerControl.h"
 #include "../Sinteck/src/audio.h"
+#include "../Sinteck/src/PE43711.h"
+#include "../Sinteck/src/AD5242.h"
 
 extern osMutexId_t MutexI2CHandle;
 
@@ -245,7 +247,6 @@ void Carrega_Prog_Default(void)
 	}
 
 	// RF
-	cfg.RFEnable = 0;
 	cfg.modo = 0;
 	RF_Disable();
 
@@ -253,16 +254,10 @@ void Carrega_Prog_Default(void)
 	cfg.Processor = 1;
     cfg.Emphase = 0;
     cfg.MonoStereo = 1;
-    cfg.Toslink = 0;
-    cfg.Imp_600_10K = 0;
     cfg.AES192 = 0;
     cfg.AudioSource = 1;
 	cfg.Vol_MPX1 = 48;
 	cfg.Vol_MPX2 = 48;
-	cfg.Vol_MPX3 = 48;
-	cfg.Vol_SCA = 48;
-	cfg.Vol_Left = 0;
-	cfg.Vol_Right = 0;
 	// Switch Ausencia Audio
 	cfg.switch_mod = 0;
 	cfg.timer_audio_on = 1000 * 60 * 3;
@@ -350,28 +345,24 @@ void Carrega_Prog_Default(void)
 	adv.GainVPA  = 1.00f;
 	adv.GainTemp = 1.00f;
 
+	// Atenuação
+	cfg.Attenuation = 0.0f;
+
 	// Grava em EEPROM
 	EEPROM_Write(ADDR_ID,       (uint8_t*)&cfg.EepromID,           2);
 	EEPROM_Write(ADDR_REV,      (uint8_t*)&cfg.prg_rev,            sizeof(cfg.prg_rev));
 	EEPROM_Write(ADDR_MODEL,    (uint8_t*)&cfg.model_type,         sizeof(cfg.model_type));
 	EEPROM_Write(ADDR_SERV,     (uint8_t*)&cfg.servico,            1);
 	// RF
-	EEPROM_Write(ADDR_RFENABLE, (uint8_t*)&cfg.RFEnable,           1);
 	EEPROM_Write(ADDR_MODO,     (uint8_t*)&cfg.modo,               1);
 	// AUDIO
 	EEPROM_Write(ADDR_PROCESSOR, (uint8_t*)&cfg.Processor,         1);
 	EEPROM_Write(ADDR_EMPHASE,   (uint8_t*)&cfg.Emphase,           1);
 	EEPROM_Write(ADDR_STEREO,    (uint8_t*)&cfg.MonoStereo,        1);
-	EEPROM_Write(ADDR_TOSKLINK,  (uint8_t*)&cfg.Toslink,           1);
-	EEPROM_Write(ADDR_IMPEDANCE, (uint8_t*)&cfg.Imp_600_10K,       1);
 	EEPROM_Write(ADDR_AES192,    (uint8_t*)&cfg.AES192,            1);
 	EEPROM_Write(ADDR_AUDIO,     (uint8_t*)&cfg.AudioSource,       1);
 	EEPROM_Write(ADDR_VOLMPX1,   (uint8_t*)&cfg.Vol_MPX1,          1);
 	EEPROM_Write(ADDR_VOLMPX2,   (uint8_t*)&cfg.Vol_MPX2,          1);
-	EEPROM_Write(ADDR_VOLMPX3,   (uint8_t*)&cfg.Vol_MPX3,          1);
-	EEPROM_Write(ADDR_VOLSCA,    (uint8_t*)&cfg.Vol_SCA,           1);
-	EEPROM_Write(ADDR_VOLLEFT,   (uint8_t*)&cfg.Vol_Left,          1);
-	EEPROM_Write(ADDR_VOLRIGHT,  (uint8_t*)&cfg.Vol_Right,         1);
 	EEPROM_Write(ADDR_SWITCHMOD, (uint8_t*)&cfg.switch_mod,        1);
 	EEPROM_Write(ADDR_TIMERON,   (uint8_t*)&cfg.timer_audio_on,    4);
 	EEPROM_Write(ADDR_TIMEROFF,  (uint8_t*)&cfg.timer_audio_off,   4);
@@ -449,22 +440,15 @@ void ReadConfig(void)
 	EEPROM_Read(ADDR_REV, (uint8_t*)&cfg.prg_rev, sizeof(cfg.prg_rev));
 	EEPROM_Read(ADDR_MODEL, (uint8_t*)&cfg.model_type, sizeof(cfg.model_type));
 	// RF
-	EEPROM_Read(ADDR_RFENABLE, (uint8_t*)&cfg.RFEnable,           1);
 	EEPROM_Read(ADDR_MODO,     (uint8_t*)&cfg.modo,               1);
 	// AUDIO
 	EEPROM_Read(ADDR_PROCESSOR, (uint8_t*)&cfg.Processor,         1);
 	EEPROM_Read(ADDR_EMPHASE,   (uint8_t*)&cfg.Emphase,           1);
 	EEPROM_Read(ADDR_STEREO,    (uint8_t*)&cfg.MonoStereo,        1);
-	EEPROM_Read(ADDR_TOSKLINK,  (uint8_t*)&cfg.Toslink,           1);
-	EEPROM_Read(ADDR_IMPEDANCE, (uint8_t*)&cfg.Imp_600_10K,       1);
 	EEPROM_Read(ADDR_AES192,    (uint8_t*)&cfg.AES192,            1);
 	EEPROM_Read(ADDR_AUDIO,     (uint8_t*)&cfg.AudioSource,       1);
 	EEPROM_Read(ADDR_VOLMPX1,   (uint8_t*)&cfg.Vol_MPX1,          1);
 	EEPROM_Read(ADDR_VOLMPX2,   (uint8_t*)&cfg.Vol_MPX2,          1);
-	EEPROM_Read(ADDR_VOLMPX3,   (uint8_t*)&cfg.Vol_MPX3,          1);
-	EEPROM_Read(ADDR_VOLSCA,    (uint8_t*)&cfg.Vol_SCA,           1);
-	EEPROM_Read(ADDR_VOLLEFT,   (uint8_t*)&cfg.Vol_Left,          1);
-	EEPROM_Read(ADDR_VOLRIGHT,  (uint8_t*)&cfg.Vol_Right,         1);
 	EEPROM_Read(ADDR_SWITCHMOD, (uint8_t*)&cfg.switch_mod,        1);
 	EEPROM_Read(ADDR_TIMERON,   (uint8_t*)&cfg.timer_audio_on,    4);
 	EEPROM_Read(ADDR_TIMEROFF,  (uint8_t*)&cfg.timer_audio_off,   4);
@@ -568,7 +552,41 @@ void ReadConfig(void)
 
 void UpdateValores(void)
 {
+	// Update Valores
+	// Stereo
+	if(cfg.MonoStereo) {
+		HAL_GPIO_WritePin(ST_MO_GPIO_Port, ST_MO_Pin, GPIO_PIN_SET);
+	}
+	else {
+		HAL_GPIO_WritePin(ST_MO_GPIO_Port, ST_MO_Pin, GPIO_PIN_RESET);
+	}
+	// Processor
+	if(cfg.Processor) {
+		HAL_GPIO_WritePin(DSP__MONO_GPIO_Port, DSP__MONO_Pin, GPIO_PIN_SET);
+	}
+	else {
+		HAL_GPIO_WritePin(DSP__MONO_GPIO_Port, DSP__MONO_Pin, GPIO_PIN_RESET);
+	}
+	// EMPHASE
+	if(cfg.Emphase) {
+		HAL_GPIO_WritePin(SEL_75_50_GPIO_Port, SEL_75_50_Pin, GPIO_PIN_SET);
+	}
+	else {
+		HAL_GPIO_WritePin(SEL_75_50_GPIO_Port, SEL_75_50_Pin, GPIO_PIN_RESET);
+	}
 
+	// AES192
+	if(cfg.AES192) {
+		HAL_GPIO_WritePin(AES192_GPIO_Port, AES192_Pin, GPIO_PIN_SET);
+	}
+	else {
+		HAL_GPIO_WritePin(AES192_GPIO_Port, AES192_Pin, GPIO_PIN_RESET);
+	}
+
+	// Atauliza Chip
+	PE43711(cfg.Attenuation);
+	Write_AD5242(AD524X_RDAC0, cfg.Vol_MPX1, 0, 0);
+	Write_AD5242(AD524X_RDAC1, cfg.Vol_MPX2, 0, 0);
 }
 
 void Read_Enviroment(void)
@@ -633,15 +651,12 @@ void Telemetry_save(void)
 		case 0:
 			break;
 		case 1:
-			EEPROM_Write(ADDR_RFENABLE, (uint8_t*)&cfg.RFEnable, 1);
 			flag_telemetry = 0;
 			break;
 		case 2:
 			EEPROM_Write(ADDR_PROCESSOR, (uint8_t*)&cfg.Processor,         1);
 			EEPROM_Write(ADDR_EMPHASE,   (uint8_t*)&cfg.Emphase,           1);
 			EEPROM_Write(ADDR_STEREO,    (uint8_t*)&cfg.MonoStereo,        1);
-			EEPROM_Write(ADDR_TOSKLINK,  (uint8_t*)&cfg.Toslink,           1);
-			EEPROM_Write(ADDR_IMPEDANCE, (uint8_t*)&cfg.Imp_600_10K,       1);
 			EEPROM_Write(ADDR_AES192,    (uint8_t*)&cfg.AES192,            1);
 			EEPROM_Write(ADDR_AUDIO,     (uint8_t*)&cfg.AudioSource,       1);
         	flag_telemetry = 0;
@@ -680,10 +695,6 @@ void Telemetry_save(void)
 		case 6:
 			EEPROM_Write(ADDR_VOLMPX1,   (uint8_t*)&cfg.Vol_MPX1,          1);
 			EEPROM_Write(ADDR_VOLMPX2,   (uint8_t*)&cfg.Vol_MPX2,          1);
-			EEPROM_Write(ADDR_VOLMPX3,   (uint8_t*)&cfg.Vol_MPX3,          1);
-			EEPROM_Write(ADDR_VOLSCA,    (uint8_t*)&cfg.Vol_SCA,           1);
-			EEPROM_Write(ADDR_VOLLEFT,   (uint8_t*)&cfg.Vol_Left,          1);
-			EEPROM_Write(ADDR_VOLRIGHT,  (uint8_t*)&cfg.Vol_Right,         1);
 			flag_telemetry = 0;
 			break;
 		case 7:

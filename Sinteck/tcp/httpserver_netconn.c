@@ -910,13 +910,6 @@ static void http_server_serve(struct netconn *conn)
     			  sprintf(str_rds, "OFF");
     		  }
     		  //
-    		  if(cfg.RFEnable) {
-    			  sprintf(str_sts, "ON");
-    		  }
-    		  else {
-    			  sprintf(str_sts, "OFF");
-    		  }
-
     		  memset(str_freq, 0, 100);
     		  sprintf(str_freq, "%ld", cfg.Frequencia);
     		  sprintf(str_freq, "%d%d%d.%d%d%d MHz", str_freq[0]-'0', str_freq[1]-'0', str_freq[2]-'0', str_freq[3]-'0', str_freq[4]-'0', 0);
@@ -941,7 +934,6 @@ static void http_server_serve(struct netconn *conn)
         	  // Power-ON
         	  if(cfg.ConfigHold == 0 && !(falha & (1ULL << FAIL_LICENSE))) {
         		  resp_http_200(conn);
-        		  cfg.RFEnable = 1;
         		  flag_telemetry = 1;
         		  RF_Enable();
         		  timer_reflesh = 0;
@@ -954,7 +946,6 @@ static void http_server_serve(struct netconn *conn)
         	  // Power-OFF
         	  if(cfg.ConfigHold == 0) {
         		  resp_http_200(conn);
-        		  cfg.RFEnable = 0;
         		  flag_telemetry = 1;
         		  // Desliga Falhas de SWR And REFLECTED
         		  falha &= ~((uint64_t)1ULL << FAIL_SWR);
@@ -1017,12 +1008,12 @@ static void http_server_serve(struct netconn *conn)
           }
           else if((strncmp(buf, "GET /readAUDIO", 14) == 0)) {
         	  sprintf(buf_html, "%s MPX:%d;STEREO:%d;EMP:%d;PROC:%d;TOS:%d;AES:%d;IMP:%d;FIM\n",
-                  			     http_200_OK, cfg.AudioSource, cfg.MonoStereo, cfg.Emphase, cfg.Processor, cfg.Toslink, cfg.AES192, cfg.Imp_600_10K);
+                  			     http_200_OK, cfg.AudioSource, cfg.MonoStereo, cfg.Emphase, cfg.Processor, 0, cfg.AES192, 0);
         	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }
           else if((strncmp(buf, "GET /readAudioVol", 17) == 0)) {
         	  sprintf(buf_html, "%s MPX1:%d;MPX2:%d;MPX3:%d;SCA:%d;LEFT:%d;RIGHT:%d;FIM\n", http_200_OK,
-        			  cfg.Vol_MPX1, cfg.Vol_MPX2, cfg.Vol_MPX3, cfg.Vol_SCA, cfg.Vol_Left, cfg.Vol_Right);
+        			  cfg.Vol_MPX1, cfg.Vol_MPX2, 0, 0, 0, 0);
         	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }
           else if((strncmp(buf, "GET /readAlarmMPX", 17) == 0)) {
@@ -1048,42 +1039,6 @@ static void http_server_serve(struct netconn *conn)
         	  }
         	  else {
         		  cfg.Vol_MPX2 = 48;
-        	  }
-        	  // MPX3-VOL
-        	  strstr_substring(buf, "MPX3:", "SCA:", 5);
-        	  cfg.Vol_MPX3 = atoi(out);
-        	  if(cfg.Vol_MPX3 >= 0 && cfg.Vol_MPX3 <= 60) {
-        		  cfg.Vol_MPX3 = atoi(out);
-        	  }
-        	  else {
-        		  cfg.Vol_MPX3 = 48;
-        	  }
-        	  // SCA-VOL
-        	  strstr_substring(buf, "SCA:", "LEFT:", 4);
-        	  cfg.Vol_SCA = atoi(out);
-        	  if(cfg.Vol_SCA >= 0 && cfg.Vol_SCA <= 60) {
-        		  cfg.Vol_SCA = atoi(out);
-        	  }
-        	  else {
-        		  cfg.Vol_SCA = 48;
-        	  }
-        	  // LEFT-VOL
-        	  strstr_substring(buf, "LEFT:", "RIGHT:", 5);
-        	  cfg.Vol_Left = atoi(out);
-        	  if(cfg.Vol_Left >= 0 && cfg.Vol_Left <= 60) {
-        		  cfg.Vol_Left = atoi(out);
-        	  }
-        	  else {
-        		  cfg.Vol_Left = 48;
-        	  }
-        	  // RIGHT-VOL
-        	  strstr_substring(buf, "RIGHT:", "FIM", 6);
-        	  cfg.Vol_Right = atoi(out);
-        	  if(cfg.Vol_Right >= 0 && cfg.Vol_Right <= 60) {
-        		  cfg.Vol_Right = atoi(out);
-        	  }
-        	  else {
-        		  cfg.Vol_Right = 48;
         	  }
         	  flag_telemetry = 6;
           }
@@ -1135,9 +1090,7 @@ static void http_server_serve(struct netconn *conn)
         	  cfg.MonoStereo =  buf[15] - '0';
         	  cfg.Emphase = buf[16] - '0';
         	  cfg.Processor = buf[17] - '0';
-        	  cfg.Toslink = buf[18] - '0';
         	  cfg.AES192 = buf[19] - '0';
-        	  cfg.Imp_600_10K = buf[20] - '0';
               // Salva na EEPROM
               flag_telemetry = 2;
           }

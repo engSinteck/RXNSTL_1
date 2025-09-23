@@ -196,22 +196,15 @@ typedef struct {
 
 typedef struct {
 	// RF
-	uint8_t		RFEnable;
 	uint8_t		modo;
 	// Audio
 	uint8_t		MonoStereo;
 	uint8_t		Processor;
 	uint8_t		Emphase;
-	uint8_t		Toslink;
-	uint8_t		Imp_600_10K;
 	uint8_t		AES192;
 	uint8_t		AudioSource;
 	uint8_t		Vol_MPX1;
 	uint8_t		Vol_MPX2;
-	uint8_t		Vol_MPX3;
-	uint8_t		Vol_SCA;
-	uint8_t		Vol_Left;
-	uint8_t		Vol_Right;
 	uint8_t		switch_mod;
 	uint32_t	timer_audio_on;
 	uint32_t	timer_audio_off;
@@ -240,6 +233,8 @@ typedef struct {
 	uint8_t 	Config_in_hold;
 	float		VSWR_Null_Value;
 	float		FWD_Null_Value;
+	// Atenuacao
+	float		Attenuation;
 	// Serial Number
 	char		SerialNumber[10];
 	char		License[16];
