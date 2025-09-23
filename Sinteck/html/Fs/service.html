@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>STL RX Strider</title>
+<link rel="shortcut icon" href="STM32H7xx_files/favicon.ico" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!--[if IE]><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body onload="getService3()"> 
+    <div id="header">
+        <h1>Service Mode</h1>
+    </div>
+    
+    <div id="img">
+        <img src="STM32H7xx_files/logo.jpg" alt="" align="right" width=210 height=38>
+    </div>
+    
+    <style>
+        legend {
+            padding-left:10px;
+            padding-right:10px;
+        }
+
+        fieldset {
+            position:relative;
+            line-height:24px;
+        }
+
+        input {
+            position:absolute;
+            left:110px;
+        }
+        
+        select {
+            position:absolute;
+            left:110px;
+        }
+        
+        .myButton1 {
+            position:absolute;
+            left:284px;
+        }
+    </style>
+   
+    <div id="nav">        
+      <ul>
+        <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span></a></li>
+ 		<li><a id="home" href="index.html">Dashboard</a></li>
+		
+        <li><a class="group">SETUP</a></li>        
+        <li><a id="confaudio" href="audio.html">Audio</a></li>
+        <li><a id="conftime" href="time.html">Time</a></li>
+        <li><a id="confrds" href="rds.html">RDS</a></li>
+        <li><a id="conffreq" href="freq.html">Frequency</a></li>
+        <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
+        <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
+        <li><a id="confpass" href="password.html">Password</a></li>
+        <li><a id="profile" href="profile.html">Station Profile</a></li>
+        <li><a class="group">TOOLS</a></li>
+        <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+        <li><a id="FAIL" href="Fail.html">Fail List</a></li>
+      </ul>                
+    </div>
+    
+    <div id="section">
+    <script>
+	    var flagservice = 0;
+		
+        setInterval(function() {
+		    if(flagservice == 0) {
+			    flagservice = 1;
+				getService2();
+			}
+			else {
+				// Call a function repetatively with 500m Second interval
+				getService();
+			}
+        }, 1000);           //500mSeconds update rate
+        
+        function validate(evt) {
+            var theEvent = evt || window.event;
+
+            // Handle paste
+            if (theEvent.type === 'paste') {
+                key = event.clipboardData.getData('text/plain');
+            } else {
+                // Handle key press
+                var key = theEvent.keyCode || theEvent.which;
+                key = String.fromCharCode(key);
+            }
+            var regex = /[0-9]|\./;
+            if( !regex.test(key) ) {
+                theEvent.returnValue = false;
+                if(theEvent.preventDefault) theEvent.preventDefault();
+            }
+        }
+        
+        function checkLengthsn(elem) {
+            // checking if input value is more than Model
+            if (elem.length > 9 ) {
+                elem.value = ''; // emptying the input box
+            }
+        }
+        
+        function getService3() {
+            getLogin();
+        }
+      
+        function getService() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("strsn").innerHTML = this.responseText.substring(this.responseText.indexOf("SN:")+3,this.responseText.indexOf("PWMD:")-1);
+					document.getElementById("pwmdriver").innerHTML = this.responseText.substring(this.responseText.indexOf("PWMD:")+5,this.responseText.indexOf("PWM1:")-1);
+                    document.getElementById("pwmbias").innerHTML = this.responseText.substring(this.responseText.indexOf("PWM1:")+5,this.responseText.indexOf("PWM2:")-1);
+					document.getElementById("pwmfan2").innerHTML = this.responseText.substring(this.responseText.indexOf("PWM2:")+5,this.responseText.indexOf("FWD:")-1);
+					document.getElementById("p1").innerHTML = document.getElementById("pwmfan2").innerHTML;
+					document.getElementById("fwd").innerHTML = this.responseText.substring(this.responseText.indexOf("FWD:")+4,this.responseText.indexOf("REF:")-1);
+					document.getElementById("ref").innerHTML = this.responseText.substring(this.responseText.indexOf("REF:")+4,this.responseText.indexOf("VPA:")-1);
+					document.getElementById("vpa").innerHTML = this.responseText.substring(this.responseText.indexOf("VPA:")+4,this.responseText.indexOf("IPA:")-1);
+					document.getElementById("ipa").innerHTML = this.responseText.substring(this.responseText.indexOf("IPA:")+4,this.responseText.indexOf("TEMP:")-1);
+					document.getElementById("temp").innerHTML = this.responseText.substring(this.responseText.indexOf("TEMP:")+5,this.responseText.indexOf("RST:")-1);
+					document.getElementById("resetcause").innerHTML = this.responseText.substring(this.responseText.indexOf("RST:")+4,this.responseText.indexOf("ADC0:")-1);
+					document.getElementById("adc0").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC0:")+5,this.responseText.indexOf("ADC1:")-1);
+					document.getElementById("adc1").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC1:")+5,this.responseText.indexOf("ADC2:")-1);
+					document.getElementById("adc2").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC2:")+5,this.responseText.indexOf("ADC3:")-1);
+					document.getElementById("adc3").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC3:")+5,this.responseText.indexOf("ADC4:")-1);
+					document.getElementById("adc4").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC4:")+5,this.responseText.indexOf("CH0:")-1);
+					document.getElementById("ch0").innerHTML = this.responseText.substring(this.responseText.indexOf("CH0:")+4,this.responseText.indexOf("CH1:")-1);
+					document.getElementById("ch1").innerHTML = this.responseText.substring(this.responseText.indexOf("CH1:")+4,this.responseText.indexOf("CH2:")-1);
+					document.getElementById("ch2").innerHTML = this.responseText.substring(this.responseText.indexOf("CH2:")+4,this.responseText.indexOf("CH3:")-1);
+					document.getElementById("ch3").innerHTML = this.responseText.substring(this.responseText.indexOf("CH3:")+4,this.responseText.indexOf("CH4:")-1);
+					document.getElementById("ch4").innerHTML = this.responseText.substring(this.responseText.indexOf("CH4:")+4,this.responseText.indexOf("CH5:")-1);
+					document.getElementById("ch5").innerHTML = this.responseText.substring(this.responseText.indexOf("CH5:")+4,this.responseText.indexOf("CH6:")-1);
+					document.getElementById("ch6").innerHTML = this.responseText.substring(this.responseText.indexOf("CH6:")+4,this.responseText.indexOf("CH7:")-1);
+					document.getElementById("ch7").innerHTML = this.responseText.substring(this.responseText.indexOf("CH7:")+4,this.responseText.indexOf("FIM")-1);
+                }
+            };
+            xhttp.open("GET", "readService", true);
+            xhttp.send();
+        }
+		
+		function getService2() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+					document.getElementById("strsn1").innerHTML = this.responseText.substring(this.responseText.indexOf("SN:")+3,this.responseText.indexOf("FIM")-1);
+					document.getElementById("sn").value = document.getElementById("strsn1").innerHTML.substring(0, 8);
+                }
+            };
+            xhttp.open("GET", "readMaxSN", true);
+            xhttp.send();
+        }
+        
+        function sendService() {
+            var resp = "";
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            var resp1 = "setService=";
+            var resp2 = "";
+            if(document.getElementById("cfg1").checked == true)
+                resp2 = "1";
+            else
+                resp2  = "0";
+            var resp = resp1.concat("", resp2, ";FIM");
+            //alert(resp)
+            xhttp.open("GET", resp, true);
+            xhttp.send();
+        }
+        
+        function sendpwm1() {
+            var resp = "";
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            var resp1 = "setPWM1=";
+            var resp = resp1.concat("", "PWM:", document.getElementById("pwmdriver").value,";FIM");
+            //alert(resp)
+            xhttp.open("GET", resp, true);
+            xhttp.send();
+        }
+        
+        function sendpwm2() {
+            var resp = "";
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            var resp1 = "setPWM2=";
+            var resp = resp1.concat("", "PWM:", document.getElementById("pwmbias").value,";FIM");
+            //alert(resp)
+            xhttp.open("GET", resp, true);
+            xhttp.send();
+        }
+        
+        function sendpwmfan() {
+            var resp = "";
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            var resp1 = "setPWMFAN=";
+            var resp = resp1.concat("", "PWM:", document.getElementById("pwmfan").value,";FIM");
+            //alert(resp)
+            xhttp.open("GET", resp, true);
+            xhttp.send();
+        }
+	        
+        function sendsn() {
+            var resp = "";
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            var resp1 = "setSN=";
+            var resp = resp1.concat("", "SN:", document.getElementById("sn").value,";FIM");
+            
+            //alert(resp);
+            xhttp.open("GET", resp, true);
+            xhttp.send();
+        }
+        
+        function sendData1(status) {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            xhttp.open("GET", "RFState="+status, true);
+            xhttp.send();
+        }
+        
+        function getLogin() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
+                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+                document.getElementById("user").innerHTML = document.getElementById("Login").innerHTML;
+                if(document.getElementById("lock").innerHTML == '0') {
+                    document.getElementById("teste1").className = "fa fa-unlock";
+                    document.getElementById("lock2").className = "fa fa-unlock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                else {
+                    document.getElementById("teste1").className = "fa fa-lock";
+                    document.getElementById("lock2").className = "fa fa-lock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+            }
+        };
+            xhttp.open("GET", "readLogin", true);
+            xhttp.send();
+        }
+        
+        function checkLength(elem) {
+            // checking if input value is more than Model
+            if (elem.value > 6000) {
+                alert( "Maximum Value: " + 6000 )
+                elem.value = 6000;
+            }
+        }
+        
+        function checkLengthv(elem) {
+            // checking if input value is more than Model
+            if (elem.value > 53) {
+                alert( "Maximum Value: " + 53 )
+                elem.value = 53;
+            }
+        }
+        
+        function checkpwm(elem) {
+            // checking if input value is more than Model
+            if (elem.value > 4095) {
+                alert( "Maximum Value: " + 4095 )
+                elem.value = 4095;
+            }
+        }
+        
+        function checkpwmfan(elem) {
+            // checking if input value is more than Model
+            if (elem.value > 4095) {
+                alert( "Maximum Value: " + 4095 )
+                elem.value = 4095;
+            }
+        }
+    </script>
+        <fieldset>
+            <label for="cfg1">Service Mode:</label>    
+            <input type="checkbox" id="cfg1" name="cfg1"><button type="button" class="myButton1" onclick="sendService()">Send </button>
+        </fieldset>
+        <fieldset>
+            <label for="pwmdriver">PWM Driver:</label> 
+            <input type="number" id="pwmdriver" name="pwmdriver" min="0" max="4095" value="0" oninput="checkpwm(this)"/><button type="button" class="myButton1" onclick="sendpwm1()">Send </button>
+        </fieldset>
+        <fieldset>
+            <label for="pwmbias">PWM Bias:</label> 
+            <input type="number" id="pwmbias" name="pwmbias" min="0" max="4095" value="0" oninput="checkpwm(this)"/><button type="button" class="myButton1" onclick="sendpwm2()">Send </button>
+        </fieldset>
+        <fieldset>
+            <label for="pwmfan">PWM FAN:</label> 
+            <input type="number" id="pwmfan" name="pwmfan" min="1044" max="4095" value="0" oninput="checkpwmfan(this)"/><button type="button" class="myButton1" onclick="sendpwmfan()">Send </button>
+        </fieldset>
+        <fieldset>
+            <label for="sn">Serial Number:</label>
+            <input type='text' id="sn" name="sn" onkeypress='validate(event)' oninput="checkLengthsn(this)" maxlength="8" size="8" /><button type="button" class="myButton1" onclick="sendsn()">Send </button>
+        </fieldset>
+		<br><br>
+        <fieldset>
+            <button type="button" class="myButtonSON" onclick="sendData1(1)">RF ON</button>
+            <button type="button" class="myButtonSMODE" onclick="sendData1(3)">Safe-Mode</button>
+            <button type="button" class="myButtonSOFF" onclick="sendData1(2)">RF OFF</button>
+            Status: <span id="rf">0</span>
+        </fieldset>
+        <br>
+        <p style="background-color:LightGray;"></p>
+        <h4>Servico: <span id="srv">0</span></h4>
+        <h4>PWM Driver: <span id="pwmdriver">0</span></h4>
+        <h4>PWM Bias: <span id="pwmbias">0</span></h4>
+        <h4>PWM FAN: <span id="pwmfan2">0</span></h4>
+        <h4>Forward: <span id="fwd">0</span></h4>
+        <h4>Reflected: <span id="ref">0</span></h4>
+        <h4>VPA: <span id="vpa">0</span></h4>
+        <h4>IPA: <span id="ipa">0</span></h4>
+        <h4>Temp: <span id="temp">0</span></h4>
+		<h5></h5>
+		<h4>MCP3208</h4>
+		<h5>CH0:<span id="ch0">0</span></h5>
+		<h5>CH1:<span id="ch1">0</span></h5> 
+		<h5>CH2:<span id="ch2">0</span></h5> 
+		<h5>CH3:<span id="ch3">0</span></h5> 
+		<h5>CH4:<span id="ch4">0</span></h5> 
+		<h5>CH5:<span id="ch5">0</span></h5> 
+		<h5>CH6:<span id="ch6">0</span></h5> 
+		<h5>CH7:<span id="ch7">0</span></h5>
+        <h5></h5>		
+        <h4>ADC STM32</h4>
+		<h5>FWD:<span id="adc0">0</span></h5>
+		<h5>REF:<span id="adc1">0</span></h5>  
+		<h5>TEMP:<span id="adc2">0</span></h5>  
+		<h5>IPA:<span id="adc3">0</span></h5>  
+		<h5>VPA:<span id="adc4">0</span></h5>
+		<h5></h5>
+		<h4>Reset Cause: <span id="resetcause">0</span></h4>
+		<h5 hidden>SN: <span id="strsn"></span></h5>
+		<h5 hidden>SN1: <span id="strsn1"></span></h5>
+		<h5 hidden>P1: <span id="p1"></span></h5>
+		<h5 hidden>P2: <span id="p2"></span></h5>
+    </div>
+		
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+		
+</body>
+</html>

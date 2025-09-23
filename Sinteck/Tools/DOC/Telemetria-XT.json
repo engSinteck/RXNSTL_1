@@ -1,0 +1,223 @@
+
+cmd/SerialNumber/Audio
+{
+    "Stereo": true,
+    "Source": 0,             
+    "Emphase": false,
+    "Processor": true,
+    "Clipper": true,
+    "VolMpx": 38,
+    "VolSca": 38
+}
+
+cmd/SerialNumber/Preset
+{
+    "Preset1":{
+        "Name":"PRESET 001",
+        "Fwd":0,
+        "Red1":0,
+        "Red2":0,
+        "En1":true,
+        "Tmr1Inicio":"00:00",
+        "Tmr1Fim":"23:59",
+        "En2":false,
+        "Tmr2Inicio":"00:00",
+        "Tmr2Fim":"23:59",
+        "weekday":127
+    },
+    "Preset2":{
+        "Name":"PRESET 002",
+        "Fwd":0,
+        "Red1":0,
+        "Red2":0,
+        "En1":true,
+        "Tmr1Inicio":"00:00",
+        "Tmr1Fim":"23:59",
+        "En2":false,
+        "Tmr2Inicio":"00:00",
+        "Tmr2Fim":"23:59",
+        "weekday":127
+    },
+    "Preset3":{
+        "Name":"PRESET 003",
+        "Fwd":0,
+        "Red1":0,
+        "Red2":0,
+        "En1":true,
+        "Tmr1Inicio":"00:00",
+        "Tmr1Fim":"23:59",
+        "En2":false,
+        "Tmr2Inicio":"00:00",
+        "Tmr2Fim":"23:59",
+        "weekday":127
+    },
+    "Preset4":{
+        "Name":"PRESET 004",
+        "Fwd":0,
+        "Red1":0,
+        "Red2":0,
+        "En1":true,
+        "Tmr1Inicio":"00:00",
+        "Tmr1Fim":"23:59",
+        "En2":false,
+        "Tmr2Inicio":"00:00",
+        "Tmr2Fim":"23:59",
+        "weekday":127
+    },
+    "Preset5":{
+        "Name":"PRESET 005",
+        "Fwd":0,
+        "Red1":0,
+        "Red2":0,
+        "En1":true,
+        "Tmr1Inicio":"00:00",
+        "Tmr1Fim":"23:59",
+        "En2":false,
+        "Tmr2Inicio":"00:00",
+        "Tmr2Fim":"23:59",
+        "weekday":127
+    },
+    "Preset6":{
+        "Name":"PRESET 006",
+        "Fwd":0,
+        "Red1":0,
+        "Red2":0,
+        "En1":true,
+        "Tmr1Inicio":"00:00",
+        "Tmr1Fim":"23:59",
+        "En2":false,
+        "Tmr2Inicio":"00:00",
+        "Tmr2Fim":"23:59",
+        "weekday":127
+    }
+}
+
+cmd/SerialNumber/PresetAtivo
+{
+    "PresetAtivo": 0
+}
+
+cmd/SerialNumber/rds
+{	
+    "Enable": true,
+    "Date-Time": false,
+    "Type": 0,
+    "PS": "Sinteck ",
+    "PI": "FFFF",
+    "PTY": 0, 
+    "PTYN": "",
+    "MS": 0,
+    "AF1": 0,
+    "AF2": 0,
+    "AF3": 0,
+    "AF4": 0,
+    "AF5": 0,
+    "RadioText": "XT-1K",
+    "DinamicText": "",
+    "Remote": false,
+    "Port": 8888
+}
+
+cmd/SerialNumber/mp3
+{
+    "mp3": 3
+}    
+
+cmd/SerialNumber/rfstate
+{
+    "state": 0
+}
+
+cmd/SerialNumber/Frequency
+{
+    "Frequency": 9810
+}
+
+cmd/SerialNumber/PowerLock
+{
+    "PowerLock": 335
+}
+
+cmd/SerialNumber/SendAlert
+{
+    "Email1": "suporte.xt@sinteck.com",
+    "Email2": "suporte.xt@sinteck.com",
+    "Telephone": "11999999999"
+}
+
+cmd/SerialNumber/License
+{
+    "License": "AAAAAAAA"
+}
+
+cmd/SerialNumber/Password
+{
+    "Admin": "1234",
+    "User": "1234"
+}
+
+cmd/Token/AdvSettings
+{	
+    "MAXIPA": 26,
+    "MAXVSWR": 100,
+    "MINAC": 176,
+    "MAXTemp": 55,
+    "OffsetForward": 1.00,
+    "OffsetReflected": 1.00,
+    "OffsetIPA": 1.00,
+    "OffsetVPA": 1.00,
+    "OffsetTemp": 1.00,
+    "OffsetDriver": 1.00,
+    "OffsetVAC": 1.00,
+    "OffsetPSTemp": 1.00,
+    "BatteryBank": 0,
+	"BatteryType": 0,
+    "BatteryPower": 500,
+    "DCInput": false,
+    "EnergyOptions": 0
+}
+
+cmd/SerialNumber/Network
+{
+    "IP": "192.168.10.10",
+    "MASK": "255.255.255.0",
+    "GW": "192.168.10.250",
+    "DNS": "192.168.10.250",
+    "Port": 56000
+}
+
+cmd/SerialNumber/LocalTimes
+{
+    "time": EPOCH,
+    "NTP": false,
+    "Fuso": 0,
+    "Language": 0
+}
+
+cmd/SerialNumber/ConfigHold
+{
+    "10MHZ": 2,
+    "ConfigInHold": false,
+    "EnableVswrNull": false,
+    "VSWRNULL": 0
+}
+
+cmd/SerialNumber/Service
+{
+    "RFInput": 0,
+    "EltekOut": 0,
+    "ServiceMode": false,
+    "PWMBias": 0,
+    "PWMDriver": 0,
+    "ResetOffsetBattery": false,
+    "ResetOffsetIPA": false
+}
+
+cmd/SerialNumber/Weather
+{
+    "Name": "Transamerica Passos",
+    "City": "Passos",
+    "State": "MG",
+    "Country": "Brasil",
+    "ExtTemperature": 28.6
+}

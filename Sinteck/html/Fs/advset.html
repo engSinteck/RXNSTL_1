@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>STL RX Strider</title>
+<link rel="shortcut icon" href="STM32H7xx_files/favicon.ico" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!--[if IE]><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body onload="getAdvData()"> 
+    <div id="header">
+          <h1>Advanced Setups</h1>
+    </div>
+    
+    <div id="img">
+        <img src="STM32H7xx_files/logo.jpg" alt="" align="right" width=210 height=38>
+    </div>
+    
+    <style>
+        legend {
+            padding-left:10px;
+            padding-right:10px;
+        }
+
+        fieldset {
+            position:relative;
+            line-height:24px;
+        }
+
+        input {
+            position:absolute;
+            left:118px;
+        }
+        
+        select {
+            position:absolute;
+            left:118px;
+        }
+    </style>
+       
+    <script>
+        function sendData() {
+            var resp = "";
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            var resp1 = "setAdvSet=";
+            var vr4 = "MAXIPA:" + document.getElementById("maxipa").value;
+            var vr5 = "MAXSWR:" + document.getElementById("maxswr").value;
+            var vr7 = "MAXTEMP:" + document.getElementById("maxtemp").value;
+            var vr8 = "GFWD:" + document.getElementById("gainfwd").value;
+            var vr9 = "GREF:" + document.getElementById("gainref").value;
+            var vr10 = "GIPA:" + document.getElementById("gainipa").value;
+            var vr11 = "GVPA:" + document.getElementById("gainvpa").value;
+            var vr12 = "GTEMP:" + document.getElementById("gaintemp").value;
+            var resp = resp1.concat("", vr4, ";", vr5, ";", vr7, ";", vr8, ";", vr9, ";", vr10, ";", vr11, ";", vr12,";", "FIM:");
+            //alert(resp);
+            if (confirm("Confirm !")) {
+                xhttp.open("GET", resp, true);
+                xhttp.send();
+            }
+            else {
+            
+            }
+        }
+        
+        function getAdvSet() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    //
+                    document.getElementById("model").innerHTML = this.responseText.substring(this.responseText.indexOf("MODEL:")+6,this.responseText.indexOf("ADV:")-1);
+                    document.getElementById("maxipa").value = this.responseText.substring(this.responseText.indexOf("MAXIPA:")+7,this.responseText.indexOf("MAXSWR:")-1);
+                    document.getElementById("maxswr").value = this.responseText.substring(this.responseText.indexOf("MAXSWR:")+7,this.responseText.indexOf("MINAC:")-1);
+                    document.getElementById("maxtemp").value = this.responseText.substring(this.responseText.indexOf("MAXTEMP:")+8,this.responseText.indexOf("GFWD:")-1);
+                    //
+                    document.getElementById("gainfwd").value = this.responseText.substring(this.responseText.indexOf("GFWD:")+5,this.responseText.indexOf("GREF:")-1);
+                    document.getElementById("gainref").value = this.responseText.substring(this.responseText.indexOf("GREF:")+5,this.responseText.indexOf("GIPA:")-1);
+                    document.getElementById("gainipa").value = this.responseText.substring(this.responseText.indexOf("GIPA:")+5,this.responseText.indexOf("GVPA:")-1);
+                    document.getElementById("gainvpa").value = this.responseText.substring(this.responseText.indexOf("GVPA:")+5,this.responseText.indexOf("GTEMP:")-1);
+                    document.getElementById("gaintemp").value = this.responseText.substring(this.responseText.indexOf("GTEMP:")+6,this.responseText.indexOf("FIM:")-1);
+                    //
+                }
+            };
+            xhttp.open("GET", "readAdvSet", true);
+            xhttp.send();
+        }
+		
+        function checkLength(elem) {
+            // checking if input value is more than Model
+            if (elem.value > parseInt(document.getElementById("max").innerHTML)) {
+                alert( "Maximum Value: " + parseInt(document.getElementById("max").innerHTML) )
+                elem.value = document.getElementById("max").innerHTML;
+            }
+        }
+		
+		function checkLimit(elem, min, max) {
+            // checking if input value is more MAX
+            if (elem.value < min) {
+			    alert( "Minimum Value: " + min );
+                elem.value = min;
+			}
+			if (elem.value > max) {
+                alert( "Maximum Value: " + max );
+                elem.value = max;
+            }
+        }
+		
+		function restrictNumberInput(input) {
+			var value = input.value;
+			var min = 0.09;
+			var max = 2;
+
+			if (value < min) {
+				input.value = min;
+			} else if (value > max) {
+				input.value = max;
+			}
+		}
+		
+        function getLogin() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
+                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+                if(document.getElementById("lock").innerHTML == '0') {
+                    document.getElementById("teste1").className = "fa fa-unlock";
+                    document.getElementById("lock2").className = "fa fa-unlock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                else {
+                    document.getElementById("teste1").className = "fa fa-lock";
+                    document.getElementById("lock2").className = "fa fa-lock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                
+                getAdvSet();
+            }
+        };
+            xhttp.open("GET", "readLogin", true);
+            xhttp.send();
+        }
+        
+        function getAdvData() {
+            getLogin();
+        }
+    </script>
+    
+    <div id="nav">        
+      <ul>
+        <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span></a></li>
+		<li><a id="home" href="index.html">Dashboard</a></li>
+		
+        <li><a class="group">SETUP</a></li>        
+        <li><a id="confaudio" href="audio.html">Audio</a></li>
+        <li><a id="conftime" href="time.html">Time</a></li>
+        <li><a id="confrds" href="rds.html">RDS</a></li>
+        <li><a id="conffreq" href="freq.html">Frequency</a></li>
+        <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
+        <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
+        <li><a id="confpass" href="password.html">Password</a></li>
+        <li><a id="profile" href="profile.html">Station Profile</a></li>
+        <li><a class="group">TOOLS</a></li>
+        <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+        <li><a id="FAIL" href="Fail.html">Fail List</a></li>
+      </ul>                
+    </div>
+	
+    <div id="section">		
+         <form>
+            <h3>Foldback:</h3>
+            <fieldset>
+                <label for="maxipa">MAX IPA (A):</label>
+                <input type="number" id="maxipa" name="maxipa" step="0.1" min="5" max="65.0" oninput="checkLength(this)"/><br>
+            </fieldset>
+            <fieldset>
+                <label for="maxvswr">MAX VSWR (W):</label>
+                <input type="number" id="maxswr" name="maxswr" step="1.0" min="1" max="30"/><br>
+            </fieldset>
+            <fieldset>
+                <label for="maxtemp">MAX TEMP (°C):</label>
+                <input type="number" id="maxtemp" name="maxtemp" step="1.0" min="30" max="60"/><br>
+            </fieldset>
+            <br><br>
+            <h3>Gain Adjust:</h3>
+            <fieldset>
+                <label for="gainfwd">FWD PWR:</label>
+                <input type="number" id="gainfwd" name="gainfwd" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+            </fieldset>
+            <fieldset>
+                <label for="gainref">REF PWR:</label>
+                <input type="number" id="gainref" name="gainref" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+            </fieldset>
+            <fieldset>
+                <label for="gainipa">IPA:</label>
+                <input type="number" id="gainipa" name="gainipa" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+            </fieldset>
+            <fieldset>
+                <label for="gainvpa">VPA:</label>
+                <input type="number" id="gainvpa" name="gainvpa" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+            </fieldset>
+            <fieldset>
+                <label for="gaintemp">INTL TEMP:</label>
+                <input type="number" id="gaintemp" name="gaintemp" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+            </fieldset>
+        </form>
+        <br><br>
+        <button type="button" class="myButton" onclick="sendData()">Submit</button>
+        <h5 /hidden>Modelo: <span id="model">0</span></h5>
+        <h5 /hidden>Max: <span id="max">0</span></h5>
+        <h5 /hidden>FWD BAT: <span id="fwdbatt2">0</span></h5>
+        <h5 hidden>Lock: <span id="lock">0</span></h5>
+        <h5 hidden>Teste1: <span id="teste1"></span></h5>
+        <br><h1></h1>
+        <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+		<br><br><br><br><br>
+    </div>
+		
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+		
+</body>
+</html>

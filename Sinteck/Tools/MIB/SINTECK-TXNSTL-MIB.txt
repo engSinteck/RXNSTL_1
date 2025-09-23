@@ -1,0 +1,137 @@
+SINTECK-TXNSTL-SNMP-MIB DEFINITIONS ::= BEGIN
+
+--
+-- SINTECK TXNSTL MIB module
+--
+
+IMPORTS
+    MODULE-IDENTITY, OBJECT-TYPE, Integer32, enterprises
+        FROM SNMPv2-SMI
+
+    OBJECT-GROUP, MODULE-COMPLIANCE
+        FROM SNMPv2-CONF
+
+    Utf8String
+        FROM SYSAPPL-MIB;
+
+sinteckTXNSTLMIB MODULE-IDENTITY
+    LAST-UPDATED "202509090000Z"
+    ORGANIZATION "www.sinteck.com.br"
+    CONTACT-INFO    
+	"postal:   Rua dos Bolivianos, 578
+                    Sao Paulo - SP
+                    Brazil
+
+          email:    fabio@sinteck.com.br"
+    DESCRIPTION
+	"Sinteck TXNSTL SNMP MIB"
+	
+    REVISION     "202509090000Z"
+    DESCRIPTION
+	"First version"
+
+    ::= { enterprises 54532}
+
+--
+--  Net-SNMP enterprise-specific management objects
+--
+sinteckCpuObjects OBJECT IDENTIFIER ::= { sinteckTXNSTLMIB 7 }
+
+sinteckTXNSTLConformance    OBJECT IDENTIFIER ::= { sinteckTXNSTLMIB 3 }
+sinteckTXNSTLCompliances    OBJECT IDENTIFIER ::= { sinteckTXNSTLConformance 1 }
+TXNSTLGroups         OBJECT IDENTIFIER ::= { sinteckTXNSTLConformance 2 }
+
+sinteckTXNSTLCompliance     MODULE-COMPLIANCE
+    STATUS          current
+    DESCRIPTION
+        "The compliance statement for SNMP entities which
+         implement the SINTECK-TXNSTL-SNMP MIB"
+
+    MODULE SINTECK-TXNSTL-SNMP-MIB
+          MANDATORY-GROUPS { TXNSTLGroup }
+
+    GROUP TXNSTLGroup
+          DESCRIPTION
+              "The TXNSTLGroup is mandatory, but no write access
+               to objects is required for compliance."
+
+    ::= { sinteckTXNSTLCompliances 1 }
+
+TXNSTLGroup OBJECT-GROUP
+    OBJECTS { 
+        ForwardPower,
+        ReflectedPower,
+        IntAvgTemperature,
+        Status,
+        SationFrequency,
+        PowerState,
+        Errors,
+    }
+    STATUS  current
+    DESCRIPTION
+            "A collection of objects providing basic instrumentation and
+            control of an SNMPv2 entity."
+    ::= { xtGroups 1 }
+    
+ForwardPower OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Forward Power from XT module"
+    ::= { sinteckCpuObjects 1 }
+    
+
+ReflectedPower OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Reflected Power from XT module"
+    ::= { sinteckCpuObjects 2 }
+ 
+IntAvgTemperature OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Internal Temperature from XT module"
+    ::= { sinteckCpuObjects 3 }
+    
+Status OBJECT-TYPE
+    SYNTAX Utf8String
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Current Status"
+    ::= { sinteckCpuObjects 4 }
+    
+SationFrequency OBJECT-TYPE
+    SYNTAX Integer32
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Station Frequency"
+    ::= { sinteckCpuObjects 5 }
+    
+PowerState OBJECT-TYPE
+    SYNTAX INTEGER {
+        poweredoff(0),
+		poweredon(1),
+        safemode(2),
+    }
+    MAX-ACCESS read-write
+    STATUS current
+    DESCRIPTION
+        "Current Power State"
+    ::= { sinteckCpuObjects 6 }
+    
+Errors OBJECT-TYPE
+    SYNTAX Utf8String
+    MAX-ACCESS read-only
+    STATUS current
+    DESCRIPTION
+        "Error List"
+    ::= { sinteckCpuObjects 7 }
+    
+END

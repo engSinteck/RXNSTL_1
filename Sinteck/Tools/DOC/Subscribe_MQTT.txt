@@ -1,0 +1,13 @@
+mosquitto_sub -h 192.168.10.143 -u "Sinteck" -P "Bolivianos578" -t "config/ZW8T-4Z7H/#"
+
+mosquitto_sub -h 192.168.10.143 -u "Sinteck" -P "Bolivianos578" -t "preset/ZW8T-4Z7H/#"
+
+mosquitto_sub -h 192.168.10.143 -u "Sinteck" -P "Bolivianos578" -t "reading/ZW8T-4Z7H/#"
+
+mosquitto_sub -h 192.168.10.143 -u "Sinteck" -P "Bolivianos578" -t "alarm/ZW8T-4Z7H/#"
+
+https://randomnerdtutorials.com/esp32-mqtt-publish-subscribe-arduino-ide/
+
+https://github.com/magiczny-kacper/ECO_MainControllerMCU/tree/WorkingCodeBranch/Core
+
+https://github.com/analogdevicesinc/linux/blob/master/drivers/iio/frequency/ad9517.c

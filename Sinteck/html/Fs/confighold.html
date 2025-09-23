@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>STL RX Strider</title>
+<link rel="shortcut icon" href="STM32H7xx_files/favicon.ico" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!--[if IE]><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body onload="getData1()"> 
+    <div id="header">
+          <h1>Config Hold/Factory Settings</h1>
+    </div>
+
+    <div id="img">
+        <img src="STM32H7xx_files/logo.jpg" alt="" align="right" width=210 height=38>
+    </div>
+    
+    <div id="nav">        
+      <ul>
+        <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span></a></li> 
+		<li><a id="home" href="index.html">Dashboard</a></li>
+		
+        <li><a class="group">SETUP</a></li>        
+        <li><a id="confaudio" href="audio.html">Audio</a></li>
+        <li><a id="conftime" href="time.html">Time</a></li>
+        <li><a id="confrds" href="rds.html">RDS</a></li>
+        <li><a id="conffreq" href="freq.html">Frequency</a></li>
+        <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
+        <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
+        <li><a id="confpass" href="password.html">Password</a></li>
+        <li><a id="profile" href="profile.html">Station Profile</a></li>
+        <li><a class="group">TOOLS</a></li>
+        <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+        <li><a id="FAIL" href="Fail.html">Fail List</a></li>
+      </ul>                
+    </div>
+    
+    <div id="section">
+    <script>
+        function getRefVSWR() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("reflected").innerHTML = this.responseText.substring(this.responseText.indexOf("REF:")+4,this.responseText.indexOf("VALUE:")-1);
+                    document.getElementById("value").innerHTML =  this.responseText.substring(this.responseText.indexOf("VALUE:")+6,this.responseText.indexOf("FWDNULL:")-1);
+                    document.getElementById("teste2").innerHTML =  this.responseText.substring(this.responseText.indexOf("FWDNULL:")+8,this.responseText.indexOf("FIM:")-1);
+                }
+            };
+            xhttp.open("GET", "readVSWR", true);
+            xhttp.send();
+        }
+        
+        function getData() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("cfg").innerHTML = this.responseText.substring(this.responseText.indexOf("HOLD:")+5,this.responseText.indexOf("VSWR:")-1);
+                    document.getElementById("vswr").innerHTML =  this.responseText.substring(this.responseText.indexOf("VSWR:")+5,this.responseText.indexOf("CLOCK:")-1);
+                    //document.getElementById("clock").innerHTML =  this.responseText.substring(this.responseText.indexOf("CLOCK:")+6,this.responseText.indexOf("REF:")-1);
+                    document.getElementById("reflected").innerHTML = this.responseText.substring(this.responseText.indexOf("REF:")+4,this.responseText.indexOf("VALUE:")-1);
+                    document.getElementById("value").innerHTML = this.responseText.substring(this.responseText.indexOf("VALUE:")+6,this.responseText.indexOf("FWDNULL1:")-1);
+                    document.getElementById("teste2").innerHTML = this.responseText.substring(this.responseText.indexOf("FWDNULL1:")+9,this.responseText.indexOf("FIM:")-1);
+                    
+                    if(document.getElementById("cfg").innerHTML == '1') {
+                        document.getElementById("cfg1").checked = true;
+                    }
+                    else {
+                        document.getElementById("cfg1").checked = false;
+                    }
+                    if(document.getElementById("vswr").innerHTML == '1') {
+                        document.getElementById("cfg3").checked = true;
+                    }
+                    else {
+                        document.getElementById("cfg3").checked = false;
+                    }
+                    //document.getElementById("cfg2").value = document.getElementById("clock").innerHTML - '0';
+                    document.getElementById("tst").innerHTML = document.getElementById("value").innerHTML;
+                    document.getElementById("cfg4").value = document.getElementById("value").innerHTML
+                    document.getElementById("cfg5").value = document.getElementById("teste2").innerHTML;
+                }
+            };
+            xhttp.open("GET", "readConfigHold", true);
+            xhttp.send();
+        }
+        
+        function sendData() {
+            var resp = "";
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            var resp1 = "setConfigHold=";
+            var id1 = "";
+            if(document.getElementById("cfg1").checked == true) {
+                id1 = "1";
+            }
+            else {
+                id1 = "0";
+            }
+            var id2 = "";
+            if(document.getElementById("cfg3").checked == true) {
+                id2 = "1";
+            }
+            else {
+                id2 = "0";
+            }
+            
+            var resp = resp1.concat("", id1, ";", id2, ";", id2, ";", "VSWR:", document.getElementById("cfg4").value, ";NFWD:", document.getElementById("cfg5").value, ";FIM:");
+            //alert(resp)
+            if (confirm("Confirm !")) {
+                xhttp.open("GET", resp, true);
+                xhttp.send();
+            }
+            else {
+            
+            }
+        }
+        
+        function sendRestoreFactory() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            if (confirm("Confirm !")) {
+                xhttp.open("GET", "SetRestoreFactory", true);
+                xhttp.send();
+            }
+            else {
+            
+            }
+        }
+
+        function sendReboot() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            if (confirm("Confirm !")) {
+                xhttp.open("GET", "SetReboot", true);
+                xhttp.send();
+            }
+            else {
+            
+            }
+        }
+        
+        setInterval(function() {
+            // Call a function repetatively with 1000m Second interval
+            getRefVSWR();
+        }, 1000);           //1000mSeconds update rate
+        
+        function checkLength(elem) {
+            // checking if input value is more than Model
+            if (elem.value > parseInt(document.getElementById("max").innerHTML)) {
+                alert( "Maximum Value: " + (parseInt(document.getElementById("max").innerHTML) ) )
+                elem.value = document.getElementById("max").innerHTML;
+            }
+        }
+        
+       function getLogin() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
+                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+                if(document.getElementById("lock").innerHTML == '0') {
+                    document.getElementById("teste1").className = "fa fa-unlock";
+                    document.getElementById("lock2").className = "fa fa-unlock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                else {
+                    document.getElementById("teste1").className = "fa fa-lock";
+                    document.getElementById("lock2").className = "fa fa-lock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                
+                getData();
+            }
+        };
+            xhttp.open("GET", "readLogin", true);
+            xhttp.send();
+        }
+        
+        function getData1() {
+            getLogin();
+        }
+        
+    </script>
+
+          <fieldset>
+            <label for="cfg1">Config In Hold:</label>    
+            <input type="checkbox" id="cfg1" name="cfg1">
+        </fieldset>
+        <br>
+        <fieldset>
+            <label for="cfg3">VSWR NULL:</label>
+            <input type="checkbox" id="cfg3" name="cfg3"> Reflected: <span id="reflected">0 W</span> ( <span id="value">0 W</span> )
+        </fieldset>
+        <br>
+        <fieldset>
+            <label for="cfg4">VSWR NULL Value:</label>
+            <input type="number" id="cfg4" name="cfg4" min="0" max="100" step="1" /><label>  W</label>
+        </fieldset>
+        <br>
+        <fieldset>
+            <label for="cfg5"> FWD  NULL Value :</label>
+            <input type="number" id="cfg5" name="cfg5" min="0" max="100" step="1" /><label>  W</label>
+        </fieldset>
+        <br>
+        
+        <button type="button" class="myButton" onclick="sendData()">Submit</button>
+        <br><br>
+        <h5 hidden>Config In Hold: <span id="cfg">0</span></h5>
+        <h5 hidden>VSWR Null: <span id="vswr">0</span> Reflected: <span id="reflected">0</span></h5>
+        <h5 hidden>Max: <span id="max">0</span></h5>
+        <h5 hidden>Teste: <span id="tst">0</span></h5>
+        <h5 hidden>Teste: <span id="teste1"></span></h5>
+        <h5 hidden>FWD NULL: <span id="teste2"></span></h5>
+        <h5 hidden>Lock: <span id="lock">0</span></h5>
+        <br><br>
+        <p style="background-color:LightGray;"></p>
+        <br><br>
+            <button type="button" class="myButton" onclick="sendRestoreFactory()">Restore Factory Settings </button> &nbsp &nbsp &nbsp &nbsp
+            <button type="button" class="myButton" onclick="sendReboot()">Reboot</button> 
+            <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><h1></h1>
+            <br><br><br><br><br><br><br><br><br>
+    </div>
+		
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+		
+</body>
+</html>

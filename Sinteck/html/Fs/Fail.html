@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>STL RX Strider</title>
+<link rel="shortcut icon" href="STM32H7xx_files/favicon.ico" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!--[if IE]><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body onload="SendAlarm()"> 
+    <div id="header">
+          <h1>Fail List</h1>
+    </div>
+    
+    <div id="img">
+        <img src="STM32H7xx_files/logo.jpg" alt="" align="right" width=210 height=38>
+    </div>
+    
+    <style>
+        legend {
+            padding-left:10px;
+            padding-right:10px;
+        }
+
+        fieldset {
+            position:relative;
+            line-height:24px;
+        }
+
+        input {
+            position:absolute;
+            left:80px;
+        }
+        
+        select {
+            position:absolute;
+            left:80px;
+        }
+        
+		table {
+			font-family: arial, sans-serif;
+			border-collapse: collapse;
+			width: 100%;
+		}
+
+		td, th {
+			border: 1px solid #dddddd;
+			text-align: left;
+		}
+
+		tr:nth-child(even) {
+			background-color: #dddddd;
+                  
+		}
+        
+        meter {
+            width: 500px;
+            height: 25px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+    </style>
+    
+    <script>
+        function sendData() {
+        var resp = "";
+        var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            // 
+            var resp1 = "setFailList=";
+            var resp = resp1.concat("", "1", ";FIM");
+            //alert(resp)
+            if (confirm("Confirm !")) {
+                xhttp.open("GET", resp, true);
+                xhttp.send();
+                document.getElementById("qtd").innerHTML = "0";
+                ClearTable();
+            }
+            else {
+            
+            }
+        }
+        
+        function getFailList(qtd) {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("qtd").innerHTML = this.responseText.substring(this.responseText.indexOf("QTD:")+4,this.responseText.indexOf("COD:")-1);
+                    document.getElementById("cod").innerHTML = this.responseText.substring(this.responseText.indexOf("COD:")+4,this.responseText.indexOf("TIME:")-1);
+                    document.getElementById("time").innerHTML = this.responseText.substring(this.responseText.indexOf("TIME:")+5,this.responseText.indexOf("DATE:")-1);
+                    document.getElementById("date").innerHTML = this.responseText.substring(this.responseText.indexOf("DATE:")+5,this.responseText.indexOf("FIM:")-1);
+                    myFunction(document.getElementById("cod").innerHTML,
+                               document.getElementById("time").innerHTML,
+                               document.getElementById("date").innerHTML );
+                }      
+            };
+            var resp1 = "/readFailList=";
+            if(qtd > 9) {
+                var resp = resp1.concat("", qtd.toString());
+            }
+            else {
+                var resp = resp1.concat("", '0', qtd.toString());
+            }
+            xhttp.open("GET", resp, true);
+            xhttp.send();
+        }
+        
+        function getFailCont() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("qtd").innerHTML = this.responseText.substring(this.responseText.indexOf("QTD:")+4,this.responseText.indexOf("FIM:")-1);
+                    document.getElementById("id").innerHTML = document.getElementById("qtd").innerHTML;
+                }
+                
+                SendFail();
+            };
+            xhttp.open("GET", "/readFailCont=", true);
+            xhttp.send();
+        }
+        
+        function myFunction(cod, hor, dat) {
+            var table = document.getElementById("myTable");
+            var row = table.insertRow(1);
+            var cell1 = row.insertCell(0);
+            var cell2 = row.insertCell(1);
+            var cell3 = row.insertCell(2);
+            cell1.innerHTML = cod;
+            cell2.innerHTML = hor;
+            cell3.innerHTML = dat;
+        }
+        
+        function ClearTable() {
+            var tableHeaderRowCount = 1;
+            var table = document.getElementById('myTable');
+            var rowCount = table.rows.length;
+            for (var i = tableHeaderRowCount; i < rowCount; i++) {
+                table.deleteRow(tableHeaderRowCount);
+            }
+        }
+        
+        function SendFail() {
+            var i;
+            for(i=0; i < parseInt(document.getElementById("id").innerHTML); i++) {
+                getFailList(i);
+                sleep(100);
+            }
+            document.getElementById("id").innerHTML = "0";
+        }
+        
+        function SendAlarm() {
+            getLogin();
+        }
+        
+        function sleep(milliseconds) {
+            const date = Date.now();
+            let currentDate = null;
+            do {
+                currentDate = Date.now();
+            } while (currentDate - date < milliseconds);
+        }
+        
+        function getLogin() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
+                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+                if(document.getElementById("lock").innerHTML == '0') {
+                    document.getElementById("teste1").className = "fa fa-unlock";
+                    document.getElementById("lock2").className = "fa fa-unlock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                else {
+                    document.getElementById("teste1").className = "fa fa-lock";
+                    document.getElementById("lock2").className = "fa fa-lock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                
+                getFailCont();
+            }
+        };
+            xhttp.open("GET", "readLogin", true);
+            xhttp.send();
+        }
+    </script>
+    
+    <div id="nav">        
+      <ul>
+        <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span></a></li>
+		<li><a id="home" href="index.html">Dashboard</a></li>
+		
+        <li><a class="group">SETUP</a></li>        
+        <li><a id="confaudio" href="audio.html">Audio</a></li>
+        <li><a id="conftime" href="time.html">Time</a></li>
+        <li><a id="confrds" href="rds.html">RDS</a></li>
+        <li><a id="conffreq" href="freq.html">Frequency</a></li>
+        <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
+        <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
+        <li><a id="confpass" href="password.html">Password</a></li>
+        <li><a id="profile" href="profile.html">Station Profile</a></li>
+        <li><a class="group">TOOLS</a></li>
+        <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+        <li><a id="FAIL" href="Fail.html">Fail List</a></li>
+      </ul>                
+    </div>
+	
+    <div id="section">
+        <br><br>
+        <h5>Alarms: <span id="qtd">0</span></h5>
+        <table id="myTable">
+            <tr>
+                <th>Fail</th>
+                <th>Time</th>
+                <th>Date</th>
+            </tr>
+        </table>
+        <br><br>   
+        <button type="button" class="myButton" onclick="SendFail()">Refresh</button> <span class="espaco"></span>
+        <button type="button" class="myButton" onclick="sendData()">Clear</button> <span class="espaco"></span>
+        <h5 /hidden>Cod: <span id="cod">0</span></h5>
+        <h5 /hidden>Time: <span id="time">0</span></h5>
+        <h5 /hidden>Date: <span id="date">0</span></h5>
+        <h5 /hidden>ID: <span id="id">0</span></h5>
+        <h5 hidden>Lock: <span id="lock">0</span></h5>
+        <h5 hidden>Teste1: <span id="teste1"></span></h5>
+        <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+        <br><br><br><br><br><br><br><br><br><br><br>
+    </div>
+		
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+		
+</body>
+</html>

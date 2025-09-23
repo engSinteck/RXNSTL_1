@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>STL RX Strider</title>
+<link rel="shortcut icon" href="STM32H7xx_files/favicon.ico" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!--[if IE]><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body onload="getData()">
+    <div id="header">
+          <h1>Forward Graph</h1>
+    </div>
+    
+    <div id="img">
+        <img src="STM32H7xx_files/logo.jpg" alt="" align="right" width=210 height=38>
+    </div>
+    
+    <style>
+        legend {
+            padding-left:10px;
+            padding-right:10px;
+        }
+
+        fieldset {
+            position:relative;
+            line-height:24px;
+        }
+
+        input {
+            position:absolute;
+            left:80px;
+        }
+        
+        select {
+            position:absolute;
+            left:248px;
+        }
+    </style>
+    
+    <div id="nav">        
+      <ul>
+        <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span></a></li>
+		<li><a id="home" href="index.html">Dashboard</a></li>
+		
+        <li><a class="group">SETUP</a></li>        
+        <li><a id="confaudio" href="audio.html">Audio</a></li>
+        <li><a id="conftime" href="time.html">Time</a></li>
+        <li><a id="confrds" href="rds.html">RDS</a></li>
+        <li><a id="conffreq" href="freq.html">Frequency</a></li>
+        <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
+        <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
+        <li><a id="confpass" href="password.html">Password</a></li>
+        <li><a id="profile" href="profile.html">Station Profile</a></li>
+        <li><a class="group">TOOLS</a></li>
+        <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+        <li><a id="FAIL" href="Fail.html">Fail List</a></li>
+      </ul>
+    </div>
+    
+    <div id="section">
+    <script>
+        setInterval(function() {
+            // Call a function repetatively with 1000m Second interval
+            GetGraph();
+        }, 1000);           //1000mSeconds update rate
+    
+        function GetGraph() {
+            var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        document.getElementById("hora0").innerHTML = this.responseText.substring(this.responseText.indexOf("H0:")+3,this.responseText.indexOf("H1:")-1);
+                        document.getElementById("hora1").innerHTML = this.responseText.substring(this.responseText.indexOf("H1:")+3,this.responseText.indexOf("H2:")-1);
+                        document.getElementById("hora2").innerHTML = this.responseText.substring(this.responseText.indexOf("H2:")+3,this.responseText.indexOf("H3:")-1);
+                        document.getElementById("hora3").innerHTML = this.responseText.substring(this.responseText.indexOf("H3:")+3,this.responseText.indexOf("H4:")-1);
+                        document.getElementById("hora4").innerHTML = this.responseText.substring(this.responseText.indexOf("H4:")+3,this.responseText.indexOf("H5:")-1);
+                        document.getElementById("hora5").innerHTML = this.responseText.substring(this.responseText.indexOf("H5:")+3,this.responseText.indexOf("H6:")-1);
+                        document.getElementById("hora6").innerHTML = this.responseText.substring(this.responseText.indexOf("H6:")+3,this.responseText.indexOf("H7:")-1);
+                        document.getElementById("hora7").innerHTML = this.responseText.substring(this.responseText.indexOf("H7:")+3,this.responseText.indexOf("H8:")-1);
+                        document.getElementById("hora8").innerHTML = this.responseText.substring(this.responseText.indexOf("H8:")+3,this.responseText.indexOf("H9:")-1);
+                        document.getElementById("hora9").innerHTML = this.responseText.substring(this.responseText.indexOf("H9:")+3,this.responseText.indexOf("H10:")-1);
+                        document.getElementById("hora10").innerHTML = this.responseText.substring(this.responseText.indexOf("H10:")+4,this.responseText.indexOf("H11:")-1);
+                        document.getElementById("hora11").innerHTML = this.responseText.substring(this.responseText.indexOf("H11:")+4,this.responseText.indexOf("H12:")-1);
+                        document.getElementById("hora12").innerHTML = this.responseText.substring(this.responseText.indexOf("H12:")+4,this.responseText.indexOf("H13:")-1);
+                        document.getElementById("hora13").innerHTML = this.responseText.substring(this.responseText.indexOf("H13:")+4,this.responseText.indexOf("H14:")-1);
+                        document.getElementById("hora14").innerHTML = this.responseText.substring(this.responseText.indexOf("H14:")+4,this.responseText.indexOf("H15:")-1);
+                        document.getElementById("hora15").innerHTML = this.responseText.substring(this.responseText.indexOf("H15:")+4,this.responseText.indexOf("H16:")-1);
+                        document.getElementById("hora16").innerHTML = this.responseText.substring(this.responseText.indexOf("H16:")+4,this.responseText.indexOf("H17:")-1);
+                        document.getElementById("hora17").innerHTML = this.responseText.substring(this.responseText.indexOf("H17:")+4,this.responseText.indexOf("H18:")-1);
+                        document.getElementById("hora18").innerHTML = this.responseText.substring(this.responseText.indexOf("H18:")+4,this.responseText.indexOf("H19:")-1);
+                        document.getElementById("hora19").innerHTML = this.responseText.substring(this.responseText.indexOf("H19:")+4,this.responseText.indexOf("H20:")-1);
+                        document.getElementById("hora20").innerHTML = this.responseText.substring(this.responseText.indexOf("H20:")+4,this.responseText.indexOf("H21:")-1);
+                        document.getElementById("hora21").innerHTML = this.responseText.substring(this.responseText.indexOf("H21:")+4,this.responseText.indexOf("H22:")-1);
+                        document.getElementById("hora22").innerHTML = this.responseText.substring(this.responseText.indexOf("H22:")+4,this.responseText.indexOf("H23:")-1);
+                        document.getElementById("hora23").innerHTML = this.responseText.substring(this.responseText.indexOf("H23:")+4,this.responseText.indexOf("FIM:")-1);
+                        drawChart()
+                    }
+                };
+            
+                var resp1 = "/GetGraph=";
+                var resp = resp1.concat("", "1", ";","FIM");
+                xhttp.open("GET", resp, true);
+                xhttp.send();
+        }
+        </script>
+        
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <script type="text/javascript">
+        var chart;
+        google.charts.load('current', {'packages':['corechart']});
+        google.charts.setOnLoadCallback(GetGraph);
+
+        function drawChart() {
+            var data = google.visualization.arrayToDataTable([
+                ['Hora', 'Power'],
+                ['00',  parseInt(document.getElementById("hora0").innerHTML, 10)],
+                ['01',  parseInt(document.getElementById("hora1").innerHTML, 10)],
+                ['02',  parseInt(document.getElementById("hora2").innerHTML, 10)],
+                ['03',  parseInt(document.getElementById("hora3").innerHTML, 10)],
+                ['04',  parseInt(document.getElementById("hora4").innerHTML, 10)],
+                ['05',  parseInt(document.getElementById("hora5").innerHTML, 10)],
+                ['06',  parseInt(document.getElementById("hora6").innerHTML, 10)],
+                ['07',  parseInt(document.getElementById("hora7").innerHTML, 10)],
+                ['08',  parseInt(document.getElementById("hora8").innerHTML, 10)],
+                ['09',  parseInt(document.getElementById("hora9").innerHTML, 10)],
+                ['10',  parseInt(document.getElementById("hora10").innerHTML, 10)],
+                ['11',  parseInt(document.getElementById("hora11").innerHTML, 10)],
+                ['12',  parseInt(document.getElementById("hora12").innerHTML, 10)],
+                ['13',  parseInt(document.getElementById("hora13").innerHTML, 10)],
+                ['14',  parseInt(document.getElementById("hora14").innerHTML, 10)],
+                ['15',  parseInt(document.getElementById("hora15").innerHTML, 10)],
+                ['16',  parseInt(document.getElementById("hora16").innerHTML, 10)],
+                ['17',  parseInt(document.getElementById("hora17").innerHTML, 10)],
+                ['18',  parseInt(document.getElementById("hora18").innerHTML, 10)],
+                ['19',  parseInt(document.getElementById("hora19").innerHTML, 10)],
+                ['20',  parseInt(document.getElementById("hora20").innerHTML, 10)],
+                ['21',  parseInt(document.getElementById("hora21").innerHTML, 10)],
+                ['22',  parseInt(document.getElementById("hora22").innerHTML, 10)],
+                ['23',  parseInt(document.getElementById("hora23").innerHTML, 10)]
+            ]);
+
+            var options = {
+                title: 'Forward Performance',
+                //curveType: 'function',
+                legend: { position: 'bottom' }
+            };
+
+            chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+
+            chart.draw(data, options);
+        }
+      
+        function getLogin() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
+                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+                if(document.getElementById("lock").innerHTML == '0') {
+                    document.getElementById("teste1").className = "fa fa-unlock";
+                    document.getElementById("lock2").className = "fa fa-unlock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                else {
+                    document.getElementById("teste1").className = "fa fa-lock";
+                    document.getElementById("lock2").className = "fa fa-lock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                
+                 GetGraph();
+            }
+        };
+            xhttp.open("GET", "readLogin", true);
+            xhttp.send();
+        }
+        
+        function getData() {
+            getLogin();
+        }
+      </script>
+            
+        <div id="curve_chart" style="width: 960px; height: 500px"></div>
+                          
+        <h5 /hidden>00:00 - <span id="hora0"</span></h5>
+        <h5 /hidden>01:00 - <span id="hora1"</span></h5>
+        <h5 /hidden>02:00 - <span id="hora2"</span></h5>
+        <h5 /hidden>03:00 - <span id="hora3"</span></h5>
+        <h5 /hidden>04:00 - <span id="hora4"</span></h5>
+        <h5 /hidden>05:00 - <span id="hora5"</span></h5>
+        <h5 /hidden>06:00 - <span id="hora6"</span></h5>
+        <h5 /hidden>07:00 - <span id="hora7"</span></h5>
+        <h5 /hidden>08:00 - <span id="hora8"</span></h5>
+        <h5 /hidden>09:00 - <span id="hora9"</span></h5>
+        <h5 /hidden>10:00 - <span id="hora10"</span></h5>
+        <h5 /hidden>11:00 - <span id="hora11"</span></h5>
+        <h5 /hidden>12:00 - <span id="hora12"</span></h5>
+        <h5 /hidden>13:00 - <span id="hora13"</span></h5>
+        <h5 /hidden>14:00 - <span id="hora14"</span></h5>
+        <h5 /hidden>15:00 - <span id="hora15"</span></h5>
+        <h5 /hidden>16:00 - <span id="hora16"</span></h5>
+        <h5 /hidden>17:00 - <span id="hora17"</span></h5>
+        <h5 /hidden>18:00 - <span id="hora18"</span></h5>
+        <h5 /hidden>19:00 - <span id="hora19"</span></h5>
+        <h5 /hidden>20:00 - <span id="hora20"</span></h5>
+        <h5 /hidden>21:00 - <span id="hora21"</span></h5>
+        <h5 /hidden>22:00 - <span id="hora22"</span></h5>
+        <h5 /hidden>23:00 - <span id="hora23"</span></h5>
+        <h5 hidden>Lock: <span id="lock">0</span></h5>
+        <h5 hidden>Teste1: <span id="teste1"></span></h5>
+        <br><br><br><br><br><br><br><br>
+    </div>
+		
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+		
+</body>
+</html>

@@ -1,0 +1,258 @@
+CONFIG
+
+{
+    "config":{
+        "Audio":{
+            "Stereo":false,
+            "Source":0,
+            "Emphase":false,
+            "Processor":true,
+            "Clipper":true,
+            "VolMpx":38,
+            "VolSca":38
+        },
+        "rds":{
+            "Enable":false,
+            "Date-Time":false,
+            "Type":0,
+            "ps":"SINTECK ",
+            "pi":"FFFF",
+            "pty":"        ",
+            "ptyn":0,
+            "ms":1,
+            "af1":0,
+            "af2":0,
+            "af3":0,
+            "af4":0,
+            "af5":0,
+            "RadioText":"XT 1K",
+            "DinamicText":"",
+            "Remote":false,
+            "Port":8888
+        },
+        "AdvancedSettings":{
+            "MaxIPA":26.00,
+            "MaxVSWR":100.00,
+            "MinAC":176.00,
+            "MaxTemp":59.00,
+            "OffsetForward":1.00,
+            "OffsetReflected":1.00,
+            "OffsetIPA":1.00,
+            "OffsetVPA":1.00,
+            "OffsetTemperature":1.00,
+            "OffsetDriver":1.00,
+            "OffsetAC":1.00,
+            "OffsetPowerSupplyTemp":1.00,
+            "BatteryBank":0,
+            "BatteryPower":335.00,
+            "DCInput":false,
+            "EnergyOptions":0
+            },
+        "SendingsAlert":{
+            "email1":"suporte.xt@sinteck.com",
+            "email2":"suporte.xt@sinteck.com",
+            "Telephone":"1199999999"
+        },
+        "Connectivity":{
+            "IP":"192.168.010.010",
+            "NetMask":"255.255.255.000",
+            "Gateway":"192.168.010.250",
+            "DNS":"192.168.010.250",
+            "Port":80
+        },
+        "Password":{
+            "Admin":"1234",
+            "User":"1234"
+        },
+        "LocalTimes":{
+            "Date":"03-25-2021",
+            "Time":"16:30:12",
+            "Language":0,
+            "TimeCfg":false
+        },
+        "Frequency":9810,
+        "PowerLock":500.00,
+        "PresetAtivo":0,
+        "TransmitterPower":0,
+        "10MHz":0,
+        "ConfigInHold":false,
+        "VSWRNULL":0.00,
+        "License":"ADAADBCB",
+        "UUID":"0024002E-0000-0451-3438-510638383334",
+        "Token":"ZW8T-4Z7H",
+        "SerialNumber":"02013123",
+        "Model":6,
+        "Version":"1.26.4.5 (25-Mar-21)",
+        "PSU":"-.-.- (xx-xxx-xx)",
+        "GUI":"XT-QSPI-018-05032021",
+        "Elteksn1":"152171007516",
+        "Elteksn2":"FFFFFFFFFFFF",
+        "Elteksn3":"FFFFFFFFFFFF",
+        "Elteksn4":"FFFFFFFFFFFF",
+        "Elteksn5":"FFFFFFFFFFFF",
+        "Elteksn6":"FFFFFFFFFFFF",
+        "MaxDrvIN":9.00,
+        "SetEltekValue":51.00
+    }
+}
+
+PRESET
+
+{
+    "preset":{
+        "Preset1":{
+            "Name":"PRESET 001",
+            "Fwd":0,
+            "Red1":0,
+            "Red2":0,
+            "En1":true,
+            "Tmr1Inicio":"00:00",
+            "Tmr1Fim":"23:59",
+            "En2":false,
+            "Tmr2Inicio":"00:00",
+            "Tmr2Fim":"23:59",
+            "weekday":127
+        },
+        "Preset2":{
+            "Name":"PRESET 002",
+            "Fwd":0,
+            "Red1":0,
+            "Red2":0,
+            "En1":true,
+            "Tmr1Inicio":"00:00",
+            "Tmr1Fim":"23:59",
+            "En2":false,
+            "Tmr2Inicio":"00:00",
+            "Tmr2Fim":"23:59",
+            "weekday":127
+        },
+        "Preset3":{
+            "Name":"PRESET 003",
+            "Fwd":0,
+            "Red1":0,
+            "Red2":0,
+            "En1":true,
+            "Tmr1Inicio":"00:00",
+            "Tmr1Fim":"23:59",
+            "En2":false,
+            "Tmr2Inicio":"00:00",
+            "Tmr2Fim":"23:59",
+            "weekday":127
+        },
+        "Preset4":{
+            "Name":"PRESET 004",
+            "Fwd":0,
+            "Red1":0,
+            "Red2":0,
+            "En1":true,
+            "Tmr1Inicio":"00:00",
+            "Tmr1Fim":"23:59",
+            "En2":false,
+            "Tmr2Inicio":"00:00",
+            "Tmr2Fim":"23:59",
+            "weekday":127
+        },
+        "Preset5":{
+            "Name":"PRESET 005",
+            "Fwd":0,
+            "Red1":0,
+            "Red2":0,
+            "En1":true,
+            "Tmr1Inicio":"00:00",
+            "Tmr1Fim":"23:59",
+            "En2":false,
+            "Tmr2Inicio":"00:00",
+            "Tmr2Fim":"23:59",
+            "weekday":127
+        },
+        "Preset6":{
+            "Name":"PRESET 006",
+            "Fwd":0,
+            "Red1":0,
+            "Red2":0,
+            "En1":true,
+            "Tmr1Inicio":"00:00",
+            "Tmr1Fim":"23:59",
+            "En2":false,
+            "Tmr2Inicio":"00:00",
+            "Tmr2Fim":"23:59",
+            "weekday":127
+        }
+    }
+}
+
+
+READING
+
+{
+    "reading":{
+        "FWD":0.00,
+        "REF":0.00,
+        "Temp":0.20,
+        "TempPS":0,
+        "VPA":0.06,
+        "IPA1":119.89,
+        "IPA2":0.00,
+        "IPA3":0.00,
+        "IPA4":0.00,
+        "IPA5":0.00,
+        "IPA6":0.00,
+        "IPA7":0.00,
+        "IPA8":0.00,
+        "IPA9":0.00,
+        "DriverPower":0.00,
+        "DriverVolts":0.00,
+        "DriverAmp":0.00,
+        "DriverTemp":0.18,
+        "Eficiency":0.00,
+        "PhaseR":0.00,
+        "PhaseS":0.00,
+        "PhaseT":0.00,
+        "PS1Volts":0.00,
+        "PS2Volts":0.00,
+        "PS3Volts":0.00,
+        "PS4Volts":0.00,
+        "PS5Volts":0.00,
+        "PS6Volts":0.00,
+        "PS1AMP":0.00,
+        "PS2AMP":0.00,
+        "PS3AMP":0.00,
+        "PS4AMP":0.00,
+        "PS5AMP":0.00,
+        "PS6AMP":0.00,
+        "PS1Temp":0,
+        "PS2Temp":0,
+        "PS3Temp":0,
+        "PS4Temp":0,
+        "PS5Temp":0,
+        "PS6Temp":0,
+        "PS1Status":0,
+        "PS2Status":0,
+        "PS3Status":0,
+        "PS4Status":0,
+        "PS5Status":0,
+        "PS6Status":0,
+        "BatteryVolts":0.06,
+        "BatteryAmp":0.00,
+        "PresetAtivo":0,
+        "MPX":0,
+        "AudioLeft":0,
+        "AudioRight":0,
+        "SCA":0,
+        "VBIAS":0.01,
+        "PWMDriver":0,
+        "PWMBias":0,
+        "PWMFan":4095
+    }
+}
+
+
+ALARM
+
+{
+    "alarm":{
+        "id":0,
+        "time":"25-03-2021 16:48:40",
+        "text":"F-PLL   - End"
+    }
+}

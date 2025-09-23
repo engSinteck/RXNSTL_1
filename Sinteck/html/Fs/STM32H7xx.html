@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>STL RX Strider</title>
+<link rel="shortcut icon" href="STM32H7xx_files/favicon.ico" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body onload="getData()">
+    <div id="header">
+          <h1>STL RX Strider</h1>
+    </div>
+    <div id="img">
+        <img src="STM32H7xx_files/logo.jpg" alt="" align="right" width=210 height=38>
+    </div>
+        
+    <div id="nav">        
+      <ul>
+        <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span> </a></li>
+		<li><a id="home" href="index.html">Dashboard</a></li>
+		
+        <li><a class="group">SETUP</a></li>        
+        <li><a id="confaudio" href="audio.html">Audio</a></li>
+        <li><a id="conftime" href="time.html">Time</a></li>
+        <li><a id="confrds" href="rds.html">RDS</a></li>
+        <li><a id="conffreq" href="freq.html">Frequency</a></li>
+        <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
+        <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
+        <li><a id="confpass" href="password.html">Password</a></li>
+        <li><a id="profile" href="profile.html">Station Profile</a></li>
+        <li><a class="group">TOOLS</a></li>
+        <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+        <li><a id="FAIL" href="Fail.html">Fail List</a></li>
+      </ul>                
+    </div>
+
+    <div id="section">
+    <script>
+            function sendData(status) {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        document.getElementById("RFState").innerHTML =
+                        this.responseText;
+                        }
+                };
+                xhttp.open("GET", "RFState="+status, true);
+                xhttp.send();
+            }
+ 
+            setInterval(function() {
+                // Call a function repetatively with 1000m Second interval
+				getTELEMETRY();
+            }, 500);           //500mSeconds update rate
+ 
+            function getData() {
+                getLogin();
+            }
+            
+        function getLogin() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
+                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+                if(document.getElementById("lock").innerHTML == '0') {
+                    document.getElementById("teste1").className = "fa fa-unlock";
+                    document.getElementById("lock2").className = "fa fa-unlock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                else {
+                    document.getElementById("teste1").className = "fa fa-lock";
+                    document.getElementById("lock2").className = "fa fa-lock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                
+                getProfile();
+            }
+        };
+            xhttp.open("GET", "readLogin", true);
+            xhttp.send();
+        }
+            
+            function getProfile() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("station_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("STATION:")+8,this.responseText.indexOf("CITY:")-1);
+                    document.getElementById("city_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("CITY:")+5,this.responseText.indexOf("STATE:")-1);
+                    document.getElementById("state_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("STATE:")+6,this.responseText.indexOf("COUNTRY:")-1);
+                    document.getElementById("country_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("COUNTRY:")+8,this.responseText.indexOf("TEMP:")-1);
+                    document.getElementById("stationtemp_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("TEMP:")+5,this.responseText.indexOf("FIM:")-1);
+                    document.getElementById("Station").innerHTML = document.getElementById("station_debug").innerHTML;
+                    document.getElementById("City").innerHTML = document.getElementById("city_debug").innerHTML;
+                    document.getElementById("State").innerHTML = document.getElementById("state_debug").innerHTML;
+                    document.getElementById("Country").innerHTML = document.getElementById("country_debug").innerHTML;
+                    document.getElementById("exttemp").innerHTML = document.getElementById("stationtemp_debug").innerHTML;
+                    
+                    getTELEMETRY();
+                }
+            };
+            xhttp.open("GET", "readProfile", true);
+            xhttp.send();
+            }
+            
+			function getTELEMETRY() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+						document.getElementById("FWD").innerHTML = this.responseText.substring(this.responseText.indexOf("FWD:")+4,this.responseText.indexOf("REF:")-1);
+						document.getElementById("REF").innerHTML = this.responseText.substring(this.responseText.indexOf("REF:")+4,this.responseText.indexOf("TEMP:")-1);
+						document.getElementById("TEMP").innerHTML = this.responseText.substring(this.responseText.indexOf("TEMP:")+5,this.responseText.indexOf("VPA:")-1);
+						document.getElementById("VPA").innerHTML = this.responseText.substring(this.responseText.indexOf("VPA:")+4,this.responseText.indexOf("IPA:")-1);
+						document.getElementById("IPA").innerHTML = this.responseText.substring(this.responseText.indexOf("IPA:")+4,this.responseText.indexOf("UPTIME:")-1);
+						document.getElementById("UPTIME").innerHTML = this.responseText.substring(this.responseText.indexOf("UPTIME:")+7,this.responseText.indexOf("EFIC:")-1);
+						document.getElementById("efficiency").innerHTML = this.responseText.substring(this.responseText.indexOf("EFIC:")+5,this.responseText.indexOf("TIPO:")-1)
+						document.getElementById("tipo").innerHTML = this.responseText.substring(this.responseText.indexOf("TIPO:")+5,this.responseText.indexOf("EXTTEMP:")-1);
+						document.getElementById("exttemp").innerHTML = this.responseText.substring(this.responseText.indexOf("EXTTEMP:")+8,this.responseText.indexOf("MODEL:")-1);
+						document.getElementById("MODEL").innerHTML = this.responseText.substring(this.responseText.indexOf("MODEL:")+6,this.responseText.indexOf("RDS:")-1);
+						document.getElementById("RDS").innerHTML = this.responseText.substring(this.responseText.indexOf("RDS:")+4,this.responseText.indexOf("FREQ:")-1);
+						document.getElementById("FREQ").innerHTML = this.responseText.substring(this.responseText.indexOf("FREQ:")+5,this.responseText.indexOf("SOURCE:")-1);
+						document.getElementById("AUDIO").innerHTML = this.responseText.substring(this.responseText.indexOf("SOURCE:")+7,this.responseText.indexOf("VERMCU:")-1);
+						document.getElementById("VERSIONMCU").innerHTML = this.responseText.substring(this.responseText.indexOf("VERMCU:")+7,this.responseText.indexOf("VERMEM:")-1);
+						document.getElementById("VERSIONMEM").innerHTML = this.responseText.substring(this.responseText.indexOf("VERMEM:")+7,this.responseText.indexOf("STS:")-1);
+						document.getElementById("STATUS").innerHTML = this.responseText.substring(this.responseText.indexOf("STS:")+4,this.responseText.indexOf("FAIL:")-1);
+						document.getElementById("FALHA").innerHTML = this.responseText.substring(this.responseText.indexOf("FAIL:")+5,this.responseText.indexOf("BAT:")-1);
+						document.getElementById("BATTERY").innerHTML = this.responseText.substring(this.responseText.indexOf("BAT:")+4,this.responseText.indexOf("CLOCK:")-1);
+						document.getElementById("CLOCK").innerHTML = this.responseText.substring(this.responseText.indexOf("CLOCK:")+6,this.responseText.indexOf("B1:")-1);
+						document.getElementById("B1").innerHTML = this.responseText.substring(this.responseText.indexOf("B1:")+3,this.responseText.indexOf("B2:")-1);
+						document.getElementById("B2").innerHTML = this.responseText.substring(this.responseText.indexOf("B2:")+3,this.responseText.indexOf("B3:")-1);
+						document.getElementById("B3").innerHTML = this.responseText.substring(this.responseText.indexOf("B3:")+3,this.responseText.indexOf("FIM")-1);
+						//
+                        var meter_mpx1 = document.getElementById('BarMPX1');
+                        meter_mpx1.value = document.getElementById("B1").innerHTML
+                        var meter_mpx2 = document.getElementById('BarMPX2');
+                        meter_mpx2.value = document.getElementById("B2").innerHTML
+                        var meter_mpx3 = document.getElementById('BarMPX3');
+                        meter_mpx3.value = document.getElementById("B3").innerHTML
+                        //
+                    }
+                };
+                xhttp.open("GET", "readTELEMETRY", true);
+                xhttp.send();
+            }
+    </script>
+        <p>
+			<style>
+                tr.v{
+                    visibility: visible;
+                }
+                
+                tr.h {
+                    visibility: hidden;
+                }
+                tr.c {
+                    visibility: collapse;
+                }
+                
+				table {
+					font-family: arial, sans-serif;
+					border-collapse: collapse;
+					width: 100%;
+				}
+
+				td, th {
+					border: 1px solid #dddddd;
+					text-align: left;
+				}
+
+				tr:nth-child(even) {
+					background-color: #dddddd;
+                  
+				}
+                meter {
+                    width: 500px;
+                    height: 25px;
+                    border: 1px solid #ccc;
+                    border-radius: 3px;
+                }
+			</style>
+            <table>
+                <tr><td><h3>Station</h3></td> <td><h4><span id="Station">0</span></h4></td>  <td></td> <td><h3>City</h3></td> <td><h3><span id="City">0</span></h3></td>  <td></td></tr>
+                <tr><td><h3>State</h3></td> <td><h3><span id="State">0</span></h3></td> <td><h3>Country</h3></td> <td><h3><span id="Country">0</span></h3></td> <td><h3>Ext. Temperature:</h3></td> <td><h3><span id="exttemp">0</span></h3></td></tr>
+                
+                <tr><td><h3>Model</h3></td>  <td><h3><span id="MODEL">0</span></h3></td> <td><h3>RDS</h3></td> <td><h3><span id="RDS">0</span></h3></td>  <td><h3>Version:</h3></td> <td></td></tr>
+                <tr><td><h3>Frequency</h3></td> <td><h3> <span id="FREQ">0</span></h3></td> <td><h3>MPX Source</h3></td>  <td><h3> <span id="AUDIO">0</span></h3></td> <td><h3><span id="VERSIONMCU">0</span></h3></td> <td></td></tr>
+				<tr><td><h3>Status</h3></td>  <td><h3> <span id="STATUS">0</span></h3></td> <td><h3>Fail</h3></td>  <td><h3> <span id="FALHA">0</span></h3></td>  <td><h3><span id="VERSIONMEM">0</span></h3></td> <td></td></tr>
+                <tr><td><h3>Time</h3></td>  <td><h3> <span id="CLOCK">0</span></h3></td> <td><h3>Battery</h3></td>  <td><h3> <span id="BATTERY">0</span></h3></td> <td><h4></h4></td> <td></td> </tr>
+			</table>
+			<h2></h2>
+			<table>
+            	<tr><td><h3>Forward</h3></td>  <td><h3><span id="FWD">0</span><br></h3></td><td><a href="Forward_Graph.html"><i style="font-size:24px" class="fa">&#xf080;</i></a></td></tr>
+				<tr><td><h3>Reflected</h3></td>  <td><h3><span id="REF">0</span><br></h3></td><td><a href="Reflected_Graph.html"><i style="font-size:24px" class="fa">&#xf080;</i></a></td></tr>
+				<tr><td><h3>Temperature</h3></td>  <td><h3><span id="TEMP">0</span><br></h3></td><td><a href="Temperature_Graph.html"><i style="font-size:24px" class="fa">&#xf080;</i></a></td></tr>
+				<tr><td><h3>VPA</h3></td> <td><h3><span id="VPA">0</span><br></h3></td><td></td></tr>
+				<tr><td><h3>IPA</h3></td> <td><h3><span id="IPA">0</span><br></h3></td><td></td></tr>
+				<tr><td><h3>Efficiency</h3></td> <td><h3><span id="efficiency">0</span><br></h3></td><td></td></tr>
+                <tr><td><h3>UpTime</h3></td> <td><h3><span id="UPTIME">0</span><br></h3></td><td></td></tr>
+			</table>
+            <h6><span class="espaco"></span>&nbsp &nbsp &nbsp 3KHz <span class="espaco"></span> 30KHz <span class="espaco"></span><span class="espaco"></span><span class="espaco"></span> &nbsp &nbsp 75KHz &nbsp &nbsp 80KHz &nbsp &nbsp 105KHz <span class="espaco"></span><span class="espaco"></span> 144KHz</h6>
+            <h3>MPX 1:&nbsp<meter name="testempx" min="0" max="48" low="24" high="31" optimum="25" value="1"id="BarMPX1" align="right" ></meter></h3>
+            <h3>MPX 2:&nbsp<meter name="testeleft" min="0" max="48" low="38" high="44" optimum="40" value="1"id="BarMPX2" align="right"></meter></h3>
+            <h3>MPX 3:&nbsp<meter name="testeright" min="0" max="48" low="38" high="44" optimum="40" value="1"id="BarMPX3" align="right"></meter></h3>
+            <h2></h2><br><br>
+            <button type="button" class="myButtonON" onclick="sendData(1)">RF ON</button> <span class="espaco"></span>
+            <button type="button" class="myButtonOFF" onclick="sendData(2)">RF OFF</button> <span class="espaco"></span>
+            
+            <h5 hidden>StationName: <span id="station_debug">0</span></h5>
+            <h5 hidden>City: <span id="city_debug">0</span></h5>
+            <h5 hidden>State: <span id="state_debug">0</span></h5>
+            <h5 hidden>Country: <span id="country_debug">0</span></h5>
+            <h5 hidden>Temperatura Externa: <span id="stationtemp_debug">0</span></h5>
+            <h5 hidden>Tipo: <span id="tipo">0</span></h5>
+            <h5 hidden>Lock: <span id="lock">0</span></h5>
+            <h5 hidden>Symbol: <span id="symbol">0</span></h5>
+            <h5 hidden>Symbol: <span id="symbol"><i class="fa fa-unlock" style="font-size:24px"></i></span></h5>
+            <h5 hidden>Symbol1: <span id="symbol1"><i class="fa fa-lock" style="font-size:24px"></i></span></h5>
+            <h5 hidden>Teste: <span id="teste1"></span></h5>
+			<h5 hidden>B1: <span id="B1"></span></h5>
+			<h5 hidden>B2: <span id="B2"></span></h5>
+			<h5 hidden>B3: <span id="B3"></span></h5>
+            <h2></h2>
+			<br><br><br><br>
+        </p>
+    </div>
+		
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+		
+</body>
+</html>

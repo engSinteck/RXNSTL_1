@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>STL RX Strider</title>
+<link rel="shortcut icon" href="STM32H7xx_files/favicon.ico" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!--[if IE]><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body onload="getData()"> 
+    <div id="header">
+          <h1>RDS</h1>
+    </div>
+       <div id="img">
+        <img src="STM32H7xx_files/logo.jpg" alt="" align="right" width=210 height=38>
+    </div>
+    
+    <div id="nav">        
+      <ul>
+        <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span></a></li>  
+		<li><a id="home" href="index.html">Dashboard</a></li>
+		
+        <li><a class="group">SETUP</a></li>        
+        <li><a id="confaudio" href="audio.html">Audio</a></li>
+        <li><a id="conftime" href="time.html">Time</a></li>
+        <li><a id="confrds" href="rds.html">RDS</a></li>
+        <li><a id="conffreq" href="freq.html">Frequency</a></li>
+        <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
+        <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
+        <li><a id="confpass" href="password.html">Password</a></li>
+        <li><a id="profile" href="profile.html">Station Profile</a></li>
+        <li><a class="group">TOOLS</a></li>
+        <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+        <li><a id="FAIL" href="Fail.html">Fail List</a></li>
+      </ul>                
+    </div>
+
+    <script>
+       function sendData() {
+        var resp = "";
+        var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("RFState").innerHTML =
+                    this.responseText;
+                }
+            };
+            // RDS-CFG
+            var chk1 = "0";
+            var chk2 = "0";
+            var chk3 = "0";
+            var chk4 = "0";
+            if(document.getElementById("enable").checked) {
+                chk1 = "1";
+            }
+            else {
+                 chk1 = "0";
+            }
+            
+            if(document.getElementById("type").value == "0") {
+                chk2 = "0";
+            }
+            else {
+                chk2 = "1";
+            }
+            
+            if(document.getElementById("ct").checked) {
+                chk3 = "1";
+            }
+            else {
+                chk3 = "0";
+            }
+            
+            var var1 = document.getElementById("stname1").value;
+            var var2 = document.getElementById("rdstext1").value;
+            var var3 = document.getElementById("pi").value;
+            var var4 = document.getElementById("pty1").value;
+            var var5 = document.getElementById("ptyn").value;
+            var var6 = document.getElementById("ms1").value;
+            
+            var var7 = document.getElementById("af1").value;
+            var var9 = document.getElementById("af2").value;
+            var var10 = document.getElementById("af3").value;
+            var var11 = document.getElementById("af4").value;
+            var var12 = document.getElementById("af5").value;
+            
+            var var8 = document.getElementById("dps1").value;
+            
+            if(document.getElementById("enableremote").checked) {
+                chk4 = "1";
+            }
+            else {
+                chk4 = "0";
+            }
+            var port = "PORT_UDP:" + document.getElementById("portudp").value + ";";
+            var resp1 = "setRDS=";
+            var resp = resp1.concat("", chk1, ";", chk2, ";", chk3, ";", "STATION:", var1, ";", "PI:", var3, ";",  "PTY:", var4, ";",  "PTYN:", var5, ";", "MS:", var6, ";", "AF1:", var7, ";", "AF2:", var9, ";", "AF3:", var10, ";", "AF4:", var11, ";", "AF5:", var12, ";", "TEXT:", var2, ";", "DPS1:", var8,";","REMOTE:", chk4,";", port ,"FIM:");
+            //alert(resp)
+            if (confirm("Confirm !")) {
+                xhttp.open("GET", resp, true);
+                xhttp.send();
+                //if(document.getElementById("remote2").innerHTML != document.getElementById("enableremote").value ) {
+                //    alert("A reboot is required for the settings to take effect.");
+                //}
+            }
+            else {
+            
+            }
+      }
+      
+      function getRDS() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+                    document.getElementById("cmd_debug").innerHTML = this.responseText;
+                    document.getElementById("en_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("ENABLE:")+7,this.responseText.indexOf("CT:")-1);
+                    document.getElementById("ct1").innerHTML = this.responseText.substring(this.responseText.indexOf("CT:")+3,this.responseText.indexOf("RDS:")-1);
+                    document.getElementById("type_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("RDS:")+4,this.responseText.indexOf("STATION:")-1)
+                    document.getElementById("pi_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("PI:")+3,this.responseText.indexOf("PTY:")-1);
+                    document.getElementById("pty_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("PTY:")+4,this.responseText.indexOf("PTYN:")-1);
+                    document.getElementById("ptyn_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("PTYN:")+5,this.responseText.indexOf("MS:")-1);
+                    document.getElementById("ms1_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("MS:")+3,this.responseText.indexOf("AF1:")-1);
+                    document.getElementById("af1_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("AF1:")+4,this.responseText.indexOf("AF2:")-1);
+                    document.getElementById("af2_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("AF2:")+4,this.responseText.indexOf("AF3:")-1);
+                    document.getElementById("af3_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("AF3:")+4,this.responseText.indexOf("AF4:")-1);
+                    document.getElementById("af4_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("AF4:")+4,this.responseText.indexOf("AF5:")-1);
+                    document.getElementById("af5_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("AF5:")+4,this.responseText.indexOf("TEXT:")-1);
+                    document.getElementById("rt1_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("TEXT:")+5,this.responseText.indexOf("DPS1:")-1);
+                    document.getElementById("dps1_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("DPS1:")+5,this.responseText.indexOf("VER:")-1);
+                    document.getElementById("dps1_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("DPS1:")+5,this.responseText.indexOf("VER:")-1);
+                    
+                    if(this.responseText.substring(this.responseText.indexOf("ENABLE:")+7,this.responseText.indexOf("CT:")-1) == '1' ) {
+                        document.getElementById("enable").checked = true;
+                    }
+                    else {
+                        document.getElementById("enable").checked = false;
+                    }
+                    
+                    if(document.getElementById("ct1").innerHTML == '1') {
+                        document.getElementById("ct").checked = true;
+                    }
+                    else {
+                        document.getElementById("ct").checked = false;
+                    }
+                    
+                    if(document.getElementById("type_debug").innerHTML == '1' ) {
+                        document.getElementById("type").value = 1;
+                    }
+                    else {
+                        document.getElementById("type").value = 0;
+                    }
+                    
+                    document.getElementById("stname").value = this.responseText.substring(this.responseText.indexOf("STATION:")+8,this.responseText.indexOf("PI:")-1);
+                    document.getElementById("stname1").value = this.responseText.substring(this.responseText.indexOf("STATION:")+8,this.responseText.indexOf("PI:")-1);
+                    document.getElementById("pi").value = this.responseText.substring(this.responseText.indexOf("PI:")+3,this.responseText.indexOf("PTY:")-1);
+                    document.getElementById("pty1").value = this.responseText.substring(this.responseText.indexOf("PTY:")+4,this.responseText.indexOf("PTYN:")-1) - '0';
+                    document.getElementById("ptyn").value = this.responseText.substring(this.responseText.indexOf("PTYN:")+5,this.responseText.indexOf("MS:")-1);
+                    
+                    document.getElementById("ms1").value = this.responseText.substring(this.responseText.indexOf("MS:")+3,this.responseText.indexOf("AF1:")-1) - '0';
+                    document.getElementById("af1").value = this.responseText.substring(this.responseText.indexOf("AF1:")+4,this.responseText.indexOf("AF2:")-1);
+                    document.getElementById("af2").value = this.responseText.substring(this.responseText.indexOf("AF2:")+4,this.responseText.indexOf("AF3:")-1);
+                    document.getElementById("af3").value = this.responseText.substring(this.responseText.indexOf("AF3:")+4,this.responseText.indexOf("AF4:")-1);
+                    document.getElementById("af4").value = this.responseText.substring(this.responseText.indexOf("AF4:")+4,this.responseText.indexOf("AF5:")-1);
+                    document.getElementById("af5").value = this.responseText.substring(this.responseText.indexOf("AF5:")+4,this.responseText.indexOf("TEXT:")-1);
+                    
+                    document.getElementById("rdstext").innerHTML = this.responseText.substring(this.responseText.indexOf("TEXT:")+5,this.responseText.indexOf("DPS1:")-1);
+                    document.getElementById("rdstext1").value = this.responseText.substring(this.responseText.indexOf("TEXT:")+5,this.responseText.indexOf("DPS1:")-1);
+                    document.getElementById("dps1").value = document.getElementById("dps1_debug").innerHTML;
+                    document.getElementById("rdsversion").innerHTML = this.responseText.substring(this.responseText.indexOf("VER:")+4,this.responseText.indexOf("SYNC:")-1);
+                    document.getElementById("rdssync").innerHTML = this.responseText.substring(this.responseText.indexOf("SYNC:")+5,this.responseText.indexOf("REMOTE:")-1);
+                    document.getElementById("remote2").innerHTML = this.responseText.substring(this.responseText.indexOf("REMOTE:")+7,this.responseText.indexOf("PORT_UDP:")-1);
+                    if(this.responseText.substring(this.responseText.indexOf("REMOTE:")+7,this.responseText.indexOf("PORT_UDP:")-1) == '1') {
+                        document.getElementById("enableremote").checked = true;
+
+                    }
+                    else {
+                        document.getElementById("enableremote").checked = false;
+                    }
+                    document.getElementById("remote2").innerHTML = this.responseText.substring(this.responseText.indexOf("REMOTE:")+7,this.responseText.indexOf("PORT_UDP:")-1);
+                    document.getElementById("portudp1").innerHTML = this.responseText.substring(this.responseText.indexOf("PORT_UDP:")+9,this.responseText.indexOf("FIM:")-1);
+                    document.getElementById("portudp").value = document.getElementById("portudp1").innerHTML.replace(/\s/g, '');
+                }
+            };
+            xhttp.open("GET", "readRDS", true);
+            xhttp.send();
+      }
+      
+    function myFunctionType() {
+      	if(document.getElementById("type").value == '0') {
+            myFunctionEuro();
+        }
+        else {
+            myFunctionUSA();
+        }
+    }
+    
+    function myFunctionEuro() {
+        removeOptions(document.getElementById("pty1"));
+        var comboMS = document.getElementById("pty1");
+        
+      var opt0 = document.createElement("option");
+      opt0.value = "0";
+      opt0.text = "None";
+      comboMS.add(opt0, comboMS.options[0]);
+    
+      var opt1 = document.createElement("option");
+      opt1.value = "1";
+      opt1.text = "News";
+      comboMS.add(opt1, comboMS.options[1]);
+      
+      var opt2 = document.createElement("option");
+      opt2.value = "2";
+      opt2.text = "Affairs";
+      comboMS.add(opt2, comboMS.options[2]);
+      
+      var opt3 = document.createElement("option");
+      opt3.value = "3";
+      opt3.text = "Info";
+      comboMS.add(opt3, comboMS.options[3]);
+      
+      var opt4 = document.createElement("option");
+      opt4.value = "4";
+      opt4.text = "Sport";
+      comboMS.add(opt4, comboMS.options[4]);
+      
+      var opt5 = document.createElement("option");
+      opt5.value = "5";
+      opt5.text = "Education";
+      comboMS.add(opt5, comboMS.options[5]);
+      
+      var opt6 = document.createElement("option");
+      opt6.value = "6";
+      opt6.text = "Drama";
+      comboMS.add(opt6, comboMS.options[6]);
+      
+      var opt7 = document.createElement("option");
+      opt7.value = "7";
+      opt7.text = "Cultures";
+      comboMS.add(opt7, comboMS.options[7]);
+      
+      var opt8 = document.createElement("option");
+      opt8.value = "8";
+      opt8.text = "Science";
+      comboMS.add(opt8, comboMS.options[8]);
+      
+      var opt9 = document.createElement("option");
+      opt9.value = "9";
+      opt9.text = "Varied Speech";
+      comboMS.add(opt9, comboMS.options[9]);
+      
+      var opt10 = document.createElement("option");
+      opt10.value = "10";
+      opt10.text = "Pop Music";
+      comboMS.add(opt10, comboMS.options[10]);
+      
+      var opt11 = document.createElement("option");
+      opt11.value = "11";
+      opt11.text = "Rock Music";
+      comboMS.add(opt11, comboMS.options[11]);
+      
+      var opt12 = document.createElement("option");
+      opt12.value = "12";
+      opt12.text = "Easy Music";
+      comboMS.add(opt12, comboMS.options[12]);
+      
+      var opt13 = document.createElement("option");
+      opt13.value = "13";
+      opt13.text = "Light Classics Music";
+      comboMS.add(opt13, comboMS.options[13]);
+      
+      var opt14 = document.createElement("option");
+      opt14.value = "14";
+      opt14.text = "Serious Classics";
+      comboMS.add(opt14, comboMS.options[14]);
+      
+      var opt15 = document.createElement("option");
+      opt15.value = "15";
+      opt15.text = "Other Music";
+      comboMS.add(opt15, comboMS.options[15]);
+      
+      var opt16 = document.createElement("option");
+      opt16.value = "16";
+      opt16.text = "Weather";
+      comboMS.add(opt16, comboMS.options[16]);
+      
+      var opt17 = document.createElement("option");
+      opt17.value = "17";
+      opt17.text = "Finance";
+      comboMS.add(opt17, comboMS.options[17]);
+      
+      var opt18 = document.createElement("option");
+      opt18.value = "18";
+      opt18.text = "Children";
+      comboMS.add(opt18, comboMS.options[18]);
+      
+      var opt19 = document.createElement("option");
+      opt19.value = "19";
+      opt19.text = "Social Affairs";
+      comboMS.add(opt19, comboMS.options[19]);
+      
+      var opt20 = document.createElement("option");
+      opt20.value = "20";
+      opt20.text = "Religion";
+      comboMS.add(opt1, comboMS.options[20]);
+      
+      var opt21 = document.createElement("option");
+      opt21.value = "21";
+      opt21.text = "Phone In";
+      comboMS.add(opt21, comboMS.options[21]);
+      
+      var opt22 = document.createElement("option");
+      opt22.value = "22";
+      opt22.text = "Travel";
+      comboMS.add(opt22, comboMS.options[22]);
+      
+      var opt23 = document.createElement("option");
+      opt23.value = "23";
+      opt23.text = "Leisure";
+      comboMS.add(opt23, comboMS.options[23]);
+      
+      var opt24 = document.createElement("option");
+      opt24.value = "24";
+      opt24.text = "Jazz Music";
+      comboMS.add(opt24, comboMS.options[24]);
+      
+      var opt25 = document.createElement("option");
+      opt25.value = "25";
+      opt25.text = "Country Music";
+      comboMS.add(opt25, comboMS.options[25]);
+      
+      var opt26 = document.createElement("option");
+      opt26.value = "26";
+      opt26.text = "National Music";
+      comboMS.add(opt26, comboMS.options[26]);
+      
+      var opt27 = document.createElement("option");
+      opt27.value = "27";
+      opt27.text = "Oldies Music";
+      comboMS.add(opt27, comboMS.options[27]);
+      
+      var opt28 = document.createElement("option");
+      opt28.value = "28";
+      opt28.text = "Folk Music";
+      comboMS.add(opt28, comboMS.options[28]);
+      
+      var opt29 = document.createElement("option");
+      opt29.value = "29";
+      opt29.text = "Documentary";
+      comboMS.add(opt29, comboMS.options[29]);
+      
+      var opt30 = document.createElement("option");
+      opt30.value = "30";
+      opt30.text = "Alarm Test";
+      comboMS.add(opt30, comboMS.options[30]);
+      
+      var opt31 = document.createElement("option");
+      opt31.value = "31";
+      opt31.text = "Alarm";
+      comboMS.add(opt31, comboMS.options[31]);
+    }
+    
+    function myFunctionUSA() {
+        removeOptions(document.getElementById("pty1"));
+        var comboMS = document.getElementById("pty1");
+        
+        var opt0 = document.createElement("option");
+        opt0.value = "0";
+        opt0.text = "None";
+        comboMS.add(opt0, comboMS.options[0]);
+    
+        var opt1 = document.createElement("option");
+        opt1.value = "1";
+        opt1.text = "News";
+      comboMS.add(opt1, comboMS.options[1]);
+      
+        var opt2 = document.createElement("option");
+        opt2.value = "2";
+        opt2.text = "Information";
+        comboMS.add(opt2, comboMS.options[2]);
+      
+        var opt3 = document.createElement("option");
+        opt3.value = "3";
+        opt3.text = "Sports";
+        comboMS.add(opt3, comboMS.options[3]);
+        
+        var opt4 = document.createElement("option");
+        opt4.value = "4";
+        opt4.text = "Talk";
+        comboMS.add(opt4, comboMS.options[4]);
+      
+        var opt5 = document.createElement("option");
+        opt5.value = "5";
+        opt5.text = "Rock";
+        comboMS.add(opt5, comboMS.options[5]);
+      var opt6 = document.createElement("option");
+      opt6.value = "6";
+      opt6.text = "Classic Rock";
+      comboMS.add(opt6, comboMS.options[6]);
+      
+      var opt7 = document.createElement("option");
+      opt7.value = "7";
+      opt7.text = "Adult Hits";
+      comboMS.add(opt7, comboMS.options[7]);
+      
+      var opt8 = document.createElement("option");
+      opt8.value = "8";
+      opt8.text = "Soft Rock";
+      comboMS.add(opt8, comboMS.options[8]);
+      
+      var opt9 = document.createElement("option");
+      opt9.value = "9";
+      opt9.text = "Top 40";
+      comboMS.add(opt9, comboMS.options[9]);
+      
+      var opt10 = document.createElement("option");
+      opt10.value = "10";
+      opt10.text = "Country";
+      comboMS.add(opt10, comboMS.options[10]);
+      
+      var opt11 = document.createElement("option");
+      opt11.value = "11";
+      opt11.text = "Oldies";
+      comboMS.add(opt11, comboMS.options[11]);
+      
+      var opt12 = document.createElement("option");
+      opt12.value = "12";
+      opt12.text = "Soft";
+      comboMS.add(opt12, comboMS.options[12]);
+      
+      var opt13 = document.createElement("option");
+      opt13.value = "13";
+      opt13.text = "Nostalgia";
+      comboMS.add(opt13, comboMS.options[13]);
+      
+      var opt14 = document.createElement("option");
+      opt14.value = "14";
+      opt14.text = "Jazz";
+      comboMS.add(opt14, comboMS.options[14]);
+      
+      var opt15 = document.createElement("option");
+      opt15.value = "15";
+      opt15.text = "Classical";
+      comboMS.add(opt15, comboMS.options[15]);
+      
+      var opt16 = document.createElement("option");
+      opt16.value = "16";
+      opt16.text = "Rhythm and Blues";
+      comboMS.add(opt16, comboMS.options[16]);
+      
+      var opt17 = document.createElement("option");
+      opt17.value = "17";
+      opt17.text = "Soft Rhythm and Blues";
+      comboMS.add(opt17, comboMS.options[17]);
+      
+      var opt18 = document.createElement("option");
+      opt18.value = "18";
+      opt18.text = "Foreign Language";
+      comboMS.add(opt18, comboMS.options[18]);
+      
+      var opt19 = document.createElement("option");
+      opt19.value = "19";
+      opt19.text = "Religious Music";
+      comboMS.add(opt19, comboMS.options[19]);
+      
+      var opt20 = document.createElement("option");
+      opt20.value = "20";
+      opt20.text = "Religious Talk";
+      comboMS.add(opt1, comboMS.options[20]);
+      
+      var opt21 = document.createElement("option");
+      opt21.value = "21";
+      opt21.text = "Personality";
+      comboMS.add(opt21, comboMS.options[21]);
+      
+      var opt22 = document.createElement("option");
+      opt22.value = "22";
+      opt22.text = "Public";
+      comboMS.add(opt22, comboMS.options[22]);
+      
+      var opt23 = document.createElement("option");
+      opt23.value = "23";
+      opt23.text = "Leisure";
+      comboMS.add(opt23, comboMS.options[23]);
+      
+      var opt24 = document.createElement("option");
+      opt24.value = "24";
+      opt24.text = "College";
+      comboMS.add(opt24, comboMS.options[24]);
+      
+      var opt25 = document.createElement("option");
+      opt25.value = "25";
+      opt25.text = "unassigned";
+      comboMS.add(opt25, comboMS.options[25]);
+      
+      var opt26 = document.createElement("option");
+      opt26.value = "26";
+      opt26.text = "unassigned";
+      comboMS.add(opt26, comboMS.options[26]);
+      
+      var opt27 = document.createElement("option");
+      opt27.value = "27";
+      opt27.text = "unassigned";
+      comboMS.add(opt27, comboMS.options[27]);
+      
+      var opt28 = document.createElement("option");
+      opt28.value = "28";
+      opt28.text = "unassigned";
+      comboMS.add(opt28, comboMS.options[28]);
+      
+      var opt29 = document.createElement("option");
+      opt29.value = "29";
+      opt29.text = "Weather";
+      comboMS.add(opt29, comboMS.options[29]);
+      
+      var opt30 = document.createElement("option");
+      opt30.value = "30";
+      opt30.text = "Emergency Test";
+      comboMS.add(opt30, comboMS.options[30]);
+      
+      var opt31 = document.createElement("option");
+      opt31.value = "31";
+      opt31.text = "Emergency";
+      comboMS.add(opt31, comboMS.options[31]);
+    }
+    
+    function removeOptions(selectElement) {
+        var i, L = selectElement.options.length - 1;
+        for(i = L; i >= 0; i--) {
+            selectElement.remove(i);
+        }
+    }
+    
+    function checkLength(elem) {
+        // checking if input value is more than Model
+        if (elem.length > 5 ) {
+            //alert( parseInt(document.getElementById("max").innerHTML) )
+            elem.value = ''; // emptying the input box
+        }
+    }
+    
+    function validate(evt) {
+        var theEvent = evt || window.event;
+
+        // Handle paste
+        if (theEvent.type === 'paste') {
+            key = event.clipboardData.getData('text/plain');
+        } else {
+            // Handle key press
+            var key = theEvent.keyCode || theEvent.which;
+            key = String.fromCharCode(key);
+        }
+        var regex = /[0-9]|\./;
+        if( !regex.test(key) ) {
+            theEvent.returnValue = false;
+            if(theEvent.preventDefault) theEvent.preventDefault();
+        }
+    }
+    
+        function getLogin() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
+                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+                if(document.getElementById("lock").innerHTML == '0') {
+                    document.getElementById("teste1").className = "fa fa-unlock";
+                    document.getElementById("lock2").className = "fa fa-unlock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                else {
+                    document.getElementById("teste1").className = "fa fa-lock";
+                    document.getElementById("lock2").className = "fa fa-lock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                
+                getRDS();
+            }
+        };
+            xhttp.open("GET", "readLogin", true);
+            xhttp.send();
+        }
+        
+    function getData() {
+        getLogin();
+    }
+    </script>
+		
+    <div id="section">
+        <p style="background-color:LightGray;"></p>
+        <p>Version: <span id="rdsversion">0</span></p>
+        <p>Sync: <span id="rdssync">0</span></p>
+        <p /hidden>St. Name: <span id="stname">0</span></p>
+        <p /hidden>Text: <span id="rdstext">0</span></p>
+        <p style="background-color:LightGray;"></p>
+        <h3>Configure Remote: </h3>
+        <label for="enableremote">Enable Remote</label>
+        <input type="checkbox" id="enableremote" name="enableremote"><br>
+        <label for="portudp">Port UDP Number:</label>
+        <input type='text' id="portudp" name="portudp" onkeypress='validate(event)' oninput="checkLength(this)" maxlength="5" size="5" />
+        <h3></h3>
+        <h3>Configure RDS:</h3>
+        <input type="checkbox" id="enable" name="enable">
+        <label for="enable">Enable</label><br>
+        
+        <input type="checkbox" id="ct" name="ct">
+        <label for="ct">Date-Time</label><br>
+
+        <label for="type">TYPE:</label><br>
+            <select name="type" id="type" onchange="myFunctionType()">
+                <option value="0">RDS(EU)</option>
+                <option value="1">RBDS(USA)</option>
+            </select><br>
+               
+        <label for="stname1">PS:</label><br>
+        <input type="text" id="stname1" name="stname1" maxlength="8" size="8"><br>
+        
+        <label for="pi">PI:</label><br>
+        <input type="text" id="pi" name="pi" maxlength="4" size="4"><br>
+        
+        <label for="pty">PTY:</label><br>
+            <select name="pty1" id="pty1">
+                <option value="0">None</option>
+                <option value="1">News</option>
+                <option value="2">Affairs</option>
+                <option value="3">Info</option>
+                <option value="4">Sport</option>
+                <option value="5">Education</option>
+                <option value="6">Drama</option>
+                <option value="7">Cultures</option>
+                <option value="8">Science</option>
+                <option value="9">Varied Speech</option>
+                <option value="10">Pop Music</option>
+                <option value="11">Rock Music</option>
+                <option value="12">Easy Music</option>
+                <option value="13">Light Classics Music</option>
+                <option value="14">Serious Classics</option>
+                <option value="15">Other Music</option>
+                <option value="16">Weather</option>
+                <option value="17">Finance</option>
+                <option value="18">Children</option>
+                <option value="19">Social Affairs</option>
+                <option value="20">Religion</option>
+                <option value="21">Phone In</option>
+                <option value="22">Travel</option>
+                <option value="23">Leisure</option>
+                <option value="24">Jazz Music</option>
+                <option value="25">Country Music</option>
+                <option value="26">National Music</option>
+                <option value="27">Oldies Music</option>
+                <option value="28">Folk Music</option>
+                <option value="29">Documentary</option>
+                <option value="30">Alarm Test</option>
+                <option value="31">Alarm</option>
+            </select><br>
+       
+        <label for="ptyn">PTYN:</label><br>
+        <input type="text" id="ptyn" name="ptyn" maxlength="8" size="8"><br>
+        
+        <label for="ms">MS:</label><br>
+            <select name="ms1" id="ms1">
+                <option value="0">Music</option>
+                <option value="1">Speech</option>
+            </select><br>
+        
+        <label for="af">AF:</label><br>
+        <label for="af1text">AF1:</label>
+            <select name="af1" id="af1">
+                <option value="0">None</option>
+                <option value="1">87.5Mhz</option>
+                <option value="2">87.6Mhz</option>
+                <option value="3">87.7Mhz</option>
+                <option value="4">87.8Mhz</option>
+                <option value="5">87.9Mhz</option>
+                <option value="6">88.0Mhz</option>
+                <option value="7">88.1Mhz</option>
+                <option value="8">88.2Mhz</option>
+                <option value="9">88.3Mhz</option>
+                <option value="10">88.4Mhz</option>
+                <option value="11">88.5Mhz</option>
+                <option value="12">88.6Mhz</option>
+                <option value="13">88.7Mhz</option>
+                <option value="14">88.8Mhz</option>
+                <option value="15">88.9Mhz</option>
+                <option value="16">89.0Mhz</option>
+                <option value="17">89.1Mhz</option>
+                <option value="18">89.2Mhz</option>
+                <option value="19">89.3Mhz</option>
+                <option value="20">89.4Mhz</option>
+                <option value="21">89.5Mhz</option>
+                <option value="22">89.6Mhz</option>
+                <option value="23">89.7Mhz</option>
+                <option value="24">89.8Mhz</option>
+                <option value="25">89.9Mhz</option>
+                <option value="26">90.0Mhz</option>
+                <option value="27">90.1Mhz</option>
+                <option value="28">90.2Mhz</option>
+                <option value="29">90.3Mhz</option>
+                <option value="30">90.4Mhz</option>
+                <option value="31">90.5Mhz</option>
+                <option value="32">90.6Mhz</option>
+                <option value="33">90.7Mhz</option>
+                <option value="34">90.8Mhz</option>
+                <option value="35">90.9Mhz</option>
+                <option value="36">91.0Mhz</option>
+                <option value="37">91.1Mhz</option>
+                <option value="38">91.2Mhz</option>
+                <option value="39">91.3Mhz</option>
+                <option value="40">91.4Mhz</option>
+                <option value="41">91.5Mhz</option>
+                <option value="42">91.6Mhz</option>
+                <option value="43">91.7Mhz</option>
+                <option value="44">91.8Mhz</option>
+                <option value="45">91.9Mhz</option>
+                <option value="46">92.0Mhz</option>
+                <option value="47">92.1Mhz</option>
+                <option value="48">92.2Mhz</option>
+                <option value="49">92.3Mhz</option>
+                <option value="50">92.4Mhz</option>
+                <option value="51">92.5Mhz</option>
+                <option value="52">92.6Mhz</option>
+                <option value="53">92.7Mhz</option>
+                <option value="54">92.8Mhz</option>
+                <option value="55">92.9Mhz</option>
+                <option value="56">93.0Mhz</option>
+                <option value="57">93.1Mhz</option>
+                <option value="58">93.2Mhz</option>
+                <option value="59">93.3Mhz</option>
+                <option value="60">93.4Mhz</option>
+                <option value="61">93.5Mhz</option>
+                <option value="62">93.6Mhz</option>
+                <option value="63">93.7Mhz</option>
+                <option value="64">93.8Mhz</option>
+                <option value="65">93.9Mhz</option>
+                <option value="66">94.0Mhz</option>
+                <option value="67">94.1Mhz</option>
+                <option value="68">94.2Mhz</option>
+                <option value="69">94.3Mhz</option>
+                <option value="70">94.4Mhz</option>
+                <option value="71">94.5Mhz</option>
+                <option value="72">94.6Mhz</option>
+                <option value="73">94.7Mhz</option>
+                <option value="74">94.8Mhz</option>
+                <option value="75">94.9Mhz</option>
+                <option value="76">95.0Mhz</option>
+                <option value="77">95.1Mhz</option>
+                <option value="78">95.2Mhz</option>
+                <option value="79">95.3Mhz</option>
+                <option value="80">95.4Mhz</option>
+                <option value="81">95.5Mhz</option>
+                <option value="82">95.6Mhz</option>
+                <option value="83">95.7Mhz</option>
+                <option value="84">95.8Mhz</option>
+                <option value="85">95.9Mhz</option>
+                <option value="86">96.0Mhz</option>
+                <option value="87">96.1Mhz</option>
+                <option value="88">96.2Mhz</option>
+                <option value="89">96.3Mhz</option>
+                <option value="90">96.4Mhz</option>
+                <option value="91">96.5Mhz</option>
+                <option value="92">96.6Mhz</option>
+                <option value="93">96.7Mhz</option>
+                <option value="94">96.8Mhz</option>
+                <option value="95">96.9Mhz</option>
+                <option value="96">97.0Mhz</option>
+                <option value="97">97.1Mhz</option>
+                <option value="98">97.2Mhz</option>
+                <option value="99">97.3Mhz</option>
+                <option value="100">97.4Mhz</option>
+                <option value="101">97.5Mhz</option>
+                <option value="102">97.6Mhz</option>
+                <option value="103">97.7Mhz</option>
+                <option value="104">97.8Mhz</option>
+                <option value="105">97.9Mhz</option>
+                <option value="106">98.0Mhz</option>
+                <option value="107">98.1Mhz</option>
+                <option value="108">98.2Mhz</option>
+                <option value="109">98.3Mhz</option>
+                <option value="110">98.4Mhz</option>
+                <option value="111">98.5Mhz</option>
+                <option value="112">98.6Mhz</option>
+                <option value="113">98.7Mhz</option>
+                <option value="114">98.8Mhz</option>
+                <option value="115">98.9Mhz</option>
+                <option value="116">99.0Mhz</option>
+                <option value="117">99.1Mhz</option>
+                <option value="118">99.2Mhz</option>
+                <option value="119">99.3Mhz</option>
+                <option value="120">99.4Mhz</option>
+                <option value="121">99.5Mhz</option>
+                <option value="122">99.6Mhz</option>
+                <option value="123">99.7Mhz</option>
+                <option value="124">99.8Mhz</option>
+                <option value="125">99.9Mhz</option>
+                <option value="126">100.0Mhz</option>
+                <option value="127">100.1Mhz</option>
+                <option value="128">100.2Mhz</option>
+                <option value="129">100.3Mhz</option>
+                <option value="130">100.4Mhz</option>
+                <option value="131">100.5Mhz</option>
+                <option value="132">100.6Mhz</option>
+                <option value="133">100.7Mhz</option>
+                <option value="134">100.8Mhz</option>
+                <option value="135">100.9Mhz</option>
+                <option value="136">101.0Mhz</option>
+                <option value="137">101.1Mhz</option>
+                <option value="138">101.2Mhz</option>
+                <option value="139">101.3Mhz</option>
+                <option value="140">101.4Mhz</option>
+                <option value="141">101.5Mhz</option>
+                <option value="142">101.6Mhz</option>
+                <option value="143">101.7Mhz</option>
+                <option value="144">101.8Mhz</option>
+                <option value="145">101.9Mhz</option>
+                <option value="146">102.0Mhz</option>
+                <option value="147">102.1Mhz</option>
+                <option value="148">102.2Mhz</option>
+                <option value="149">102.3Mhz</option>
+                <option value="150">102.4Mhz</option>
+                <option value="151">102.5Mhz</option>
+                <option value="152">102.6Mhz</option>
+                <option value="153">102.7Mhz</option>
+                <option value="154">102.8Mhz</option>
+                <option value="155">102.9Mhz</option>
+                <option value="156">103.0Mhz</option>
+                <option value="157">103.1Mhz</option>
+                <option value="158">103.2Mhz</option>
+                <option value="159">103.3Mhz</option>
+                <option value="160">103.4Mhz</option>
+                <option value="161">103.5Mhz</option>
+                <option value="162">103.6Mhz</option>
+                <option value="163">103.7Mhz</option>
+                <option value="164">103.8Mhz</option>
+                <option value="165">103.9Mhz</option>
+                <option value="166">104.0Mhz</option>
+                <option value="167">104.1Mhz</option>
+                <option value="168">104.2Mhz</option>
+                <option value="169">104.3Mhz</option>
+                <option value="170">104.4Mhz</option>
+                <option value="171">104.5Mhz</option>
+                <option value="172">104.6Mhz</option>
+                <option value="173">104.7Mhz</option>
+                <option value="174">104.8Mhz</option>
+                <option value="175">104.9Mhz</option>
+                <option value="176">105.0Mhz</option>
+                <option value="177">105.1Mhz</option>
+                <option value="178">105.2Mhz</option>
+                <option value="179">105.3Mhz</option>
+                <option value="180">105.4Mhz</option>
+                <option value="181">105.5Mhz</option>
+                <option value="182">105.6Mhz</option>
+                <option value="183">105.7Mhz</option>
+                <option value="184">105.8Mhz</option>
+                <option value="185">105.9Mhz</option>
+                <option value="186">106.0Mhz</option>
+                <option value="187">106.1Mhz</option>
+                <option value="188">106.2Mhz</option>
+                <option value="189">106.3Mhz</option>
+                <option value="190">106.4Mhz</option>
+                <option value="191">106.5Mhz</option>
+                <option value="192">106.6Mhz</option>
+                <option value="193">106.7Mhz</option>
+                <option value="194">106.8Mhz</option>
+                <option value="195">106.9Mhz</option>
+                <option value="196">107.0Mhz</option>
+                <option value="197">107.1Mhz</option>
+                <option value="198">107.2Mhz</option>
+                <option value="199">107.3Mhz</option>
+                <option value="200">107.4Mhz</option>
+                <option value="201">107.5Mhz</option>
+                <option value="202">107.6Mhz</option>
+                <option value="203">107.7Mhz</option>
+                <option value="204">107.8Mhz</option>
+                <option value="205">107.9Mhz</option>
+                <option value="206">108.0Mhz</option>
+                <option value="207">108.1Mhz</option>
+            </select>
+            <label for="af2text">AF2:</label>
+            <select name="af2" id="af2">
+               <option value="0">None</option>
+                <option value="1">87.5Mhz</option>
+                <option value="2">87.6Mhz</option>
+                <option value="3">87.7Mhz</option>
+                <option value="4">87.8Mhz</option>
+                <option value="5">87.9Mhz</option>
+                <option value="6">88.0Mhz</option>
+                <option value="7">88.1Mhz</option>
+                <option value="8">88.2Mhz</option>
+                <option value="9">88.3Mhz</option>
+                <option value="10">88.4Mhz</option>
+                <option value="11">88.5Mhz</option>
+                <option value="12">88.6Mhz</option>
+                <option value="13">88.7Mhz</option>
+                <option value="14">88.8Mhz</option>
+                <option value="15">88.9Mhz</option>
+                <option value="16">89.0Mhz</option>
+                <option value="17">89.1Mhz</option>
+                <option value="18">89.2Mhz</option>
+                <option value="19">89.3Mhz</option>
+                <option value="20">89.4Mhz</option>
+                <option value="21">89.5Mhz</option>
+                <option value="22">89.6Mhz</option>
+                <option value="23">89.7Mhz</option>
+                <option value="24">89.8Mhz</option>
+                <option value="25">89.9Mhz</option>
+                <option value="26">90.0Mhz</option>
+                <option value="27">90.1Mhz</option>
+                <option value="28">90.2Mhz</option>
+                <option value="29">90.3Mhz</option>
+                <option value="30">90.4Mhz</option>
+                <option value="31">90.5Mhz</option>
+                <option value="32">90.6Mhz</option>
+                <option value="33">90.7Mhz</option>
+                <option value="34">90.8Mhz</option>
+                <option value="35">90.9Mhz</option>
+                <option value="36">91.0Mhz</option>
+                <option value="37">91.1Mhz</option>
+                <option value="38">91.2Mhz</option>
+                <option value="39">91.3Mhz</option>
+                <option value="40">91.4Mhz</option>
+                <option value="41">91.5Mhz</option>
+                <option value="42">91.6Mhz</option>
+                <option value="43">91.7Mhz</option>
+                <option value="44">91.8Mhz</option>
+                <option value="45">91.9Mhz</option>
+                <option value="46">92.0Mhz</option>
+                <option value="47">92.1Mhz</option>
+                <option value="48">92.2Mhz</option>
+                <option value="49">92.3Mhz</option>
+                <option value="50">92.4Mhz</option>
+                <option value="51">92.5Mhz</option>
+                <option value="52">92.6Mhz</option>
+                <option value="53">92.7Mhz</option>
+                <option value="54">92.8Mhz</option>
+                <option value="55">92.9Mhz</option>
+                <option value="56">93.0Mhz</option>
+                <option value="57">93.1Mhz</option>
+                <option value="58">93.2Mhz</option>
+                <option value="59">93.3Mhz</option>
+                <option value="60">93.4Mhz</option>
+                <option value="61">93.5Mhz</option>
+                <option value="62">93.6Mhz</option>
+                <option value="63">93.7Mhz</option>
+                <option value="64">93.8Mhz</option>
+                <option value="65">93.9Mhz</option>
+                <option value="66">94.0Mhz</option>
+                <option value="67">94.1Mhz</option>
+                <option value="68">94.2Mhz</option>
+                <option value="69">94.3Mhz</option>
+                <option value="70">94.4Mhz</option>
+                <option value="71">94.5Mhz</option>
+                <option value="72">94.6Mhz</option>
+                <option value="73">94.7Mhz</option>
+                <option value="74">94.8Mhz</option>
+                <option value="75">94.9Mhz</option>
+                <option value="76">95.0Mhz</option>
+                <option value="77">95.1Mhz</option>
+                <option value="78">95.2Mhz</option>
+                <option value="79">95.3Mhz</option>
+                <option value="80">95.4Mhz</option>
+                <option value="81">95.5Mhz</option>
+                <option value="82">95.6Mhz</option>
+                <option value="83">95.7Mhz</option>
+                <option value="84">95.8Mhz</option>
+                <option value="85">95.9Mhz</option>
+                <option value="86">96.0Mhz</option>
+                <option value="87">96.1Mhz</option>
+                <option value="88">96.2Mhz</option>
+                <option value="89">96.3Mhz</option>
+                <option value="90">96.4Mhz</option>
+                <option value="91">96.5Mhz</option>
+                <option value="92">96.6Mhz</option>
+                <option value="93">96.7Mhz</option>
+                <option value="94">96.8Mhz</option>
+                <option value="95">96.9Mhz</option>
+                <option value="96">97.0Mhz</option>
+                <option value="97">97.1Mhz</option>
+                <option value="98">97.2Mhz</option>
+                <option value="99">97.3Mhz</option>
+                <option value="100">97.4Mhz</option>
+                <option value="101">97.5Mhz</option>
+                <option value="102">97.6Mhz</option>
+                <option value="103">97.7Mhz</option>
+                <option value="104">97.8Mhz</option>
+                <option value="105">97.9Mhz</option>
+                <option value="106">98.0Mhz</option>
+                <option value="107">98.1Mhz</option>
+                <option value="108">98.2Mhz</option>
+                <option value="109">98.3Mhz</option>
+                <option value="110">98.4Mhz</option>
+                <option value="111">98.5Mhz</option>
+                <option value="112">98.6Mhz</option>
+                <option value="113">98.7Mhz</option>
+                <option value="114">98.8Mhz</option>
+                <option value="115">98.9Mhz</option>
+                <option value="116">99.0Mhz</option>
+                <option value="117">99.1Mhz</option>
+                <option value="118">99.2Mhz</option>
+                <option value="119">99.3Mhz</option>
+                <option value="120">99.4Mhz</option>
+                <option value="121">99.5Mhz</option>
+                <option value="122">99.6Mhz</option>
+                <option value="123">99.7Mhz</option>
+                <option value="124">99.8Mhz</option>
+                <option value="125">99.9Mhz</option>
+                <option value="126">100.0Mhz</option>
+                <option value="127">100.1Mhz</option>
+                <option value="128">100.2Mhz</option>
+                <option value="129">100.3Mhz</option>
+                <option value="130">100.4Mhz</option>
+                <option value="131">100.5Mhz</option>
+                <option value="132">100.6Mhz</option>
+                <option value="133">100.7Mhz</option>
+                <option value="134">100.8Mhz</option>
+                <option value="135">100.9Mhz</option>
+                <option value="136">101.0Mhz</option>
+                <option value="137">101.1Mhz</option>
+                <option value="138">101.2Mhz</option>
+                <option value="139">101.3Mhz</option>
+                <option value="140">101.4Mhz</option>
+                <option value="141">101.5Mhz</option>
+                <option value="142">101.6Mhz</option>
+                <option value="143">101.7Mhz</option>
+                <option value="144">101.8Mhz</option>
+                <option value="145">101.9Mhz</option>
+                <option value="146">102.0Mhz</option>
+                <option value="147">102.1Mhz</option>
+                <option value="148">102.2Mhz</option>
+                <option value="149">102.3Mhz</option>
+                <option value="150">102.4Mhz</option>
+                <option value="151">102.5Mhz</option>
+                <option value="152">102.6Mhz</option>
+                <option value="153">102.7Mhz</option>
+                <option value="154">102.8Mhz</option>
+                <option value="155">102.9Mhz</option>
+                <option value="156">103.0Mhz</option>
+                <option value="157">103.1Mhz</option>
+                <option value="158">103.2Mhz</option>
+                <option value="159">103.3Mhz</option>
+                <option value="160">103.4Mhz</option>
+                <option value="161">103.5Mhz</option>
+                <option value="162">103.6Mhz</option>
+                <option value="163">103.7Mhz</option>
+                <option value="164">103.8Mhz</option>
+                <option value="165">103.9Mhz</option>
+                <option value="166">104.0Mhz</option>
+                <option value="167">104.1Mhz</option>
+                <option value="168">104.2Mhz</option>
+                <option value="169">104.3Mhz</option>
+                <option value="170">104.4Mhz</option>
+                <option value="171">104.5Mhz</option>
+                <option value="172">104.6Mhz</option>
+                <option value="173">104.7Mhz</option>
+                <option value="174">104.8Mhz</option>
+                <option value="175">104.9Mhz</option>
+                <option value="176">105.0Mhz</option>
+                <option value="177">105.1Mhz</option>
+                <option value="178">105.2Mhz</option>
+                <option value="179">105.3Mhz</option>
+                <option value="180">105.4Mhz</option>
+                <option value="181">105.5Mhz</option>
+                <option value="182">105.6Mhz</option>
+                <option value="183">105.7Mhz</option>
+                <option value="184">105.8Mhz</option>
+                <option value="185">105.9Mhz</option>
+                <option value="186">106.0Mhz</option>
+                <option value="187">106.1Mhz</option>
+                <option value="188">106.2Mhz</option>
+                <option value="189">106.3Mhz</option>
+                <option value="190">106.4Mhz</option>
+                <option value="191">106.5Mhz</option>
+                <option value="192">106.6Mhz</option>
+                <option value="193">106.7Mhz</option>
+                <option value="194">106.8Mhz</option>
+                <option value="195">106.9Mhz</option>
+                <option value="196">107.0Mhz</option>
+                <option value="197">107.1Mhz</option>
+                <option value="198">107.2Mhz</option>
+                <option value="199">107.3Mhz</option>
+                <option value="200">107.4Mhz</option>
+                <option value="201">107.5Mhz</option>
+                <option value="202">107.6Mhz</option>
+                <option value="203">107.7Mhz</option>
+                <option value="204">107.8Mhz</option>
+                <option value="205">107.9Mhz</option>
+                <option value="206">108.0Mhz</option>
+                <option value="207">108.1Mhz</option>
+            </select>
+            <label for="af3text">AF3:</label>
+            <select name="af3" id="af3">
+               <option value="0">None</option>
+                <option value="1">87.5Mhz</option>
+                <option value="2">87.6Mhz</option>
+                <option value="3">87.7Mhz</option>
+                <option value="4">87.8Mhz</option>
+                <option value="5">87.9Mhz</option>
+                <option value="6">88.0Mhz</option>
+                <option value="7">88.1Mhz</option>
+                <option value="8">88.2Mhz</option>
+                <option value="9">88.3Mhz</option>
+                <option value="10">88.4Mhz</option>
+                <option value="11">88.5Mhz</option>
+                <option value="12">88.6Mhz</option>
+                <option value="13">88.7Mhz</option>
+                <option value="14">88.8Mhz</option>
+                <option value="15">88.9Mhz</option>
+                <option value="16">89.0Mhz</option>
+                <option value="17">89.1Mhz</option>
+                <option value="18">89.2Mhz</option>
+                <option value="19">89.3Mhz</option>
+                <option value="20">89.4Mhz</option>
+                <option value="21">89.5Mhz</option>
+                <option value="22">89.6Mhz</option>
+                <option value="23">89.7Mhz</option>
+                <option value="24">89.8Mhz</option>
+                <option value="25">89.9Mhz</option>
+                <option value="26">90.0Mhz</option>
+                <option value="27">90.1Mhz</option>
+                <option value="28">90.2Mhz</option>
+                <option value="29">90.3Mhz</option>
+                <option value="30">90.4Mhz</option>
+                <option value="31">90.5Mhz</option>
+                <option value="32">90.6Mhz</option>
+                <option value="33">90.7Mhz</option>
+                <option value="34">90.8Mhz</option>
+                <option value="35">90.9Mhz</option>
+                <option value="36">91.0Mhz</option>
+                <option value="37">91.1Mhz</option>
+                <option value="38">91.2Mhz</option>
+                <option value="39">91.3Mhz</option>
+                <option value="40">91.4Mhz</option>
+                <option value="41">91.5Mhz</option>
+                <option value="42">91.6Mhz</option>
+                <option value="43">91.7Mhz</option>
+                <option value="44">91.8Mhz</option>
+                <option value="45">91.9Mhz</option>
+                <option value="46">92.0Mhz</option>
+                <option value="47">92.1Mhz</option>
+                <option value="48">92.2Mhz</option>
+                <option value="49">92.3Mhz</option>
+                <option value="50">92.4Mhz</option>
+                <option value="51">92.5Mhz</option>
+                <option value="52">92.6Mhz</option>
+                <option value="53">92.7Mhz</option>
+                <option value="54">92.8Mhz</option>
+                <option value="55">92.9Mhz</option>
+                <option value="56">93.0Mhz</option>
+                <option value="57">93.1Mhz</option>
+                <option value="58">93.2Mhz</option>
+                <option value="59">93.3Mhz</option>
+                <option value="60">93.4Mhz</option>
+                <option value="61">93.5Mhz</option>
+                <option value="62">93.6Mhz</option>
+                <option value="63">93.7Mhz</option>
+                <option value="64">93.8Mhz</option>
+                <option value="65">93.9Mhz</option>
+                <option value="66">94.0Mhz</option>
+                <option value="67">94.1Mhz</option>
+                <option value="68">94.2Mhz</option>
+                <option value="69">94.3Mhz</option>
+                <option value="70">94.4Mhz</option>
+                <option value="71">94.5Mhz</option>
+                <option value="72">94.6Mhz</option>
+                <option value="73">94.7Mhz</option>
+                <option value="74">94.8Mhz</option>
+                <option value="75">94.9Mhz</option>
+                <option value="76">95.0Mhz</option>
+                <option value="77">95.1Mhz</option>
+                <option value="78">95.2Mhz</option>
+                <option value="79">95.3Mhz</option>
+                <option value="80">95.4Mhz</option>
+                <option value="81">95.5Mhz</option>
+                <option value="82">95.6Mhz</option>
+                <option value="83">95.7Mhz</option>
+                <option value="84">95.8Mhz</option>
+                <option value="85">95.9Mhz</option>
+                <option value="86">96.0Mhz</option>
+                <option value="87">96.1Mhz</option>
+                <option value="88">96.2Mhz</option>
+                <option value="89">96.3Mhz</option>
+                <option value="90">96.4Mhz</option>
+                <option value="91">96.5Mhz</option>
+                <option value="92">96.6Mhz</option>
+                <option value="93">96.7Mhz</option>
+                <option value="94">96.8Mhz</option>
+                <option value="95">96.9Mhz</option>
+                <option value="96">97.0Mhz</option>
+                <option value="97">97.1Mhz</option>
+                <option value="98">97.2Mhz</option>
+                <option value="99">97.3Mhz</option>
+                <option value="100">97.4Mhz</option>
+                <option value="101">97.5Mhz</option>
+                <option value="102">97.6Mhz</option>
+                <option value="103">97.7Mhz</option>
+                <option value="104">97.8Mhz</option>
+                <option value="105">97.9Mhz</option>
+                <option value="106">98.0Mhz</option>
+                <option value="107">98.1Mhz</option>
+                <option value="108">98.2Mhz</option>
+                <option value="109">98.3Mhz</option>
+                <option value="110">98.4Mhz</option>
+                <option value="111">98.5Mhz</option>
+                <option value="112">98.6Mhz</option>
+                <option value="113">98.7Mhz</option>
+                <option value="114">98.8Mhz</option>
+                <option value="115">98.9Mhz</option>
+                <option value="116">99.0Mhz</option>
+                <option value="117">99.1Mhz</option>
+                <option value="118">99.2Mhz</option>
+                <option value="119">99.3Mhz</option>
+                <option value="120">99.4Mhz</option>
+                <option value="121">99.5Mhz</option>
+                <option value="122">99.6Mhz</option>
+                <option value="123">99.7Mhz</option>
+                <option value="124">99.8Mhz</option>
+                <option value="125">99.9Mhz</option>
+                <option value="126">100.0Mhz</option>
+                <option value="127">100.1Mhz</option>
+                <option value="128">100.2Mhz</option>
+                <option value="129">100.3Mhz</option>
+                <option value="130">100.4Mhz</option>
+                <option value="131">100.5Mhz</option>
+                <option value="132">100.6Mhz</option>
+                <option value="133">100.7Mhz</option>
+                <option value="134">100.8Mhz</option>
+                <option value="135">100.9Mhz</option>
+                <option value="136">101.0Mhz</option>
+                <option value="137">101.1Mhz</option>
+                <option value="138">101.2Mhz</option>
+                <option value="139">101.3Mhz</option>
+                <option value="140">101.4Mhz</option>
+                <option value="141">101.5Mhz</option>
+                <option value="142">101.6Mhz</option>
+                <option value="143">101.7Mhz</option>
+                <option value="144">101.8Mhz</option>
+                <option value="145">101.9Mhz</option>
+                <option value="146">102.0Mhz</option>
+                <option value="147">102.1Mhz</option>
+                <option value="148">102.2Mhz</option>
+                <option value="149">102.3Mhz</option>
+                <option value="150">102.4Mhz</option>
+                <option value="151">102.5Mhz</option>
+                <option value="152">102.6Mhz</option>
+                <option value="153">102.7Mhz</option>
+                <option value="154">102.8Mhz</option>
+                <option value="155">102.9Mhz</option>
+                <option value="156">103.0Mhz</option>
+                <option value="157">103.1Mhz</option>
+                <option value="158">103.2Mhz</option>
+                <option value="159">103.3Mhz</option>
+                <option value="160">103.4Mhz</option>
+                <option value="161">103.5Mhz</option>
+                <option value="162">103.6Mhz</option>
+                <option value="163">103.7Mhz</option>
+                <option value="164">103.8Mhz</option>
+                <option value="165">103.9Mhz</option>
+                <option value="166">104.0Mhz</option>
+                <option value="167">104.1Mhz</option>
+                <option value="168">104.2Mhz</option>
+                <option value="169">104.3Mhz</option>
+                <option value="170">104.4Mhz</option>
+                <option value="171">104.5Mhz</option>
+                <option value="172">104.6Mhz</option>
+                <option value="173">104.7Mhz</option>
+                <option value="174">104.8Mhz</option>
+                <option value="175">104.9Mhz</option>
+                <option value="176">105.0Mhz</option>
+                <option value="177">105.1Mhz</option>
+                <option value="178">105.2Mhz</option>
+                <option value="179">105.3Mhz</option>
+                <option value="180">105.4Mhz</option>
+                <option value="181">105.5Mhz</option>
+                <option value="182">105.6Mhz</option>
+                <option value="183">105.7Mhz</option>
+                <option value="184">105.8Mhz</option>
+                <option value="185">105.9Mhz</option>
+                <option value="186">106.0Mhz</option>
+                <option value="187">106.1Mhz</option>
+                <option value="188">106.2Mhz</option>
+                <option value="189">106.3Mhz</option>
+                <option value="190">106.4Mhz</option>
+                <option value="191">106.5Mhz</option>
+                <option value="192">106.6Mhz</option>
+                <option value="193">106.7Mhz</option>
+                <option value="194">106.8Mhz</option>
+                <option value="195">106.9Mhz</option>
+                <option value="196">107.0Mhz</option>
+                <option value="197">107.1Mhz</option>
+                <option value="198">107.2Mhz</option>
+                <option value="199">107.3Mhz</option>
+                <option value="200">107.4Mhz</option>
+                <option value="201">107.5Mhz</option>
+                <option value="202">107.6Mhz</option>
+                <option value="203">107.7Mhz</option>
+                <option value="204">107.8Mhz</option>
+                <option value="205">107.9Mhz</option>
+                <option value="206">108.0Mhz</option>
+                <option value="207">108.1Mhz</option>
+            </select>
+            <label for="af4text">AF4:</label>
+            <select name="af4" id="af4">
+               <option value="0">None</option>
+                <option value="1">87.5Mhz</option>
+                <option value="2">87.6Mhz</option>
+                <option value="3">87.7Mhz</option>
+                <option value="4">87.8Mhz</option>
+                <option value="5">87.9Mhz</option>
+                <option value="6">88.0Mhz</option>
+                <option value="7">88.1Mhz</option>
+                <option value="8">88.2Mhz</option>
+                <option value="9">88.3Mhz</option>
+                <option value="10">88.4Mhz</option>
+                <option value="11">88.5Mhz</option>
+                <option value="12">88.6Mhz</option>
+                <option value="13">88.7Mhz</option>
+                <option value="14">88.8Mhz</option>
+                <option value="15">88.9Mhz</option>
+                <option value="16">89.0Mhz</option>
+                <option value="17">89.1Mhz</option>
+                <option value="18">89.2Mhz</option>
+                <option value="19">89.3Mhz</option>
+                <option value="20">89.4Mhz</option>
+                <option value="21">89.5Mhz</option>
+                <option value="22">89.6Mhz</option>
+                <option value="23">89.7Mhz</option>
+                <option value="24">89.8Mhz</option>
+                <option value="25">89.9Mhz</option>
+                <option value="26">90.0Mhz</option>
+                <option value="27">90.1Mhz</option>
+                <option value="28">90.2Mhz</option>
+                <option value="29">90.3Mhz</option>
+                <option value="30">90.4Mhz</option>
+                <option value="31">90.5Mhz</option>
+                <option value="32">90.6Mhz</option>
+                <option value="33">90.7Mhz</option>
+                <option value="34">90.8Mhz</option>
+                <option value="35">90.9Mhz</option>
+                <option value="36">91.0Mhz</option>
+                <option value="37">91.1Mhz</option>
+                <option value="38">91.2Mhz</option>
+                <option value="39">91.3Mhz</option>
+                <option value="40">91.4Mhz</option>
+                <option value="41">91.5Mhz</option>
+                <option value="42">91.6Mhz</option>
+                <option value="43">91.7Mhz</option>
+                <option value="44">91.8Mhz</option>
+                <option value="45">91.9Mhz</option>
+                <option value="46">92.0Mhz</option>
+                <option value="47">92.1Mhz</option>
+                <option value="48">92.2Mhz</option>
+                <option value="49">92.3Mhz</option>
+                <option value="50">92.4Mhz</option>
+                <option value="51">92.5Mhz</option>
+                <option value="52">92.6Mhz</option>
+                <option value="53">92.7Mhz</option>
+                <option value="54">92.8Mhz</option>
+                <option value="55">92.9Mhz</option>
+                <option value="56">93.0Mhz</option>
+                <option value="57">93.1Mhz</option>
+                <option value="58">93.2Mhz</option>
+                <option value="59">93.3Mhz</option>
+                <option value="60">93.4Mhz</option>
+                <option value="61">93.5Mhz</option>
+                <option value="62">93.6Mhz</option>
+                <option value="63">93.7Mhz</option>
+                <option value="64">93.8Mhz</option>
+                <option value="65">93.9Mhz</option>
+                <option value="66">94.0Mhz</option>
+                <option value="67">94.1Mhz</option>
+                <option value="68">94.2Mhz</option>
+                <option value="69">94.3Mhz</option>
+                <option value="70">94.4Mhz</option>
+                <option value="71">94.5Mhz</option>
+                <option value="72">94.6Mhz</option>
+                <option value="73">94.7Mhz</option>
+                <option value="74">94.8Mhz</option>
+                <option value="75">94.9Mhz</option>
+                <option value="76">95.0Mhz</option>
+                <option value="77">95.1Mhz</option>
+                <option value="78">95.2Mhz</option>
+                <option value="79">95.3Mhz</option>
+                <option value="80">95.4Mhz</option>
+                <option value="81">95.5Mhz</option>
+                <option value="82">95.6Mhz</option>
+                <option value="83">95.7Mhz</option>
+                <option value="84">95.8Mhz</option>
+                <option value="85">95.9Mhz</option>
+                <option value="86">96.0Mhz</option>
+                <option value="87">96.1Mhz</option>
+                <option value="88">96.2Mhz</option>
+                <option value="89">96.3Mhz</option>
+                <option value="90">96.4Mhz</option>
+                <option value="91">96.5Mhz</option>
+                <option value="92">96.6Mhz</option>
+                <option value="93">96.7Mhz</option>
+                <option value="94">96.8Mhz</option>
+                <option value="95">96.9Mhz</option>
+                <option value="96">97.0Mhz</option>
+                <option value="97">97.1Mhz</option>
+                <option value="98">97.2Mhz</option>
+                <option value="99">97.3Mhz</option>
+                <option value="100">97.4Mhz</option>
+                <option value="101">97.5Mhz</option>
+                <option value="102">97.6Mhz</option>
+                <option value="103">97.7Mhz</option>
+                <option value="104">97.8Mhz</option>
+                <option value="105">97.9Mhz</option>
+                <option value="106">98.0Mhz</option>
+                <option value="107">98.1Mhz</option>
+                <option value="108">98.2Mhz</option>
+                <option value="109">98.3Mhz</option>
+                <option value="110">98.4Mhz</option>
+                <option value="111">98.5Mhz</option>
+                <option value="112">98.6Mhz</option>
+                <option value="113">98.7Mhz</option>
+                <option value="114">98.8Mhz</option>
+                <option value="115">98.9Mhz</option>
+                <option value="116">99.0Mhz</option>
+                <option value="117">99.1Mhz</option>
+                <option value="118">99.2Mhz</option>
+                <option value="119">99.3Mhz</option>
+                <option value="120">99.4Mhz</option>
+                <option value="121">99.5Mhz</option>
+                <option value="122">99.6Mhz</option>
+                <option value="123">99.7Mhz</option>
+                <option value="124">99.8Mhz</option>
+                <option value="125">99.9Mhz</option>
+                <option value="126">100.0Mhz</option>
+                <option value="127">100.1Mhz</option>
+                <option value="128">100.2Mhz</option>
+                <option value="129">100.3Mhz</option>
+                <option value="130">100.4Mhz</option>
+                <option value="131">100.5Mhz</option>
+                <option value="132">100.6Mhz</option>
+                <option value="133">100.7Mhz</option>
+                <option value="134">100.8Mhz</option>
+                <option value="135">100.9Mhz</option>
+                <option value="136">101.0Mhz</option>
+                <option value="137">101.1Mhz</option>
+                <option value="138">101.2Mhz</option>
+                <option value="139">101.3Mhz</option>
+                <option value="140">101.4Mhz</option>
+                <option value="141">101.5Mhz</option>
+                <option value="142">101.6Mhz</option>
+                <option value="143">101.7Mhz</option>
+                <option value="144">101.8Mhz</option>
+                <option value="145">101.9Mhz</option>
+                <option value="146">102.0Mhz</option>
+                <option value="147">102.1Mhz</option>
+                <option value="148">102.2Mhz</option>
+                <option value="149">102.3Mhz</option>
+                <option value="150">102.4Mhz</option>
+                <option value="151">102.5Mhz</option>
+                <option value="152">102.6Mhz</option>
+                <option value="153">102.7Mhz</option>
+                <option value="154">102.8Mhz</option>
+                <option value="155">102.9Mhz</option>
+                <option value="156">103.0Mhz</option>
+                <option value="157">103.1Mhz</option>
+                <option value="158">103.2Mhz</option>
+                <option value="159">103.3Mhz</option>
+                <option value="160">103.4Mhz</option>
+                <option value="161">103.5Mhz</option>
+                <option value="162">103.6Mhz</option>
+                <option value="163">103.7Mhz</option>
+                <option value="164">103.8Mhz</option>
+                <option value="165">103.9Mhz</option>
+                <option value="166">104.0Mhz</option>
+                <option value="167">104.1Mhz</option>
+                <option value="168">104.2Mhz</option>
+                <option value="169">104.3Mhz</option>
+                <option value="170">104.4Mhz</option>
+                <option value="171">104.5Mhz</option>
+                <option value="172">104.6Mhz</option>
+                <option value="173">104.7Mhz</option>
+                <option value="174">104.8Mhz</option>
+                <option value="175">104.9Mhz</option>
+                <option value="176">105.0Mhz</option>
+                <option value="177">105.1Mhz</option>
+                <option value="178">105.2Mhz</option>
+                <option value="179">105.3Mhz</option>
+                <option value="180">105.4Mhz</option>
+                <option value="181">105.5Mhz</option>
+                <option value="182">105.6Mhz</option>
+                <option value="183">105.7Mhz</option>
+                <option value="184">105.8Mhz</option>
+                <option value="185">105.9Mhz</option>
+                <option value="186">106.0Mhz</option>
+                <option value="187">106.1Mhz</option>
+                <option value="188">106.2Mhz</option>
+                <option value="189">106.3Mhz</option>
+                <option value="190">106.4Mhz</option>
+                <option value="191">106.5Mhz</option>
+                <option value="192">106.6Mhz</option>
+                <option value="193">106.7Mhz</option>
+                <option value="194">106.8Mhz</option>
+                <option value="195">106.9Mhz</option>
+                <option value="196">107.0Mhz</option>
+                <option value="197">107.1Mhz</option>
+                <option value="198">107.2Mhz</option>
+                <option value="199">107.3Mhz</option>
+                <option value="200">107.4Mhz</option>
+                <option value="201">107.5Mhz</option>
+                <option value="202">107.6Mhz</option>
+                <option value="203">107.7Mhz</option>
+                <option value="204">107.8Mhz</option>
+                <option value="205">107.9Mhz</option>
+                <option value="206">108.0Mhz</option>
+                <option value="207">108.1Mhz</option>
+            </select>
+            <label for="af5text">AF5:</label>
+            <select name="af5" id="af5">
+               <option value="0">None</option>
+                <option value="1">87.5Mhz</option>
+                <option value="2">87.6Mhz</option>
+                <option value="3">87.7Mhz</option>
+                <option value="4">87.8Mhz</option>
+                <option value="5">87.9Mhz</option>
+                <option value="6">88.0Mhz</option>
+                <option value="7">88.1Mhz</option>
+                <option value="8">88.2Mhz</option>
+                <option value="9">88.3Mhz</option>
+                <option value="10">88.4Mhz</option>
+                <option value="11">88.5Mhz</option>
+                <option value="12">88.6Mhz</option>
+                <option value="13">88.7Mhz</option>
+                <option value="14">88.8Mhz</option>
+                <option value="15">88.9Mhz</option>
+                <option value="16">89.0Mhz</option>
+                <option value="17">89.1Mhz</option>
+                <option value="18">89.2Mhz</option>
+                <option value="19">89.3Mhz</option>
+                <option value="20">89.4Mhz</option>
+                <option value="21">89.5Mhz</option>
+                <option value="22">89.6Mhz</option>
+                <option value="23">89.7Mhz</option>
+                <option value="24">89.8Mhz</option>
+                <option value="25">89.9Mhz</option>
+                <option value="26">90.0Mhz</option>
+                <option value="27">90.1Mhz</option>
+                <option value="28">90.2Mhz</option>
+                <option value="29">90.3Mhz</option>
+                <option value="30">90.4Mhz</option>
+                <option value="31">90.5Mhz</option>
+                <option value="32">90.6Mhz</option>
+                <option value="33">90.7Mhz</option>
+                <option value="34">90.8Mhz</option>
+                <option value="35">90.9Mhz</option>
+                <option value="36">91.0Mhz</option>
+                <option value="37">91.1Mhz</option>
+                <option value="38">91.2Mhz</option>
+                <option value="39">91.3Mhz</option>
+                <option value="40">91.4Mhz</option>
+                <option value="41">91.5Mhz</option>
+                <option value="42">91.6Mhz</option>
+                <option value="43">91.7Mhz</option>
+                <option value="44">91.8Mhz</option>
+                <option value="45">91.9Mhz</option>
+                <option value="46">92.0Mhz</option>
+                <option value="47">92.1Mhz</option>
+                <option value="48">92.2Mhz</option>
+                <option value="49">92.3Mhz</option>
+                <option value="50">92.4Mhz</option>
+                <option value="51">92.5Mhz</option>
+                <option value="52">92.6Mhz</option>
+                <option value="53">92.7Mhz</option>
+                <option value="54">92.8Mhz</option>
+                <option value="55">92.9Mhz</option>
+                <option value="56">93.0Mhz</option>
+                <option value="57">93.1Mhz</option>
+                <option value="58">93.2Mhz</option>
+                <option value="59">93.3Mhz</option>
+                <option value="60">93.4Mhz</option>
+                <option value="61">93.5Mhz</option>
+                <option value="62">93.6Mhz</option>
+                <option value="63">93.7Mhz</option>
+                <option value="64">93.8Mhz</option>
+                <option value="65">93.9Mhz</option>
+                <option value="66">94.0Mhz</option>
+                <option value="67">94.1Mhz</option>
+                <option value="68">94.2Mhz</option>
+                <option value="69">94.3Mhz</option>
+                <option value="70">94.4Mhz</option>
+                <option value="71">94.5Mhz</option>
+                <option value="72">94.6Mhz</option>
+                <option value="73">94.7Mhz</option>
+                <option value="74">94.8Mhz</option>
+                <option value="75">94.9Mhz</option>
+                <option value="76">95.0Mhz</option>
+                <option value="77">95.1Mhz</option>
+                <option value="78">95.2Mhz</option>
+                <option value="79">95.3Mhz</option>
+                <option value="80">95.4Mhz</option>
+                <option value="81">95.5Mhz</option>
+                <option value="82">95.6Mhz</option>
+                <option value="83">95.7Mhz</option>
+                <option value="84">95.8Mhz</option>
+                <option value="85">95.9Mhz</option>
+                <option value="86">96.0Mhz</option>
+                <option value="87">96.1Mhz</option>
+                <option value="88">96.2Mhz</option>
+                <option value="89">96.3Mhz</option>
+                <option value="90">96.4Mhz</option>
+                <option value="91">96.5Mhz</option>
+                <option value="92">96.6Mhz</option>
+                <option value="93">96.7Mhz</option>
+                <option value="94">96.8Mhz</option>
+                <option value="95">96.9Mhz</option>
+                <option value="96">97.0Mhz</option>
+                <option value="97">97.1Mhz</option>
+                <option value="98">97.2Mhz</option>
+                <option value="99">97.3Mhz</option>
+                <option value="100">97.4Mhz</option>
+                <option value="101">97.5Mhz</option>
+                <option value="102">97.6Mhz</option>
+                <option value="103">97.7Mhz</option>
+                <option value="104">97.8Mhz</option>
+                <option value="105">97.9Mhz</option>
+                <option value="106">98.0Mhz</option>
+                <option value="107">98.1Mhz</option>
+                <option value="108">98.2Mhz</option>
+                <option value="109">98.3Mhz</option>
+                <option value="110">98.4Mhz</option>
+                <option value="111">98.5Mhz</option>
+                <option value="112">98.6Mhz</option>
+                <option value="113">98.7Mhz</option>
+                <option value="114">98.8Mhz</option>
+                <option value="115">98.9Mhz</option>
+                <option value="116">99.0Mhz</option>
+                <option value="117">99.1Mhz</option>
+                <option value="118">99.2Mhz</option>
+                <option value="119">99.3Mhz</option>
+                <option value="120">99.4Mhz</option>
+                <option value="121">99.5Mhz</option>
+                <option value="122">99.6Mhz</option>
+                <option value="123">99.7Mhz</option>
+                <option value="124">99.8Mhz</option>
+                <option value="125">99.9Mhz</option>
+                <option value="126">100.0Mhz</option>
+                <option value="127">100.1Mhz</option>
+                <option value="128">100.2Mhz</option>
+                <option value="129">100.3Mhz</option>
+                <option value="130">100.4Mhz</option>
+                <option value="131">100.5Mhz</option>
+                <option value="132">100.6Mhz</option>
+                <option value="133">100.7Mhz</option>
+                <option value="134">100.8Mhz</option>
+                <option value="135">100.9Mhz</option>
+                <option value="136">101.0Mhz</option>
+                <option value="137">101.1Mhz</option>
+                <option value="138">101.2Mhz</option>
+                <option value="139">101.3Mhz</option>
+                <option value="140">101.4Mhz</option>
+                <option value="141">101.5Mhz</option>
+                <option value="142">101.6Mhz</option>
+                <option value="143">101.7Mhz</option>
+                <option value="144">101.8Mhz</option>
+                <option value="145">101.9Mhz</option>
+                <option value="146">102.0Mhz</option>
+                <option value="147">102.1Mhz</option>
+                <option value="148">102.2Mhz</option>
+                <option value="149">102.3Mhz</option>
+                <option value="150">102.4Mhz</option>
+                <option value="151">102.5Mhz</option>
+                <option value="152">102.6Mhz</option>
+                <option value="153">102.7Mhz</option>
+                <option value="154">102.8Mhz</option>
+                <option value="155">102.9Mhz</option>
+                <option value="156">103.0Mhz</option>
+                <option value="157">103.1Mhz</option>
+                <option value="158">103.2Mhz</option>
+                <option value="159">103.3Mhz</option>
+                <option value="160">103.4Mhz</option>
+                <option value="161">103.5Mhz</option>
+                <option value="162">103.6Mhz</option>
+                <option value="163">103.7Mhz</option>
+                <option value="164">103.8Mhz</option>
+                <option value="165">103.9Mhz</option>
+                <option value="166">104.0Mhz</option>
+                <option value="167">104.1Mhz</option>
+                <option value="168">104.2Mhz</option>
+                <option value="169">104.3Mhz</option>
+                <option value="170">104.4Mhz</option>
+                <option value="171">104.5Mhz</option>
+                <option value="172">104.6Mhz</option>
+                <option value="173">104.7Mhz</option>
+                <option value="174">104.8Mhz</option>
+                <option value="175">104.9Mhz</option>
+                <option value="176">105.0Mhz</option>
+                <option value="177">105.1Mhz</option>
+                <option value="178">105.2Mhz</option>
+                <option value="179">105.3Mhz</option>
+                <option value="180">105.4Mhz</option>
+                <option value="181">105.5Mhz</option>
+                <option value="182">105.6Mhz</option>
+                <option value="183">105.7Mhz</option>
+                <option value="184">105.8Mhz</option>
+                <option value="185">105.9Mhz</option>
+                <option value="186">106.0Mhz</option>
+                <option value="187">106.1Mhz</option>
+                <option value="188">106.2Mhz</option>
+                <option value="189">106.3Mhz</option>
+                <option value="190">106.4Mhz</option>
+                <option value="191">106.5Mhz</option>
+                <option value="192">106.6Mhz</option>
+                <option value="193">106.7Mhz</option>
+                <option value="194">106.8Mhz</option>
+                <option value="195">106.9Mhz</option>
+                <option value="196">107.0Mhz</option>
+                <option value="197">107.1Mhz</option>
+                <option value="198">107.2Mhz</option>
+                <option value="199">107.3Mhz</option>
+                <option value="200">107.4Mhz</option>
+                <option value="201">107.5Mhz</option>
+                <option value="202">107.6Mhz</option>
+                <option value="203">107.7Mhz</option>
+                <option value="204">107.8Mhz</option>
+                <option value="205">107.9Mhz</option>
+                <option value="206">108.0Mhz</option>
+                <option value="207">108.1Mhz</option>
+            </select><br>
+
+        <label for="rdstext1">Radio Text:</label><br>
+        <input type="text" id="rdstext1" name="rdstext1" maxlength="48" size="84"><br>
+        
+        <label for="dps1">Dynamic Text:</label><br>
+        <input type="text" id="dps1" name="dps1" maxlength="48" size="84"><br><br>
+        
+        <button type="button" class="myButton" onclick="sendData()">Submit</button>
+        
+        <h5 /hidden>ENABLE: <span id="en_debug">0</span></h5>
+        <h5 /hidden>TYPE: <span id="type_debug">0</span></h5>
+        <h5 /hidden>PI: <span id="pi_debug">0</span></h5>
+        <h5 /hidden>PTY: <span id="pty_debug">0</span></h5>
+        <h5 /hidden>PTYN: <span id="ptyn_debug">0</span></h5>
+        <h5 /hidden>MS: <span id="ms1_debug">0</span></h5>
+        <h5 /hidden>AF1: <span id="af1_debug">0</span></h5>
+        <h5 /hidden>AF2: <span id="af2_debug">0</span></h5>
+        <h5 /hidden>AF3: <span id="af3_debug">0</span></h5>
+        <h5 /hidden>AF4: <span id="af4_debug">0</span></h5>
+        <h5 /hidden>AF5: <span id="af5_debug">0</span></h5>
+        <h5 /hidden>RT1: <span id="rt1_debug">0</span></h5>
+        <h5 /hidden>DPS1: <span id="dps1_debug">0</span></h5>
+        <h5 /hidden>CMD: <span id="cmd_debug">0</span></h5>
+        <h5 /hidden>CT: <span id="ct1">0</span></h5>
+        <h5 /hidden> Remote: <span id="remote2">0</span></h5>
+        <h5 /hidden> PORT_UDP: <span id="portudp1">0</span></h5>
+        <h5 hidden>Lock: <span id="lock">0</span></h5>
+        <h5 hidden>Teste1: <span id="teste1"></span></h5>
+        <br><br><br><br>
+    </div>
+		
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+		
+</body>
+</html>
+

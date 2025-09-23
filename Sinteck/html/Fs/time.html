@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>STL RX Strider</title>
+<link rel="shortcut icon" href="STM32H7xx_files/favicon.ico" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!--[if IE]><script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+<link rel="stylesheet" type="text/css" href="css/style.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<body onload="getData()"> 
+    <div id="header">
+          <h1>Time</h1>
+    </div>
+    
+    <div id="img">
+        <img src="STM32H7xx_files/logo.jpg" alt="" align="right" width=210 height=38>
+    </div>
+    
+    <style>
+        legend {
+            padding-left:10px;
+            padding-right:10px;
+        }
+
+        fieldset {
+            position:relative;
+            line-height:24px;
+        }
+
+        input {
+            position:absolute;
+            left:100px;
+        }
+        
+        select {
+            position:absolute;
+            left:100px;
+        }
+    </style>
+    
+    <div id="nav">        
+      <ul>
+        <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span></a></li>  
+		<li><a id="home" href="index.html">Dashboard</a></li>
+		
+        <li><a class="group">SETUP</a></li>        
+        <li><a id="confaudio" href="audio.html">Audio</a></li>
+        <li><a id="conftime" href="time.html">Time</a></li>
+        <li><a id="confrds" href="rds.html">RDS</a></li>
+        <li><a id="conffreq" href="freq.html">Frequency</a></li>
+        <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
+        <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
+        <li><a id="confpass" href="password.html">Password</a></li>
+        <li><a id="profile" href="profile.html">Station Profile</a></li>
+        <li><a class="group">TOOLS</a></li>
+        <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+        <li><a id="FAIL" href="Fail.html">Fail List</a></li>
+      </ul>                
+    </div>
+		
+    <div id="section">
+        <script>
+            function getTime() {
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        document.getElementById("diasemana").innerHTML = this.responseText.substring(this.responseText.indexOf("DAY:")+4,this.responseText.indexOf("DATE")-1);
+                        document.getElementById("data").innerHTML = this.responseText.substring(this.responseText.indexOf("DATE:")+5,this.responseText.indexOf("TIME:")-1);
+                        document.getElementById("hora").innerHTML = this.responseText.substring(this.responseText.indexOf("TIME:")+5,this.responseText.indexOf("NTP:")-1);
+                        document.getElementById("ntp1").innerHTML = this.responseText.substring(this.responseText.indexOf("NTP:")+4,this.responseText.indexOf("FUSO:")-1);
+                        document.getElementById("debug_fuso").innerHTML = this.responseText.substring(this.responseText.indexOf("FUSO:")+5,this.responseText.indexOf("FIM:")-1);
+                        
+                        document.getElementById('fuso').value = parseInt(document.getElementById("debug_fuso").innerHTML);
+                        
+                        document.getElementById("weekday").value = document.getElementById("diasemana").innerHTML - '0';
+                        if(document.getElementById("diasemana").innerHTML == '1')
+                            document.getElementById("diasemana").innerHTML = 'Monday';
+                        else if(document.getElementById("diasemana").innerHTML == '2')
+                            document.getElementById("diasemana").innerHTML = 'Tuesday';
+                        else if(document.getElementById("diasemana").innerHTML == '3')
+                            document.getElementById("diasemana").innerHTML = 'Wednesday';
+                        else if(document.getElementById("diasemana").innerHTML == '4')
+                            document.getElementById("diasemana").innerHTML = 'Thursday';
+                        else if(document.getElementById("diasemana").innerHTML == '5')
+                            document.getElementById("diasemana").innerHTML = 'Friday';
+                        else if(document.getElementById("diasemana").innerHTML == '6')
+                            document.getElementById("diasemana").innerHTML = 'Saturday';
+                        else if(document.getElementById("diasemana").innerHTML == '7')
+                            document.getElementById("diasemana").innerHTML = 'Sunday';
+                            
+                        if(document.getElementById("ntp1").innerHTML == "1")
+                            document.getElementById("ntp").checked = true;
+                        else
+                            document.getElementById("ntp").checked = false;
+                    }
+                };
+                xhttp.open("GET", "readTime", true);
+                xhttp.send();
+            }
+      
+            function sendData() {
+                var resp = "";
+                var xhttp = new XMLHttpRequest();
+                xhttp.onreadystatechange = function() {
+                    if (this.readyState == 4 && this.status == 200) {
+                        document.getElementById("RFState").innerHTML =
+                        this.responseText;
+                    }
+                };
+                var resp2 = "0";
+                if(document.getElementById('ntp').checked == true) {
+                    resp2 = "1";
+                }    
+                else {
+                    resp2 = "0";
+                }
+                if(document.getElementById('fuso').value < 10) {
+                    var resp3 = "0" + document.getElementById('fuso').value;
+                }
+                else {
+                    var resp3 = document.getElementById('fuso').value;
+                }
+                var resp1 = "setTime=";
+                var resp = resp1.concat("", document.getElementById("weekday").value, ";Data:",document.getElementById("date").value, ";Hora:", document.getElementById('time').value, ";NTP:", resp2,";FUSO:", resp3,";FIM");
+                //alert(resp);
+                if (confirm("Confirm !")) {
+                    xhttp.open("GET", resp, true);
+                    xhttp.send();
+                }
+                else {
+            
+                }
+            }
+            
+        function getLogin() {
+            var xhttp = new XMLHttpRequest();
+            xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
+                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+                if(document.getElementById("lock").innerHTML == '0') {
+                    document.getElementById("teste1").className = "fa fa-unlock";
+                    document.getElementById("lock2").className = "fa fa-unlock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                else {
+                    document.getElementById("teste1").className = "fa fa-lock";
+                    document.getElementById("lock2").className = "fa fa-lock";
+                    document.getElementById("lock2").style = "font-size:24px";
+                }
+                
+                getTime();
+            }
+        };
+            xhttp.open("GET", "readLogin", true);
+            xhttp.send();
+        }
+        
+        function getData() {
+            getLogin();
+        }
+        </script>
+
+        <p style="background-color:LightGray;"></p>
+        <h2>Time: </h2>
+        <h3><span id="diasemana">0</span>, <span id="data">0</span>, <span id="hora">0</span></h3>
+        
+        <p style="background-color:LightGray;"></p>
+        <h3>Configure Time: </h3><br>
+            <form action="/action_page.php">
+            <fieldset>
+                <label for="weekday">WeekDay:</label>
+                <select name="weekday" id="weekday">
+                    <option value="1">Monday</option>
+                    <option value="2">Tuesday</option>
+                    <option value="3">Wednesday</option>
+                    <option value="4">Thursday</option>
+                    <option value="5">Friday</option>
+                    <option value="6">Saturday</option>
+                    <option value="7">Sunday</option>
+                </select>
+            </fieldset>
+            <br>
+            <fieldset>
+                <label>Date:</label>
+                <input type=date id=date>
+                <script>
+                    document.getElementById('date').value = new Date().toISOString().substring(0, 10);
+                </script>
+            </fieldset>
+            <br>
+            <fieldset>            
+                <label>Time:</label>
+				<input id="time" step='1' type="time" value="now">
+                <script>
+					document.getElementById('time').value = new Date().toLocaleString().substring(12, 20);
+                </script>
+            </fieldset>
+            <br>
+            <fieldset>
+                <label>Automatic:</label>
+                <input type="checkbox" id="ntp" name="ntp">
+            </fieldset>
+            <fieldset>
+                <label>Timezone:</label>
+                <select name="fuso" id="fuso">
+                    <option value="0">-12</option>
+                    <option value="1">-11</option>
+                    <option value="2">-10</option>
+                    <option value="3">-9</option>
+                    <option value="4">-8</option>
+                    <option value="5">-7</option>
+                    <option value="6">-6</option>
+                    <option value="7">-5</option>
+                    <option value="8">-4</option>
+                    <option value="9">-3</option>
+                    <option value="10">-2</option>
+                    <option value="11">-1</option>
+                    <option value="12">0</option>
+                    <option value="13">+1</option>
+                    <option value="14">+2</option>
+                    <option value="15">+3</option>
+                    <option value="16">+4</option>
+                    <option value="17">+5</option>
+                    <option value="18">+6</option>
+                    <option value="19">+7</option>
+                    <option value="20">+8</option>
+                    <option value="21">+9</option>
+                    <option value="22">+10</option>
+                    <option value="23">+11</option>
+                    <option value="24">+12</option>
+                </select>
+            </fieldset>    
+            <h5 hidden>NTP: <span id="ntp1">0</span></h5>
+            <br><button type="button" class="myButton" onclick="sendData()">Submit</button><br><br>
+            
+			<h5 hidden>fuso: <span id="debug_fuso">0</span></h5>
+            <h5 hidden>Lock: <span id="lock">0</span></h5>
+            <h5 hidden>Teste1: <span id="teste1"></span></h5>
+    </div>
+		
+    <h3></h3>
+    <h3></h3>
+    <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+		
+</body>
+</html>
