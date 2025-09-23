@@ -180,8 +180,8 @@ const osThreadAttr_t TaskGUI_attributes = {
 osThreadId_t TaskNTPHandle;
 const osThreadAttr_t TaskNTP_attributes = {
   .name = "TaskNTP",
-  .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityLow,
+  .stack_size = 1024 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* Definitions for QueueUSART3 */
 osMessageQueueId_t QueueUSART3Handle;
@@ -544,7 +544,7 @@ void StartTaskGUI(void *argument)
   lv_log_register_print_cb(my_loglvgl);
 #endif
 
-  main_screen_TX();
+  main_screen_RX();
 
   /* Infinite loop */
   for(;;)
