@@ -33,7 +33,7 @@
 
 /* Within 'USER CODE' section, code will be kept by default at each generation */
 /* USER CODE BEGIN 0 */
-
+uint8_t MAC_Read(uint32_t Flash_Address);
 /* USER CODE END 0 */
 
 /* Private define ------------------------------------------------------------*/
@@ -43,7 +43,7 @@
 #define ETHIF_TX_TIMEOUT (2000U)
 /* USER CODE BEGIN OS_THREAD_STACK_SIZE_WITH_RTOS */
 /* Stack size of the interface thread */
-#define INTERFACE_THREAD_STACK_SIZE ( 350 )
+#define INTERFACE_THREAD_STACK_SIZE ( 2048 )
 /* USER CODE END OS_THREAD_STACK_SIZE_WITH_RTOS */
 /* Network interface name */
 #define IFNAME0 's'
@@ -220,12 +220,20 @@ static void low_level_init(struct netif *netif)
 
    uint8_t MACAddr[6] ;
   heth.Instance = ETH;
-  MACAddr[0] = 0x00;
-  MACAddr[1] = 0x80;
-  MACAddr[2] = 0xE1;
-  MACAddr[3] = 0x00;
-  MACAddr[4] = 0x00;
-  MACAddr[5] = 0x02;
+//  MACAddr[0] = 0x00;
+//  MACAddr[1] = 0x80;
+//  MACAddr[2] = 0xE1;
+//  MACAddr[3] = 0x00;
+//  MACAddr[4] = 0x00;
+// MACAddr[5] = 0x02;
+
+  MACAddr[0] = 0x00;		// MAC_Read(0x081FFC00);
+  MACAddr[1] = 0x80;		// MAC_Read(0x081FFC01);
+  MACAddr[2] = 0xE1;		// MAC_Read(0x081FFC02);
+  MACAddr[3] = (uint8_t)((HAL_GetUIDw0() & 0x00FF0000) >> 16);
+  MACAddr[4] = (uint8_t)((HAL_GetUIDw0() & 0x000000FF));
+  MACAddr[5] = (uint8_t)((HAL_GetUIDw2() & 0x000000FF));
+
   heth.Init.MACAddr = &MACAddr[0];
   heth.Init.MediaInterface = HAL_ETH_RMII_MODE;
   heth.Init.TxDesc = DMATxDscrTab;
@@ -820,28 +828,28 @@ void ethernet_link_thread(void* argument)
 
     switch (PHYLinkState)
     {
-    case LAN8742_STATUS_100MBITS_FULLDUPLEX:
-      duplex = ETH_FULLDUPLEX_MODE;
-      speed = ETH_SPEED_100M;
-      linkchanged = 1;
-      break;
-    case LAN8742_STATUS_100MBITS_HALFDUPLEX:
-      duplex = ETH_HALFDUPLEX_MODE;
-      speed = ETH_SPEED_100M;
-      linkchanged = 1;
-      break;
-    case LAN8742_STATUS_10MBITS_FULLDUPLEX:
-      duplex = ETH_FULLDUPLEX_MODE;
-      speed = ETH_SPEED_10M;
-      linkchanged = 1;
-      break;
-    case LAN8742_STATUS_10MBITS_HALFDUPLEX:
-      duplex = ETH_HALFDUPLEX_MODE;
-      speed = ETH_SPEED_10M;
-      linkchanged = 1;
-      break;
-    default:
-      break;
+    	case LAN8742_STATUS_100MBITS_FULLDUPLEX:
+    		duplex = ETH_FULLDUPLEX_MODE;
+    		speed = ETH_SPEED_100M;
+    		linkchanged = 1;
+    		break;
+    	case LAN8742_STATUS_100MBITS_HALFDUPLEX:
+    		duplex = ETH_HALFDUPLEX_MODE;
+    		speed = ETH_SPEED_100M;
+    		linkchanged = 1;
+    		break;
+    	case LAN8742_STATUS_10MBITS_FULLDUPLEX:
+    		duplex = ETH_FULLDUPLEX_MODE;
+    		speed = ETH_SPEED_10M;
+    		linkchanged = 1;
+    		break;
+    	case LAN8742_STATUS_10MBITS_HALFDUPLEX:
+    		duplex = ETH_HALFDUPLEX_MODE;
+    		speed = ETH_SPEED_10M;
+    		linkchanged = 1;
+    		break;
+    	default:
+    		break;
     }
 
     if(linkchanged)
@@ -937,6 +945,11 @@ void HAL_ETH_TxFreeCallback(uint32_t * buff)
 }
 
 /* USER CODE BEGIN 8 */
+uint8_t MAC_Read(uint32_t Flash_Address)
+{
+	uint8_t *FlashData = (uint8_t *)Flash_Address;
+	return(*FlashData);
+}
 
 /* USER CODE END 8 */
 

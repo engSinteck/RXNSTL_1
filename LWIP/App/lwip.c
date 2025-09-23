@@ -29,7 +29,7 @@
 #include <string.h>
 
 /* USER CODE BEGIN 0 */
-
+#include "lwip/dns.h"
 /* USER CODE END 0 */
 /* Private function prototypes -----------------------------------------------*/
 static void ethernet_link_status_updated(struct netif *netif);
@@ -49,11 +49,14 @@ uint8_t IP_ADDRESS[4];
 uint8_t NETMASK_ADDRESS[4];
 uint8_t GATEWAY_ADDRESS[4];
 /* USER CODE BEGIN OS_THREAD_ATTR_CMSIS_RTOS_V2 */
-#define INTERFACE_THREAD_STACK_SIZE ( 1024 )
+#define INTERFACE_THREAD_STACK_SIZE ( 2048 )
 osThreadAttr_t attributes;
 /* USER CODE END OS_THREAD_ATTR_CMSIS_RTOS_V2 */
 
 /* USER CODE BEGIN 2 */
+extern Cfg_var cfg;
+ip4_addr_t dnsaddr;
+uint8_t DNS_ADDRESS[4];
 
 /* USER CODE END 2 */
 
@@ -62,19 +65,23 @@ osThreadAttr_t attributes;
   */
 void MX_LWIP_Init(void)
 {
-  /* IP addresses initialization */
-  IP_ADDRESS[0] = 10;
-  IP_ADDRESS[1] = 55;
-  IP_ADDRESS[2] = 1;
-  IP_ADDRESS[3] = 11;
-  NETMASK_ADDRESS[0] = 255;
-  NETMASK_ADDRESS[1] = 255;
-  NETMASK_ADDRESS[2] = 255;
-  NETMASK_ADDRESS[3] = 0;
-  GATEWAY_ADDRESS[0] = 10;
-  GATEWAY_ADDRESS[1] = 55;
-  GATEWAY_ADDRESS[2] = 1;
-  GATEWAY_ADDRESS[3] = 1;
+	/* IP addresses initialization */
+	IP_ADDRESS[0]      = cfg.IP_ADDR[0];
+	IP_ADDRESS[1]      = cfg.IP_ADDR[1];
+	IP_ADDRESS[2]      = cfg.IP_ADDR[2];
+	IP_ADDRESS[3]      = cfg.IP_ADDR[3];
+	NETMASK_ADDRESS[0] = cfg.MASK_ADDR[0];
+	NETMASK_ADDRESS[1] = cfg.MASK_ADDR[1];
+	NETMASK_ADDRESS[2] = cfg.MASK_ADDR[2];
+	NETMASK_ADDRESS[3] = cfg.MASK_ADDR[3];
+	GATEWAY_ADDRESS[0] = cfg.GW_ADDR[0];
+	GATEWAY_ADDRESS[1] = cfg.GW_ADDR[1];
+	GATEWAY_ADDRESS[2] = cfg.GW_ADDR[2];
+	GATEWAY_ADDRESS[3] = cfg.GW_ADDR[3];
+	DNS_ADDRESS[0]     = cfg.DNS_ADDR[0];
+	DNS_ADDRESS[1]     = cfg.DNS_ADDR[1];
+	DNS_ADDRESS[2]     = cfg.DNS_ADDR[2];
+	DNS_ADDRESS[3]     = cfg.DNS_ADDR[3];
 
 /* USER CODE BEGIN IP_ADDRESSES */
 /* USER CODE END IP_ADDRESSES */
@@ -86,6 +93,12 @@ void MX_LWIP_Init(void)
   IP4_ADDR(&ipaddr, IP_ADDRESS[0], IP_ADDRESS[1], IP_ADDRESS[2], IP_ADDRESS[3]);
   IP4_ADDR(&netmask, NETMASK_ADDRESS[0], NETMASK_ADDRESS[1] , NETMASK_ADDRESS[2], NETMASK_ADDRESS[3]);
   IP4_ADDR(&gw, GATEWAY_ADDRESS[0], GATEWAY_ADDRESS[1], GATEWAY_ADDRESS[2], GATEWAY_ADDRESS[3]);
+  IP4_ADDR(&dnsaddr, DNS_ADDRESS[0], DNS_ADDRESS[1], DNS_ADDRESS[2], DNS_ADDRESS[3]);
+  dns_setserver(0, &dnsaddr);
+  //
+  ip4_addr_t secondaryDnsServer;
+  IP4_ADDR(&secondaryDnsServer,8,8,8,8);
+  dns_setserver(1, &secondaryDnsServer);
 
   /* add the network interface (IPv4/IPv6) with RTOS */
   netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &tcpip_input);

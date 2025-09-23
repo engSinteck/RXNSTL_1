@@ -520,8 +520,8 @@ void StartTaskGUI(void *argument)
 	// Init Flash QSPI
   qspi_ret = BSP_QSPI_Init();
   // Mount Flash FATFS
-  MX_FATFS_Init();
-  Mount_FATFS();
+  //MX_FATFS_Init();
+  //Mount_FATFS();
 
   lv_disp_buf_init(&disp_buf, buf_tft, NULL, LV_HOR_RES_MAX * 10);    // Initialize the display buffer
   lv_init(0);
