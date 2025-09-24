@@ -567,10 +567,10 @@ void StartTaskGUI(void *argument)
 static void ntp_set_packet(ntp_packet_t *packet) {
     memset(packet, 0, sizeof(ntp_packet_t));
 
-    // LI = 0 (sem aviso), VN = 4 (vers�o 4), Mode = 3 (cliente)
+    // LI = 0 (sem aviso), VN = 4 (vers?o 4), Mode = 3 (cliente)
     packet->li_vn_mode = (0 << 6) | (4 << 3) | (3 << 0);
 
-    // Timestamp de transmiss�o (tempo atual aproximado)
+    // Timestamp de transmiss?o (tempo atual aproximado)
     uint32_t current_time = (uint32_t)time(NULL) + NTP_OFFSET;
     packet->trans_ts_sec = __REV(current_time);
 }
@@ -580,7 +580,7 @@ static time_t ntp_get_time(void) {
     err_t err;
     time_t ntp_time = 0;
 
-    // Criar conex�o UDP
+    // Criar conex?o UDP
     conn = netconn_new(NETCONN_UDP);
     if (conn == NULL) {
         return 0;
@@ -589,7 +589,7 @@ static time_t ntp_get_time(void) {
     // Configurar timeout
     netconn_set_recvtimeout(conn, NTP_TIMEOUT);
 
-    // Resolver endere�o do servidor NTP
+    // Resolver endere?o do servidor NTP
     ip_addr_t ntp_addr;
     err = netconn_gethostbyname(NTP_SERVER, &ntp_addr);
     if (err != ERR_OK) {
@@ -598,7 +598,7 @@ static time_t ntp_get_time(void) {
         return 0;
     }
 
-    // Conectar ao servidor NTP (opcional para UDP, mas �til)
+    // Conectar ao servidor NTP (opcional para UDP, mas ?til)
     err = netconn_connect(conn, &ntp_addr, NTP_PORT);
     if (err != ERR_OK) {
         netconn_close(conn);
@@ -610,7 +610,7 @@ static time_t ntp_get_time(void) {
     ntp_packet_t ntp_request;
     ntp_set_packet(&ntp_request);
 
-    // Enviar requisi��o CORRETAMENTE
+    // Enviar requisi??o CORRETAMENTE
     struct netbuf *buf_send = netbuf_new();
     if (buf_send) {
         void *payload = netbuf_alloc(buf_send, sizeof(ntp_packet_t));
@@ -648,7 +648,7 @@ static time_t ntp_get_time(void) {
     } else {
     }
 
-    // Fechar e deletar conex�o
+    // Fechar e deletar conex?o
     netconn_close(conn);
     netconn_delete(conn);
 
@@ -665,8 +665,8 @@ void StartTaskNTP(void *argument)
 		time_t current_time = ntp_get_time();
 
 		if (current_time > 0) {
-			// Atualizar o rel�gio do sistema
-			// (implemente sua fun��o de set_time aqui)
+			// Atualizar o rel?gio do sistema
+			// (implemente sua fun??o de set_time aqui)
 			info = localtime(&current_time);
 			sprintf(str_ntp, "NTP: W: %d - D: %02d/%02d/%04d  T: %02d:%02d:%02d\n",
 					info->tm_wday, info->tm_mday, info->tm_mon + 1, info->tm_year + 1900,
@@ -696,7 +696,7 @@ void StartTaskNTP(void *argument)
 			// Sincronizar a cada hora
 			vTaskDelay(pdMS_TO_TICKS(3600000));
 		} else {
-			// Tentar novamente ap�s delay em caso de falha
+			// Tentar novamente ap?s delay em caso de falha
 			vTaskDelay(pdMS_TO_TICKS(NTP_RETRY_DELAY));
 		}
 	}

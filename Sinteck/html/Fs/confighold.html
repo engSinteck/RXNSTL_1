@@ -24,6 +24,7 @@
 		
         <li><a class="group">SETUP</a></li>        
         <li><a id="confaudio" href="audio.html">Audio</a></li>
+		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
         <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
@@ -33,6 +34,7 @@
         <li><a id="profile" href="profile.html">Station Profile</a></li>
         <li><a class="group">TOOLS</a></li>
         <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+		<li><a id="MP3" href="mp3.html">MP3</a></li>
         <li><a id="FAIL" href="Fail.html">Fail List</a></li>
       </ul>                
     </div>
@@ -58,10 +60,28 @@
                 if (this.readyState == 4 && this.status == 200) {
                     document.getElementById("cfg").innerHTML = this.responseText.substring(this.responseText.indexOf("HOLD:")+5,this.responseText.indexOf("VSWR:")-1);
                     document.getElementById("vswr").innerHTML =  this.responseText.substring(this.responseText.indexOf("VSWR:")+5,this.responseText.indexOf("CLOCK:")-1);
-                    //document.getElementById("clock").innerHTML =  this.responseText.substring(this.responseText.indexOf("CLOCK:")+6,this.responseText.indexOf("REF:")-1);
                     document.getElementById("reflected").innerHTML = this.responseText.substring(this.responseText.indexOf("REF:")+4,this.responseText.indexOf("VALUE:")-1);
                     document.getElementById("value").innerHTML = this.responseText.substring(this.responseText.indexOf("VALUE:")+6,this.responseText.indexOf("FWDNULL1:")-1);
-                    document.getElementById("teste2").innerHTML = this.responseText.substring(this.responseText.indexOf("FWDNULL1:")+9,this.responseText.indexOf("FIM:")-1);
+                    document.getElementById("teste2").innerHTML = this.responseText.substring(this.responseText.indexOf("FWDNULL1:")+9,this.responseText.indexOf("REM1:")-1);
+					//
+					// Remote 1
+                    if( this.responseText.substring(this.responseText.indexOf("REM1:")+5,this.responseText.indexOf("REM2:")-1) == '0' ) {
+						document.getElementById("REMOTE11").checked = true;
+                        document.getElementById("REMOTE12").checked = false;
+                    }
+                    else {
+						document.getElementById("REMOTE11").checked = false;
+                        document.getElementById("REMOTE12").checked = true;
+                    }
+					// Remote 2
+                    if( this.responseText.substring(this.responseText.indexOf("REM2:")+5,this.responseText.indexOf("FIM:")-1) == '0' ) {
+						document.getElementById("REMOTE21").checked = true;
+                        document.getElementById("REMOTE22").checked = false;
+                    }
+                    else {
+						document.getElementById("REMOTE21").checked = false;
+                        document.getElementById("REMOTE22").checked = true;
+                    }
                     
                     if(document.getElementById("cfg").innerHTML == '1') {
                         document.getElementById("cfg1").checked = true;
@@ -109,8 +129,24 @@
             else {
                 id2 = "0";
             }
+			// Remote 1
+			var rem1 = "0";
+            if(document.getElementById("REMOTE11").checked) {
+				rem1 = "0";
+            }
+            else if(document.getElementById("REMOTE12").checked) {
+				rem1 = "1";
+            }
+			// Remote 2
+			var rem2 = "0";
+            if(document.getElementById("REMOTE21").checked) {
+				rem2 = "0";
+            }
+            else if(document.getElementById("REMOTE22").checked) {
+				rem2 = "1";
+            }
             
-            var resp = resp1.concat("", id1, ";", id2, ";", id2, ";", "VSWR:", document.getElementById("cfg4").value, ";NFWD:", document.getElementById("cfg5").value, ";FIM:");
+            var resp = resp1.concat("", id1, ";", id2, ";", id2, ";", "VSWR:", document.getElementById("cfg4").value, ";NFWD:", document.getElementById("cfg5").value, ";REM1:", rem1, ";REM2:", rem2, ";FIM:");
             //alert(resp)
             if (confirm("Confirm !")) {
                 xhttp.open("GET", resp, true);
@@ -197,7 +233,6 @@
         }
         
     </script>
-
           <fieldset>
             <label for="cfg1">Config In Hold:</label>    
             <input type="checkbox" id="cfg1" name="cfg1">
@@ -218,9 +253,6 @@
             <input type="number" id="cfg5" name="cfg5" min="0" max="100" step="1" /><label>  W</label>
         </fieldset>
         <br>
-        
-        <button type="button" class="myButton" onclick="sendData()">Submit</button>
-        <br><br>
         <h5 hidden>Config In Hold: <span id="cfg">0</span></h5>
         <h5 hidden>VSWR Null: <span id="vswr">0</span> Reflected: <span id="reflected">0</span></h5>
         <h5 hidden>Max: <span id="max">0</span></h5>
@@ -228,13 +260,37 @@
         <h5 hidden>Teste: <span id="teste1"></span></h5>
         <h5 hidden>FWD NULL: <span id="teste2"></span></h5>
         <h5 hidden>Lock: <span id="lock">0</span></h5>
-        <br><br>
-        <p style="background-color:LightGray;"></p>
-        <br><br>
+		<fieldset>
+        <div>
+            <h4><label>REMOTE 1:<br></label></h4>
+            <input type="radio" id="REMOTE11"
+            name="remote1" value="off">
+            <label for="REMOTE11">OFF</label>
+
+            <input type="radio" id="REMOTE12"
+            name="remote1" value="on">
+            <label for="REMOTE12">ON</label>
+		</div>
+		
+		 <div>
+            <h4><label>REMOTE 2:<br></label></h4>
+            <input type="radio" id="REMOTE21"
+            name="remote2" value="off">
+            <label for="REMOTE21">OFF</label>
+
+            <input type="radio" id="REMOTE22"
+            name="remote2" value="on">
+            <label for="REMOTE22">ON</label>
+		</div>
+		<fieldset>
+		 <br><br>
+		 <button type="button" class="myButton" onclick="sendData()">Submit</button>
+		 <br><br>
+		 <p style="background-color:LightGray;"></p>
+		 <br><br>
             <button type="button" class="myButton" onclick="sendRestoreFactory()">Restore Factory Settings </button> &nbsp &nbsp &nbsp &nbsp
             <button type="button" class="myButton" onclick="sendReboot()">Reboot</button> 
-            <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><h1></h1>
-            <br><br><br><br><br><br><br><br><br>
+            <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><h1></h1>
     </div>
 		
     <div id="footer">

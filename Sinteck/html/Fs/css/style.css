@@ -106,7 +106,7 @@ li a.current {
 #nav {
     line-height:14px;
     background-color:#3f3f3f;
-    height:452px;
+    height:512px;
     width:180px;
     float:left;
     padding:5px;	 
@@ -122,7 +122,7 @@ li a.current {
 
 #sectionaudio {
     width:800px;
-    line-height:9px;
+    line-height:14px;
     float:left;
     padding:4px;	 	 
 }

@@ -248,18 +248,18 @@ void Carrega_Prog_Default(void)
 
 	// RF
 	cfg.modo = 0;
+	cfg.BW = 0;
+	cfg.Atten = 4.0f;
 	RF_Disable();
 
 	// Audio
 	cfg.Processor = 1;
     cfg.Emphase = 0;
-    cfg.MonoStereo = 1;
     cfg.AES192 = 0;
     cfg.AudioSource = 1;
 	cfg.Vol_MPX1 = 48;
 	cfg.Vol_MPX2 = 48;
 	// Switch Ausencia Audio
-	cfg.switch_mod = 0;
 	cfg.timer_audio_on = 1000 * 60 * 3;
 	cfg.timer_audio_off = 1000 * 60 * 5;
 	cfg.level_audio_on = 0;
@@ -286,26 +286,21 @@ void Carrega_Prog_Default(void)
 
 	// VSWR NULL
 	cfg.ConfigHold = 0;
-	cfg.VSWR_Null = 0;
-	cfg.VSWR_Null_Value = 0.0f;
-	cfg.FWD_Null_Value = 0.0f;
 
 	// RDS
-	cfg.RDSRemote = 0;
-	cfg.RDSUDPPort = 8888;
 	//
 	rds.enable = 0;			// Enable / Disable RDS
 	rds.enable_station = 0;
 	rds.enable_text = 0;
-	rds.ms = 1;				// Music / Speech
+	rds.ms = 0;				// Music / Speech
 	rds.pty = 0;			// Program Type Number
 	rds.tp = 0;				// Traffic Program
 	rds.type = 0;			// Tipo RDS(EU) or RBDS
 	rds.ct = 0;				// Enable / Disable DateTime
 
 	// Station Name 8 Pos
-	rds.ps[0] = 'S'; rds.ps[1] = 'I'; rds.ps[2] = 'N'; rds.ps[3] = 'T';
-	rds.ps[4] = 'E'; rds.ps[5] = 'C'; rds.ps[6] = 'K'; rds.ps[7] = ' ';
+	rds.ps[0] = 0; rds.ps[1] = 0; rds.ps[2] = 0; rds.ps[3] = 0;
+	rds.ps[4] = 0; rds.ps[5] = 0; rds.ps[6] = 0; rds.ps[7] = 0;
 	rds.ps[8] = 0;   rds.ps[9] = 0;
 
 	// Trafic PS
@@ -319,7 +314,7 @@ void Carrega_Prog_Default(void)
 	rds.ptyn[8] = 0;   rds.ptyn[9] = 0;
 
 	// Program Identification
-	rds.pi[0] = 'F'; rds.pi[1] = 'F'; rds.pi[2] = 'F'; rds.pi[3] = 'F';
+	rds.pi[0] = 0; rds.pi[1] = 0; rds.pi[2] = 0; rds.pi[3] = 0;
 
 	// Alternative frequency
 	rds.af[0] = 0; rds.af[1] = 0; rds.af[2] = 0; rds.af[3] = 0; rds.af[4] = 0; rds.af[5] = 0;
@@ -327,11 +322,6 @@ void Carrega_Prog_Default(void)
 	// Text
 	memset(rds.dps1, 0, 72);		// Dynamic Text 72 Caracteres
 	memset(rds.rt1, 0, 72);			// Text 1  72 Caracteres
-
-	rds.rt1[0] = 'R';  rds.rt1[1] = 'X';  rds.rt1[2] = ' ';  rds.rt1[3] = 'N';
-	rds.rt1[4] = 'S';  rds.rt1[5] = 'T';  rds.rt1[6] = 'L';  rds.rt1[7] = ' ';
-	rds.rt1[8] = '9';  rds.rt1[9] = '0';  rds.rt1[10]= '0';  rds.rt1[11] = 'M';
-	rds.rt1[12] = 'H'; rds.rt1[13] = 'z'; rds.rt1[14] = 0;
 
 	// Advanced Settings
 	// Limites
@@ -346,7 +336,7 @@ void Carrega_Prog_Default(void)
 	adv.GainTemp = 1.00f;
 
 	// Atenuação
-	cfg.Attenuation = 0.0f;
+	cfg.Atten = 0.0f;
 
 	// Grava em EEPROM
 	EEPROM_Write(ADDR_ID,       (uint8_t*)&cfg.EepromID,           2);
@@ -358,12 +348,10 @@ void Carrega_Prog_Default(void)
 	// AUDIO
 	EEPROM_Write(ADDR_PROCESSOR, (uint8_t*)&cfg.Processor,         1);
 	EEPROM_Write(ADDR_EMPHASE,   (uint8_t*)&cfg.Emphase,           1);
-	EEPROM_Write(ADDR_STEREO,    (uint8_t*)&cfg.MonoStereo,        1);
 	EEPROM_Write(ADDR_AES192,    (uint8_t*)&cfg.AES192,            1);
 	EEPROM_Write(ADDR_AUDIO,     (uint8_t*)&cfg.AudioSource,       1);
 	EEPROM_Write(ADDR_VOLMPX1,   (uint8_t*)&cfg.Vol_MPX1,          1);
 	EEPROM_Write(ADDR_VOLMPX2,   (uint8_t*)&cfg.Vol_MPX2,          1);
-	EEPROM_Write(ADDR_SWITCHMOD, (uint8_t*)&cfg.switch_mod,        1);
 	EEPROM_Write(ADDR_TIMERON,   (uint8_t*)&cfg.timer_audio_on,    4);
 	EEPROM_Write(ADDR_TIMEROFF,  (uint8_t*)&cfg.timer_audio_off,   4);
 	EEPROM_Write(ADDR_LEVELON,   (uint8_t*)&cfg.level_audio_on,    1);
@@ -385,13 +373,7 @@ void Carrega_Prog_Default(void)
 	EEPROM_Write(ADDR_PASSUSER,   (uint8_t*)&cfg.PassUser,         4);
 	// VSWR NULL
 	EEPROM_Write(ADDR_CONFIGHOLD, (uint8_t*)&cfg.ConfigHold,       1);
-	EEPROM_Write(ADDR_VSWRNULL,   (uint8_t*)&cfg.VSWR_Null,        1);
-	EEPROM_Write(ADDR_VSWRVALUE,  (uint8_t*)&cfg.VSWR_Null_Value,  4);
-	EEPROM_Write(ADDR_FWDNULL,    (uint8_t*)&cfg.FWD_Null_Value,   4);
 	// RDS
-	EEPROM_Write(ADDR_RDS_REMOTE,  (uint8_t*)&cfg.RDSRemote,       1);
-	EEPROM_Write(ADDR_RDS_PORTRDS, (uint8_t*)&cfg.RDSUDPPort,      2);
-	//
 	EEPROM_Write(ADDR_RDS_ENABLE, (uint8_t*)&rds.enable,           1);
 	EEPROM_Write(ADDR_RDS_EN_STATION, (uint8_t*)&rds.enable_station,   1);
 	EEPROM_Write(ADDR_RDS_EN_TEXT,    (uint8_t*)&rds.enable_text,      1);
@@ -444,12 +426,10 @@ void ReadConfig(void)
 	// AUDIO
 	EEPROM_Read(ADDR_PROCESSOR, (uint8_t*)&cfg.Processor,         1);
 	EEPROM_Read(ADDR_EMPHASE,   (uint8_t*)&cfg.Emphase,           1);
-	EEPROM_Read(ADDR_STEREO,    (uint8_t*)&cfg.MonoStereo,        1);
 	EEPROM_Read(ADDR_AES192,    (uint8_t*)&cfg.AES192,            1);
 	EEPROM_Read(ADDR_AUDIO,     (uint8_t*)&cfg.AudioSource,       1);
 	EEPROM_Read(ADDR_VOLMPX1,   (uint8_t*)&cfg.Vol_MPX1,          1);
 	EEPROM_Read(ADDR_VOLMPX2,   (uint8_t*)&cfg.Vol_MPX2,          1);
-	EEPROM_Read(ADDR_SWITCHMOD, (uint8_t*)&cfg.switch_mod,        1);
 	EEPROM_Read(ADDR_TIMERON,   (uint8_t*)&cfg.timer_audio_on,    4);
 	EEPROM_Read(ADDR_TIMEROFF,  (uint8_t*)&cfg.timer_audio_off,   4);
 	EEPROM_Read(ADDR_LEVELON,   (uint8_t*)&cfg.level_audio_on,    1);
@@ -471,13 +451,7 @@ void ReadConfig(void)
 	EEPROM_Read(ADDR_PASSUSER,   (uint8_t*)&cfg.PassUser,         4);
 	// VSWR NULL
 	EEPROM_Read(ADDR_CONFIGHOLD, (uint8_t*)&cfg.ConfigHold,       1);
-	EEPROM_Read(ADDR_VSWRNULL,   (uint8_t*)&cfg.VSWR_Null,        1);
-	EEPROM_Read(ADDR_VSWRVALUE,  (uint8_t*)&cfg.VSWR_Null_Value,  4);
-	EEPROM_Read(ADDR_FWDNULL,    (uint8_t*)&cfg.FWD_Null_Value,   4);
 	// RDS
-	EEPROM_Read(ADDR_RDS_REMOTE,  (uint8_t*)&cfg.RDSRemote,       1);
-	EEPROM_Read(ADDR_RDS_PORTRDS, (uint8_t*)&cfg.RDSUDPPort,      2);
-	//
 	EEPROM_Read(ADDR_RDS_ENABLE, (uint8_t*)&rds.enable,           1);
 	EEPROM_Read(ADDR_RDS_EN_STATION, (uint8_t*)&rds.enable_station,   1);
 	EEPROM_Read(ADDR_RDS_EN_TEXT,    (uint8_t*)&rds.enable_text,      1);
@@ -553,13 +527,6 @@ void ReadConfig(void)
 void UpdateValores(void)
 {
 	// Update Valores
-	// Stereo
-	if(cfg.MonoStereo) {
-		HAL_GPIO_WritePin(ST_MO_GPIO_Port, ST_MO_Pin, GPIO_PIN_SET);
-	}
-	else {
-		HAL_GPIO_WritePin(ST_MO_GPIO_Port, ST_MO_Pin, GPIO_PIN_RESET);
-	}
 	// Processor
 	if(cfg.Processor) {
 		HAL_GPIO_WritePin(DSP__MONO_GPIO_Port, DSP__MONO_Pin, GPIO_PIN_SET);
@@ -584,7 +551,7 @@ void UpdateValores(void)
 	}
 
 	// Atauliza Chip
-	PE43711(cfg.Attenuation);
+	PE43711(cfg.Atten);
 	Write_AD5242(AD524X_RDAC0, cfg.Vol_MPX1, 0, 0);
 	Write_AD5242(AD524X_RDAC1, cfg.Vol_MPX2, 0, 0);
 }
@@ -656,7 +623,6 @@ void Telemetry_save(void)
 		case 2:
 			EEPROM_Write(ADDR_PROCESSOR, (uint8_t*)&cfg.Processor,         1);
 			EEPROM_Write(ADDR_EMPHASE,   (uint8_t*)&cfg.Emphase,           1);
-			EEPROM_Write(ADDR_STEREO,    (uint8_t*)&cfg.MonoStereo,        1);
 			EEPROM_Write(ADDR_AES192,    (uint8_t*)&cfg.AES192,            1);
 			EEPROM_Write(ADDR_AUDIO,     (uint8_t*)&cfg.AudioSource,       1);
         	flag_telemetry = 0;
@@ -672,9 +638,6 @@ void Telemetry_save(void)
 			break;
 		case 5:
 			// RDS EEPROM
-			EEPROM_Write(ADDR_RDS_REMOTE,  (uint8_t*)&cfg.RDSRemote,       1);
-			EEPROM_Write(ADDR_RDS_PORTRDS, (uint8_t*)&cfg.RDSUDPPort,      2);
-			//
 			EEPROM_Write(ADDR_RDS_ENABLE, (uint8_t*)&rds.enable,           1);
 			EEPROM_Write(ADDR_RDS_EN_STATION, (uint8_t*)&rds.enable_station,   1);
 			EEPROM_Write(ADDR_RDS_EN_TEXT,    (uint8_t*)&rds.enable_text,      1);
@@ -713,9 +676,6 @@ void Telemetry_save(void)
 		case 10:
 			// VSWR NULL
 			EEPROM_Write(ADDR_CONFIGHOLD, (uint8_t*)&cfg.ConfigHold,       1);
-			EEPROM_Write(ADDR_VSWRNULL,   (uint8_t*)&cfg.VSWR_Null,        1);
-			EEPROM_Write(ADDR_VSWRVALUE,  (uint8_t*)&cfg.VSWR_Null_Value,  4);
-			EEPROM_Write(ADDR_FWDNULL,    (uint8_t*)&cfg.FWD_Null_Value,   4);
 			flag_telemetry = 0;
 			break;
 		case 11:
@@ -809,7 +769,6 @@ void Telemetry_save(void)
 			flag_telemetry = 0;
 			break;
 		case 33:
-			EEPROM_Write(ADDR_SWITCHMOD, (uint8_t*)&cfg.switch_mod,        1);
 			EEPROM_Write(ADDR_TIMERON,   (uint8_t*)&cfg.timer_audio_on,    4);
 			EEPROM_Write(ADDR_TIMEROFF,  (uint8_t*)&cfg.timer_audio_off,   4);
 			EEPROM_Write(ADDR_LEVELON,   (uint8_t*)&cfg.level_audio_on,    1);

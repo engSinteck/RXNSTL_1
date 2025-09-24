@@ -24,6 +24,7 @@
 		
         <li><a class="group">SETUP</a></li>        
         <li><a id="confaudio" href="audio.html">Audio</a></li>
+		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
         <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
@@ -33,6 +34,7 @@
         <li><a id="profile" href="profile.html">Station Profile</a></li>
         <li><a class="group">TOOLS</a></li>
         <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+		<li><a id="MP3" href="mp3.html">MP3</a></li>
         <li><a id="FAIL" href="Fail.html">Fail List</a></li>
       </ul>                
     </div>
@@ -40,33 +42,7 @@
     <div id="sectionaudio">
         <fieldset>
         <div>
-            <label><h4>SOURCE:<br></label></h4>
-            <input type="radio" id="MPX1"
-            name="source" value="mpx1">
-            <label for="MPX1">MPX 1</label>
-
-            <input type="radio" id="MPX2"
-            name="source" value="mpx2">
-            <label for="MPX2">MPX 2</label>
-
-            <input type="radio" id="MPX3"
-            name="source" value="mpx3">
-            <label for="MPX3">MPX 3</label>
-        </div>
-        
-        <div>
-            <br><h4><label>AUDIO MODE:<br></label></h4>
-            <input type="radio" id="MODE1"
-            name="mode" value="mono">
-            <label for="MODE1">Mono</label>
-
-            <input type="radio" id="MODE2"
-            name="mode" value="stereo">
-            <label for="MODE2">Stereo</label>
-		</div>
-        
-        <div>
-            <br><h4><label>PRE-EMPHASIS:<br></label></h4>
+            <h4><label>PRE-EMPHASIS:<br></label></h4>
             <input type="radio" id="EMPHASE1"
             name="emphase" value="50us">
             <label for="EMPHASE1">50uS</label>
@@ -77,7 +53,7 @@
 		</div>
         
         <div>
-            <br><h4><label>PROCESSOR:<br></label></h4>
+            <h4><label>PROCESSOR:<br></label></h4>
             <input type="radio" id="PROCESSOR1"
             name="processor" value="on">
             <label for="PROCESSOR1">OFF</label>
@@ -86,19 +62,9 @@
             name="processor" value="off">
             <label for="PROCESSOR2">ON</label>
 		</div>
-        
-        <div>
-            <br><h4><label>TOSLINK:<br></label></h4>
-            <input type="radio" id="TOSLINK1"
-            name="toslink" value="on">
-            <label for="TOSLINK1">OFF</label>
 
-            <input type="radio" id="TOSLINK2"
-            name="toslink" value="off">
-            <label for="TOSLINK2">ON</label>
-		</div>
         <div>
-            <br><h4><label>AES192:<br></label></h4>
+            <h4><label>AES192:<br></label></h4>
             <input type="radio" id="AES1921"
             name="aes192" value="on">
             <label for="AES1921">OFF</label>
@@ -107,34 +73,52 @@
             name="aes192" value="off">
             <label for="AES1922">ON</label>
 		</div>
+		<h3></h3>
+		<p style="background-color:LightGray;"></p>
 		<div>
-            <br><h4><label>IMPEDANCE:<br></label></h4>
-            <input type="radio" id="IMPEDANCE1"
-            name="impedance" value="on">
-            <label for="IMPEDANCE1">OFF</label>
+            <h4><label>DSP:<br></label></h4>
+            <input type="radio" id="DSP31"
+            name="dsp" value="on">
+            <label for="DSP31">USB</label>
 
-            <input type="radio" id="IMPEDANCE2"
-            name="impedance" value="off">
-            <label for="IMPEDANCE2">ON</label>
+            <input type="radio" id="DSP32"
+            name="dsp" value="off">
+            <label for="DSP32">FM</label>
 		</div>
-		
-        </fieldset>
-        <h3></h3>
+		<div>
+            <h4><label>DSP BIT 1:<br></label></h4>
+            <input type="radio" id="DSP11"
+            name="dsp1" value="on">
+            <label for="DSP11">OFF</label>
+
+            <input type="radio" id="DSP12"
+            name="dsp1" value="off">
+            <label for="DSP12">ON</label>
+		</div>
+		<div>
+            <h4><label>DSP BIT 2:<br></label></h4>
+            <input type="radio" id="DSP21"
+            name="dsp2" value="on">
+            <label for="DSP21">OFF</label>
+
+            <input type="radio" id="DSP22"
+            name="dsp2" value="off">
+            <label for="DSP22">ON</label>
+		</div>
+		<h4><label>PWM DSP:&nbsp&nbsp <input type="number" id="dsp_value" name="dsp_value" min="0" max="4095"</input></h4>
+		</fieldset>
+		<h3></h3>
         <button type="button" class="myButton" onclick="sendData()">Submit</button>
         <h3></h3>
         <p style="background-color:LightGray;"></p>
         <h3>Level Adjust: </h3>
         <h4><label>MPX 1:&nbsp&nbsp&nbsp<input type="number" id="volmpx1" name="volmpx1" min="0" max="60"</input>
 		<label>&nbsp&nbsp&nbsp MPX 2:&nbsp&nbsp<input type="number" id="volmpx2" name="volmpx2" min="0" max="60"</input></h4>
-        <h4><label>MPX 3:&nbsp&nbsp&nbsp<input type="number" id="volmpx3" name="volmpx3" min="0" max="60"</input>
-		<label>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp SCA:&nbsp <input type="number" id="volsca" name="volsca" min="0" max="60"</input></h4>
-        <h4><label>LEFT:&nbsp&nbsp&nbsp&nbsp <input type="number" id="volleft" name="volleft" min="0" max="60"</input>
-		<label>&nbsp&nbsp&nbsp RIGHT:&nbsp <input type="number" id="volright" name="volright" min="0" max="60"</input></h4>
-		<h3></h3>
+     	<h3></h3>
         <button type="button" class="myButton" onclick="sendDataVol()">Submit</button>
         <h3></h3>
         <p style="background-color:LightGray;"></p>
-        <h3>MPX Alarm: </h3>
+		<h3>MPX Alarm: </h3>
         <h4><label>Level ON:&nbsp&nbsp <input type="number" id="mpx_value" name="mpx_value" min="0" max="48"</input>
         <label>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp Timer ON:&nbsp&nbsp&nbsp <input type="number" id="mpx_timer" name="mpx_timer" min="1" max="60"</input><label> min.</label></h4>
         <h4><label>Level OFF:&nbsp <input type="number" id="mpx_value_off" name="mpx_value_off" min="0" max="48"</input>
@@ -143,16 +127,14 @@
         <button type="button" class="myButton" onclick="sendAlarmMPX()">Submit</button>
         <h5 hidden>VOLMPX1: <span id="tst1">0</span></h5>
         <h5 hidden>VOLMPX2: <span id="tst2">0</span></h5>
-		<h5 hidden>VOLMPX3: <span id="tst3">0</span></h5>
-		<h5 hidden>VOLSCA : <span id="tst4">0</span></h5>
-		<h5 hidden>VOLLEFT: <span id="tst5">0</span></h5>
-		<h5 hidden>VOLRIGHT:<span id="tst6">0</span></h5>
-        <h5 hidden>MPX VAlue: <span id="tst7">0</span></h5>
+        <h5 hidden>MPX Value: <span id="tst7">0</span></h5>
         <h5 hidden>MPX Timer: <span id="tst8">0</span></h5>
 		<h5 hidden>MPX Value OFF: <span id="tst9">0</span></h5>
 		<h5 hidden>MPX Timer OFF: <span id="tst10">0</span></h5>
         <h5 hidden>Teste1: <span id="teste1"></span></h5>
         <h5 hidden>Lock: <span id="lock">0</span></h5>
+		<h5 hidden>DSP PWM: <span id="dsp_tst">0</span></h5>
+		
         <style>
             meter {
                 width: 500px;
@@ -163,13 +145,12 @@
         </style>
         <script>
             function sendData() {
-                var mpx = "1";
-                var mode = "0";
                 var enfase = "0";
                 var processador = "0";
-                var toslink = "0";
 				var aes192 = "0";
-				var impedance = "0";
+				var dspm = "0";
+				var dsp1 = "0";
+				var dsp2 = "0";
                 
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
@@ -178,26 +159,6 @@
                         this.responseText;
                         }
                 };
-                // Source Audio    
-                if(document.getElementById("MPX1").checked) { 
-                    mpx = "1"; 
-                }
-                else if(document.getElementById("MPX2").checked) { 
-                    mpx = "2";
-                }
-                else if(document.getElementById("MPX3").checked) { 
-                    mpx = "3";
-                }
-                else {
-                    mpx = "1";
-                }
-                // Mono-Stereo
-                if(document.getElementById("MODE1").checked) {
-                    stereo = "0";
-                }
-                else if(document.getElementById("MODE2").checked) {
-                    stereo = "1";
-                }
                 // EMPHASE
                 if(document.getElementById("EMPHASE1").checked) {
                     enfase = "1";
@@ -212,13 +173,6 @@
                 else if(document.getElementById("PROCESSOR2").checked) {
                     processador = "1";
                 }
-                // TOSLINK
-                if(document.getElementById("TOSLINK1").checked) {
-                    toslink = "0";
-                }
-                else if(document.getElementById("TOSLINK2").checked) {
-                    toslink = "1";
-                }
 				// AES192
                 if(document.getElementById("AES1921").checked) {
                     aes192 = "0";
@@ -226,16 +180,31 @@
                 else if(document.getElementById("AES1922").checked) {
                     aes192 = "1";
                 }
-				// IMPEDANCE
-                if(document.getElementById("IMPEDANCE1").checked) {
-                    impedance = "0";
+				// DSP M
+                if(document.getElementById("DSP31").checked) {
+                    dspm = "0";
                 }
-                else if(document.getElementById("IMPEDANCE2").checked) {
-                    impedance = "1";
+                else if(document.getElementById("DSP32").checked) {
+                    dspm = "1";
                 }
-                
+				// DSP 1
+                if(document.getElementById("DSP11").checked) {
+                    dsp1 = "0";
+                }
+                else if(document.getElementById("DSP12").checked) {
+                    dsp1 = "1";
+                }
+				// DSP 2
+                if(document.getElementById("DSP21").checked) {
+                    dsp2 = "0";
+                }
+                else if(document.getElementById("DSP22").checked) {
+                    dsp2 = "1";
+                }
+				var dsppwm_value = document.getElementById("dsp_value").value;
+				
                 var resp1 = "setAUDIO=";
-                var resp = resp1.concat("", mpx, stereo, enfase, processador, toslink, aes192, impedance);
+                var resp = resp1.concat("", enfase, processador, aes192, dspm, dsp1, dsp2, "DSPPWM:", dsppwm_value, ";FIM");
                 //alert(resp)
                   if (confirm("Confirm !")) {
                     xhttp.open("GET", resp, true);
@@ -248,30 +217,25 @@
             
             function sendDataVol() {
                 var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function() {
-                    if (this.readyState == 4 && this.status == 200) {
-                        document.getElementById("RFState").innerHTML =
-                        this.responseText;
+					xhttp.onreadystatechange = function() {
+						if (this.readyState == 4 && this.status == 200) {
+							document.getElementById("RFState").innerHTML =
+							this.responseText;
                         }
-                };
-                // Source Audio    
-                var mpxvol1 = document.getElementById("volmpx1").value;
-                var mpxvol2 = document.getElementById("volmpx2").value;
-				var mpxvol3 = document.getElementById("volmpx3").value;
-				var scavol  = document.getElementById("volsca").value;
-				var leftvol  = document.getElementById("volleft").value;
-				var rightvol  = document.getElementById("volright").value;
+					};
+					// Source Audio    
+					var mpxvol1 = document.getElementById("volmpx1").value;
+					var mpxvol2 = document.getElementById("volmpx2").value;
 				
-                var resp1 = "setAUDIOVOL=";
-                var resp = resp1.concat("", "MPX1:", mpxvol1, ";MPX2:", mpxvol2, ";MPX3:", mpxvol3, ";SCA:", scavol, ";LEFT:", leftvol, ";RIGHT:", rightvol, ";FIM");
-                //alert(resp)
-                if (confirm("Confirm !")) {
-                    xhttp.open("GET", resp, true);
-                    xhttp.send();
-                }
-                else {
-                  
-                }
+					var resp1 = "setAUDIOVOL=";
+					var resp = resp1.concat("", "MPX1:", mpxvol1, ";MPX2:", mpxvol2, ";FIM");
+					//alert(resp)
+					if (confirm("Confirm !")) {
+						xhttp.open("GET", resp, true);
+						xhttp.send();
+					}
+					else {
+					}
             }
             
             function sendAlarmMPX() {
@@ -303,31 +267,6 @@
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
-                        // MPX SOURCE
-                        if( this.responseText.substring(this.responseText.indexOf("MPX:")+4,this.responseText.indexOf("STEREO:")-1) == '1' ) {
-                            document.getElementById("MPX1").checked = true;
-                            document.getElementById("MPX2").checked = false;
-                            document.getElementById("MPX3").checked = false;
-                        }
-                        else if( this.responseText.substring(this.responseText.indexOf("MPX:")+4,this.responseText.indexOf("STEREO:")-1) == '2' ) {
-                            document.getElementById("MPX1").checked = false;
-                            document.getElementById("MPX2").checked = true;
-                            document.getElementById("MPX3").checked = false;
-                        }
-                        else if( this.responseText.substring(this.responseText.indexOf("MPX:")+4,this.responseText.indexOf("STEREO:")-1) == '3' ) {
-                            document.getElementById("MPX1").checked = false;
-                            document.getElementById("MPX2").checked = false;
-                            document.getElementById("MPX3").checked = true;
-                        }
-                        // Mono-Stereo
-                        if( this.responseText.substring(this.responseText.indexOf("STEREO:")+7,this.responseText.indexOf("EMP:")-1) == '0' ) {
-                            document.getElementById("MODE1").checked = true;
-                            document.getElementById("MODE2").checked = false;
-                        }
-                        else {
-                            document.getElementById("MODE1").checked = false;
-                            document.getElementById("MODE2").checked = true;
-                        }
                         // Emphase 50-75
                         if( this.responseText.substring(this.responseText.indexOf("EMP:")+4,this.responseText.indexOf("PROC:")-1) == '0' ) {
                             document.getElementById("EMPHASE1").checked = false;
@@ -338,7 +277,7 @@
                             document.getElementById("EMPHASE2").checked = false;
                         }
                         // Processor Yes/NO
-                        if( this.responseText.substring(this.responseText.indexOf("PROC:")+5,this.responseText.indexOf("TOS:")-1) == '0' ) {
+                        if( this.responseText.substring(this.responseText.indexOf("PROC:")+5,this.responseText.indexOf("AES:")-1) == '0' ) {
                             document.getElementById("PROCESSOR1").checked = true;
                             document.getElementById("PROCESSOR2").checked = false;
                         }
@@ -346,33 +285,45 @@
                             document.getElementById("PROCESSOR1").checked = false;
                             document.getElementById("PROCESSOR2").checked = true;
                         }
-                        // TOSLINK
-                        if( this.responseText.substring(this.responseText.indexOf("TOS:")+4,this.responseText.indexOf("AES:")-1) == '0' ) {
-                            document.getElementById("TOSLINK1").checked = true;
-                            document.getElementById("TOSLINK2").checked = false;
-                        }
-                        else {
-                            document.getElementById("TOSLINK1").checked = false;
-                            document.getElementById("TOSLINK2").checked = true;
-                        }
 						// AES192
-                        if( this.responseText.substring(this.responseText.indexOf("AES:")+4,this.responseText.indexOf("IMP:")-1) == '0' ) {
+                        if( this.responseText.substring(this.responseText.indexOf("AES:")+4,this.responseText.indexOf("DSPM:")-1) == '0' ) {
                             document.getElementById("AES1921").checked = true;
                             document.getElementById("AES1922").checked = false;
                         }
                         else {
                             document.getElementById("AES1921").checked = false;
-                            document.getElementById("AES19222").checked = true;
+                            document.getElementById("AES1922").checked = true;
                         }
-						// IMPEDANCE
-                        if( this.responseText.substring(this.responseText.indexOf("IMP:")+4,this.responseText.indexOf("FIM")-1) == '0' ) {
-                            document.getElementById("IMPEDANCE1").checked = true;
-                            document.getElementById("IMPEDANCE2").checked = false;
+						// DSP Source
+						if( this.responseText.substring(this.responseText.indexOf("DSPM:")+5,this.responseText.indexOf("DSP1:")-1) == '0' ) {
+                            document.getElementById("DSP31").checked = true;
+                            document.getElementById("DSP32").checked = false;
                         }
                         else {
-                            document.getElementById("IMPEDANCE1").checked = false;
-                            document.getElementById("IMPEDANCE2").checked = true;
-                        }                        
+                            document.getElementById("DSP31").checked = false;
+                            document.getElementById("DSP32").checked = true;
+                        }
+						// DSP 1
+						if( this.responseText.substring(this.responseText.indexOf("DSP1:")+5,this.responseText.indexOf("DSP2:")-1) == '0' ) {
+                            document.getElementById("DSP11").checked = true;
+                            document.getElementById("DSP12").checked = false;
+                        }
+                        else {
+                            document.getElementById("DSP11").checked = false;
+                            document.getElementById("DSP12").checked = true;
+                        }
+						// DSP 2
+						if( this.responseText.substring(this.responseText.indexOf("DSP2:")+5,this.responseText.indexOf("DSPP:")-1) == '0' ) {
+                            document.getElementById("DSP21").checked = true;
+                            document.getElementById("DSP22").checked = false;
+                        }
+                        else {
+                            document.getElementById("DSP21").checked = false;
+                            document.getElementById("DSP22").checked = true;
+                        }
+						// DSP PWM
+						document.getElementById("dsp_tst").innerHTML = this.responseText.substring(this.responseText.indexOf("DSPP:")+5,this.responseText.indexOf("FIM")-1);
+						dsp_value.value = document.getElementById("dsp_tst").innerHTML;
                         
 						getAudioVol();
                     }
@@ -386,18 +337,10 @@
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
                         document.getElementById("tst1").innerHTML = this.responseText.substring(this.responseText.indexOf("MPX1:")+5,this.responseText.indexOf("MPX2:")-1);
-                        document.getElementById("tst2").innerHTML = this.responseText.substring(this.responseText.indexOf("MPX2:")+5,this.responseText.indexOf("MPX3:")-1);
-						document.getElementById("tst3").innerHTML = this.responseText.substring(this.responseText.indexOf("MPX3:")+5,this.responseText.indexOf("SCA:")-1);
-						document.getElementById("tst4").innerHTML = this.responseText.substring(this.responseText.indexOf("SCA:")+4,this.responseText.indexOf("LEFT:")-1);
-						document.getElementById("tst5").innerHTML = this.responseText.substring(this.responseText.indexOf("LEFT:")+5,this.responseText.indexOf("RIGHT:")-1);
-						document.getElementById("tst6").innerHTML = this.responseText.substring(this.responseText.indexOf("RIGHT:")+6,this.responseText.indexOf("FIM")-1);
+                        document.getElementById("tst2").innerHTML = this.responseText.substring(this.responseText.indexOf("MPX2:")+5,this.responseText.indexOf("FIM")-1);
 						//
                         volmpx1.value = document.getElementById("tst1").innerHTML;
 						volmpx2.value = document.getElementById("tst2").innerHTML;
-						volmpx3.value = document.getElementById("tst3").innerHTML;
-					    volsca.value = document.getElementById("tst4").innerHTML;
-						volleft.value = document.getElementById("tst5").innerHTML;
-						volright.value = document.getElementById("tst6").innerHTML;
                         
                         getAlarmMPX();
                     }
@@ -452,7 +395,6 @@
             getLogin();
         }
         </script>
-        <br><br>
     </div>
 
     <div id="footer">

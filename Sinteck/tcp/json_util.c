@@ -68,7 +68,6 @@ size_t json_config( char* dest)
 
 	// Audio
 	dest = json_objOpen( dest, "Audio" );
-	dest = json_bool( dest, "Stereo",  cfg.MonoStereo);
 	dest = json_int( dest, "Source", cfg.AudioSource );
 	dest = json_bool( dest, "Emphase", cfg.Emphase );
 	dest = json_bool( dest, "Processor", cfg.Processor );
@@ -93,8 +92,6 @@ size_t json_config( char* dest)
 	dest = json_int( dest, "af5", rds.af[4]);
 	dest = json_str( dest, "RadioText", rds.rt1);
 	dest = json_str( dest, "DinamicText", rds.dps1);
-	dest = json_bool( dest, "Remote", cfg.RDSRemote);
-	dest = json_int( dest, "Port", cfg.RDSUDPPort);
 	dest = json_objClose( dest );
 	// Advanced Settings
 	dest = json_objOpen( dest, "AdvancedSettings" );
@@ -147,9 +144,6 @@ size_t json_config( char* dest)
 	//
 	dest = json_int( dest, "Frequency", cfg.Frequencia );
 	dest = json_bool( dest, "ConfigInHold", cfg.ConfigHold );
-	dest = json_bool( dest, "VSWRNULL", cfg.VSWR_Null );
-	dest = json_float( dest, "VSWR_Value", cfg.VSWR_Null_Value );
-	dest = json_float( dest, "FWD_NULL_VALUE", cfg.FWD_Null_Value );
 
 	if( (cfg.License[0] == 0 || cfg.License[0] == 0xFF) ||
 		(cfg.License[1] == 0 || cfg.License[1] == 0xFF) ||

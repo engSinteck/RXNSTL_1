@@ -69,9 +69,21 @@ extern volatile unsigned long MilliTimer;
 uint32_t timer_lvgl = 0;
 uint32_t timer_key = 0;
 GPIO_PinState BatteryInput;
+GPIO_PinState StereoMonoInput;
+GPIO_PinState FMDemInput;
+
 uint32_t deb_battery_l = 0;
 uint32_t deb_battery_h = 0;
 uint8_t Status_Battery = 0;
+
+uint32_t deb_fmdem_l = 0;
+uint32_t deb_fmdem_h = 0;
+uint8_t Status_FMDem = 0;
+
+uint32_t deb_stmo_l = 0;
+uint32_t deb_stmo_h = 0;
+uint8_t Status_Stereo = 0;
+
 reset_cause_t reset_cause;
 
 uint32_t TelaAtiva = 0;
@@ -437,6 +449,42 @@ void Read_Remote(void)
 		if(deb_battery_h >= DEBOUNCE_REMOTE) {
 			deb_battery_h = DEBOUNCE_REMOTE + 1;
 			Status_Battery = 1;
+		}
+	}
+	// FM Demulador
+	FMDemInput = HAL_GPIO_ReadPin(FM_DEM_GPIO_Port, FM_DEM_Pin);
+	if(FMDemInput == GPIO_PIN_RESET) {
+		deb_fmdem_l++;
+		deb_fmdem_h = 0;
+		if(deb_fmdem_l >= DEBOUNCE_REMOTE) {
+			deb_fmdem_l = DEBOUNCE_REMOTE + 1;
+			Status_FMDem = 0;
+		}
+	}
+	else {
+		deb_fmdem_h++;
+		deb_fmdem_l = 0;
+		if(deb_fmdem_h >= DEBOUNCE_REMOTE) {
+			deb_fmdem_h = DEBOUNCE_REMOTE + 1;
+			Status_FMDem = 1;
+		}
+	}
+	// Stereo / Mono
+	StereoMonoInput = HAL_GPIO_ReadPin(ST_MO_GPIO_Port, ST_MO_Pin);
+	if(StereoMonoInput == GPIO_PIN_RESET) {
+		deb_stmo_l++;
+		deb_stmo_h = 0;
+		if(deb_stmo_l >= DEBOUNCE_REMOTE) {
+			deb_stmo_l = DEBOUNCE_REMOTE + 1;
+			Status_Stereo = 0;
+		}
+	}
+	else {
+		deb_stmo_h++;
+		deb_stmo_l = 0;
+		if(deb_stmo_h >= DEBOUNCE_REMOTE) {
+			deb_stmo_h = DEBOUNCE_REMOTE + 1;
+			Status_Stereo = 1;
 		}
 	}
 }

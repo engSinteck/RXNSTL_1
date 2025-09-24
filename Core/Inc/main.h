@@ -196,16 +196,16 @@ typedef struct {
 
 typedef struct {
 	// RF
+	uint8_t		BW;
 	uint8_t		modo;
+	float		Atten;
 	// Audio
-	uint8_t		MonoStereo;
 	uint8_t		Processor;
 	uint8_t		Emphase;
 	uint8_t		AES192;
 	uint8_t		AudioSource;
 	uint8_t		Vol_MPX1;
 	uint8_t		Vol_MPX2;
-	uint8_t		switch_mod;
 	uint32_t	timer_audio_on;
 	uint32_t	timer_audio_off;
 	uint8_t		level_audio_on;
@@ -218,9 +218,6 @@ typedef struct {
 	uint8_t		MASK_ADDR[4];
 	uint8_t		GW_ADDR[4];
 	uint8_t		DNS_ADDR[4];
-	// RDS Remote
-	uint8_t		RDSRemote;
-	uint16_t	RDSUDPPort;
 	// Timezone
 	uint8_t		NTP;
 	uint8_t		Timezone;
@@ -229,12 +226,6 @@ typedef struct {
 	uint8_t		PassUser[4];
 	// VSWR NULL
 	uint8_t		ConfigHold;
-	uint8_t		VSWR_Null;
-	uint8_t 	Config_in_hold;
-	float		VSWR_Null_Value;
-	float		FWD_Null_Value;
-	// Atenuacao
-	float		Attenuation;
 	// Serial Number
 	char		SerialNumber[10];
 	char		License[16];
@@ -309,8 +300,15 @@ typedef struct {
 	float SWR;
 	float Load_MisMatch;
 	float Return_Loss;
+	uint8_t  DSP_Cfg;
+	uint8_t	 DSP_Bit_1;
+	uint8_t	 DSP_Bit_2;
+	uint16_t DSP_PWM;
 	uint16_t pwm_bias;
 	uint16_t pwm_fan;
+	uint8_t  Relay1;
+	uint8_t  Relay2;
+
 } SYS_Realtime;
 
 enum LEDS_STATE {

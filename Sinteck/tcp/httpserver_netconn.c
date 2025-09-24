@@ -38,6 +38,8 @@
 
 #include "../Sinteck/lvgl/lvgl.h"
 #include "../Sinteck/src/eeprom.h"
+#include "../Sinteck/src/PE43711.h"
+#include "../Sinteck/src/AD5242.h"
 #include "../Sinteck/src/defines.h"
 #include "../Sinteck/src/PowerControl.h"
 #include "../Sinteck/src/audio.h"
@@ -84,7 +86,7 @@ extern uint8_t flag_telemetry;
 extern uint32_t timer_reflesh;
 extern const char* versao;
 extern char version_flash[];
-extern uint8_t Status_Battery;
+extern uint8_t Status_Battery, Status_Stereo, Status_FMDem;
 
 const static char http_200_OK[] = "HTTP/1.1 200 OK\r\nContent-type: text/html\r\n\r\n";
 //const static char http_200_OK_JSON[] = "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n";
@@ -536,6 +538,18 @@ static void http_server_serve(struct netconn *conn)
     		  netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_COPY);
     		  fs_close(&file);
     	  }
+    	  else if((strncmp(buf, "GET /rf.html", 12) == 0)) {
+    		  /* Load Time page */
+    		  fs_open(&file, "/rf.html");
+    		  netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_COPY);
+    		  fs_close(&file);
+    	  }
+    	  else if((strncmp(buf, "GET /mp3.html", 13) == 0)) {
+    		  /* Load Time page */
+    		  fs_open(&file, "/mp3.html");
+    		  netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_COPY);
+    		  fs_close(&file);
+    	  }
     	  else if((strncmp(buf, "POST /login.html", 16) == 0) || (strncmp(buf, "POST / ", 6) == 0)) {
     		  char user[16] = {0};
     		  char pass[16] = {0};
@@ -784,36 +798,27 @@ static void http_server_serve(struct netconn *conn)
     	      flag_telemetry = 27;
     	  }
     	  else if((strncmp(buf, "GET /readConfigHold", 19) == 0)) {
-    		  sprintf(buf_html, "%s HOLD:%d;VSWR:%d;CLOCK:%d;REF:%0.0f;VALUE:%0.0f;FWDNULL1:%0.0f;FIM:", http_200_OK,
-    				             cfg.ConfigHold, cfg.VSWR_Null, 0, Realtime.Reflected, cfg.VSWR_Null_Value, cfg.FWD_Null_Value);
+    		  sprintf(buf_html, "%s HOLD:%d;VSWR:%d;CLOCK:%d;REF:%0.0f;VALUE:%0.0f;FWDNULL1:%0.0f;REM1:%d;REM2:%d;FIM:", http_200_OK,
+    				             cfg.ConfigHold, 0, 0, Realtime.Reflected, 0.0, 0.0, Realtime.Relay1, Realtime.Relay2);
     	      netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
     	  }
     	  else if((strncmp(buf, "GET /setConfigHold=", 19) == 0)) {
     		  resp_http_200(conn);
     		  cfg.ConfigHold = buf[19] - '0';
-    	      //OSC10MCfg = buf[21] - '0';
-    		  cfg.VSWR_Null = buf[23] - '0';
-    	      strstr_substring(buf, "VSWR:", "NFWD:", 5);
-    	      cfg.VSWR_Null_Value = atoi(out);
-    	      if(cfg.VSWR_Null_Value >=0 && cfg.VSWR_Null_Value <= 10) {
-    	    	  cfg.VSWR_Null_Value = atoi(out);
-    	      }
-    	      else {
-    	    	  cfg.VSWR_Null_Value = 0;
-    	      }
-    	      strstr_substring(buf, "NFWD:", "FIM:", 5);
-    	      cfg.FWD_Null_Value = atoi(out);
-    	      if(cfg.FWD_Null_Value >=0 && cfg.FWD_Null_Value <= 30) {
-    	    	  cfg.FWD_Null_Value = atoi(out);
-    	      }
-    	      else {
-    	    	  cfg.FWD_Null_Value = 0;
-    	      }
+    	      strstr_substring(buf, "REM1:", "REM2:", 5);
+    	      Realtime.Relay1 = atoi(out);
+    	      strstr_substring(buf, "REM2:", "FIM:", 5);
+    	      Realtime.Relay2 = atoi(out);
+
+    	      // Atualiza Reles
+    	      HAL_GPIO_WritePin(RELAY_1_GPIO_Port, RELAY_1_Pin,  Realtime.Relay1);
+    	      HAL_GPIO_WritePin(RELAY_2_GPIO_Port, RELAY_2_Pin,  Realtime.Relay2);
+
     	      flag_telemetry = 10;
     	  }
     	  else if((strncmp(buf, "GET /readVSWR", 13) == 0)) {
     		  sprintf(buf_html, "%s REF:%0.1fW;VALUE:%0.1fW;FWDNULL:%0.1fW;FIM:", http_200_OK,
-    				             Realtime.Reflected, cfg.VSWR_Null_Value, cfg.FWD_Null_Value);
+    				             Realtime.Reflected, 0.0, 0.0);
     		  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
     	  }
     	  else if((strncmp(buf, "GET /SetRestoreFactory", 22) == 0)) {
@@ -926,8 +931,17 @@ static void http_server_serve(struct netconn *conn)
     		  }
 
         	  memset(buf_html, 0, 2500);
-		      sprintf(buf_html, "%s FWD:%0.0f W [ %0.2f ];REF:%0.0f W [ VSWR: %0.2f:1  Load_Mismatch: %0.2f%% Return Loss: %0.2fdB ];TEMP:%2.1f &#8451;VPA:%0.1f V;IPA:%0.1fA;UPTIME:%s;EFIC:%s;TIPO:%d;EXTTEMP:%s;MODEL:%s;RDS:%s;FREQ:%s;SOURCE:%s;VERMCU:%s;VERMEM:%s;STS:%s;FAIL:%s;BAT:%s;CLOCK:%02d/%02d/%04d %02d:%02d:%02d;B1:%d;B2:%d;B3:%d;FIM\n",
-		    		  http_200_OK, Get_Forward(), 3000.00f, Realtime.Reflected, Realtime.SWR, Realtime.Load_MisMatch, Realtime.Return_Loss, Realtime.Temperature, Realtime.VPA, Realtime.IPA, str_uptime, "100.0%", 0, "25.0°C", "RXNSTL 900MHz", str_rds, str_freq, str_source, str_ver, str_ver3, str_sts, "OK", str_bat, gDate.Date, gDate.Month, 2000+gDate.Year, gTime.Hours, gTime.Minutes, gTime.Seconds, 5, 10, 18);
+		      sprintf(buf_html, "%s RSSIS:0x%X &#9 [ %d ] &#9 mV:%0.2f;RSSIL:0x%X [ %d ]  mV:%0.2f;19KHZ:0x%X [ %d ]  mV:%0.2f;57KHZ:0x%X [ %d ]  mV:%0.2f;MPX:0x%X [ %d ]  mV:%0.2f;MONO:0x%X [ %d ]  mV:%0.2f;LEFT:0x%X [ %d ]  mV:%0.2f;RIGHT:0x%X [ %d ]  mV:%0.2f;UPTIME:%s;TIPO:%d;EXTTEMP:%s;MODEL:%s;RDS:%s;FREQ:%s;SOURCE:%s;VERMCU:%s;VERMEM:%s;STS:%s;FAIL:%s;BAT:%s;CLOCK:%02d/%02d/%04d %02d:%02d:%02d;B1:%d;B2:%d;B3:%d;DEM:%d;STEREO:%d;FIM\n",
+		    		  http_200_OK, adc_values[3], adc_values[3], (float)((3000.0/65535)*adc_values[3]),
+					               adc_values[4], adc_values[4], (float)((3000.0/65535)*adc_values[4]),
+								   adc_values[5], adc_values[5], (float)((3000.0/65535)*adc_values[5]),
+								   adc_values[8], adc_values[8], (float)((3000.0/65535)*adc_values[8]),
+								   adc_values[0], adc_values[0], (float)((3000.0/65535)*adc_values[0]),
+								   adc_values[1], adc_values[1], (float)((3000.0/65535)*adc_values[1]),
+								   adc_values[6], adc_values[6], (float)((3000.0/65535)*adc_values[6]),
+								   adc_values[7], adc_values[7], (float)((3000.0/65535)*adc_values[7]),
+								   str_uptime, 0, "25.0°C", "RXNSTL 900MHz", str_rds, str_freq, str_source, str_ver, str_ver3, str_sts, "OK", str_bat, gDate.Date, gDate.Month, 2000+gDate.Year, gTime.Hours, gTime.Minutes, gTime.Seconds, 5, 10, 18,
+								   Status_FMDem, Status_Stereo);
 		      netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }
           else if((strncmp(buf, "GET /RFState=1", 14) == 0) && (http_access == 2) ) {
@@ -1007,13 +1021,14 @@ static void http_server_serve(struct netconn *conn)
       			}
           }
           else if((strncmp(buf, "GET /readAUDIO", 14) == 0)) {
-        	  sprintf(buf_html, "%s MPX:%d;STEREO:%d;EMP:%d;PROC:%d;TOS:%d;AES:%d;IMP:%d;FIM\n",
-                  			     http_200_OK, cfg.AudioSource, cfg.MonoStereo, cfg.Emphase, cfg.Processor, 0, cfg.AES192, 0);
+        	  sprintf(buf_html, "%s EMP:%d;PROC:%d;AES:%d;DSPM:%d;DSP1:%d;DSP2:%d;DSPP:%d;FIM\n",
+                  			     http_200_OK, cfg.Emphase, cfg.Processor, cfg.AES192,
+								 Realtime.DSP_Cfg, Realtime.DSP_Bit_1, Realtime.DSP_Bit_2, Realtime.DSP_PWM);
         	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }
           else if((strncmp(buf, "GET /readAudioVol", 17) == 0)) {
-        	  sprintf(buf_html, "%s MPX1:%d;MPX2:%d;MPX3:%d;SCA:%d;LEFT:%d;RIGHT:%d;FIM\n", http_200_OK,
-        			  cfg.Vol_MPX1, cfg.Vol_MPX2, 0, 0, 0, 0);
+        	  sprintf(buf_html, "%s MPX1:%d;MPX2:%d;FIM\n", http_200_OK,
+        			  cfg.Vol_MPX1, cfg.Vol_MPX2);
         	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }
           else if((strncmp(buf, "GET /readAlarmMPX", 17) == 0)) {
@@ -1040,6 +1055,11 @@ static void http_server_serve(struct netconn *conn)
         	  else {
         		  cfg.Vol_MPX2 = 48;
         	  }
+
+        	  // Atualiza Valores
+        	  Write_AD5242(AD524X_RDAC0, cfg.Vol_MPX1, 0, 0);
+        	  Write_AD5242(AD524X_RDAC1, cfg.Vol_MPX2, 0, 0);
+
         	  flag_telemetry = 6;
           }
           else if((strncmp(buf, "GET /setALARMMPX=", 17) == 0)) {
@@ -1086,12 +1106,19 @@ static void http_server_serve(struct netconn *conn)
           }
           else if((strncmp(buf, "GET /setAUDIO=", 14) == 0)) {
         	  resp_http_200(conn);
-        	  cfg.AudioSource = buf[14] - '0';
-        	  cfg.MonoStereo =  buf[15] - '0';
-        	  cfg.Emphase = buf[16] - '0';
-        	  cfg.Processor = buf[17] - '0';
-        	  cfg.AES192 = buf[19] - '0';
-              // Salva na EEPROM
+        	  cfg.Emphase = buf[14] - '0';
+        	  cfg.Processor = buf[15] - '0';
+        	  cfg.AES192 = buf[16] - '0';
+        	  Realtime.DSP_Cfg = buf[17] - '0';
+			  Realtime.DSP_Bit_1 = buf[18] - '0';
+			  Realtime.DSP_Bit_2 = buf[19] - '0';
+        	  strstr_substring(buf, "DSPPWM:", "FIM", 7);
+        	  Realtime.DSP_PWM = atoi(out);
+        	  // Salva na EEPROM
+
+        	  // Atualiza Valores
+        	  UpdateValores();
+
               flag_telemetry = 2;
           }
           else if((strncmp(buf, "GET /setRDS=", 12) == 0)) {
@@ -1195,11 +1222,9 @@ static void http_server_serve(struct netconn *conn)
               // UDP
               strstr_substring(buf, "REMOTE:", "PORT_UDP:", 7);
               decode_string(out, out1);
-              cfg.RDSRemote = out1[0] - '0';
               // Port
               strstr_substring(buf, "PORT_UDP:", "FIM:", 9);
               decode_string(out, out1);
-              cfg.RDSUDPPort = atoi(out1);
 
               flag_telemetry = 5;
           }
@@ -1214,7 +1239,7 @@ static void http_server_serve(struct netconn *conn)
                   			http_200_OK,
                   			rds.enable, rds.ct, rds.type,	rds.ps, rds.pi[0], rds.pi[1], rds.pi[2], rds.pi[3], rds.pty,
           					rds.ptyn, rds.ms, rds.af[0], rds.af[1], rds.af[2], rds.af[3], rds.af[4],
-          					rds.rt1, rds.dps1, rds.version, str_rds, cfg.RDSRemote, cfg.RDSUDPPort);
+          					rds.rt1, rds.dps1, rds.version, str_rds, 0, 0);
         	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }
           else if((strncmp(buf, "GET /readRDSSYNC", 16) == 0)) {
@@ -1385,6 +1410,34 @@ static void http_server_serve(struct netconn *conn)
 					  adc_ext[7], adc_ext[8], (float)((3000.0/4095.0)*adc_ext[8]) );
 
         	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+          }
+          else if((strncmp(buf, "GET /readRF", 11) == 0)) {
+        	  sprintf(buf_html, "%s BW:%d;ATN:%0.2f;FIM", http_200_OK, cfg.BW, cfg.Atten);
+
+        	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+          }
+          else if((strncmp(buf, "GET /setRF=", 11) == 0)) {
+        	  resp_http_200(conn);
+        	  cfg.BW = buf[11] =  buf[14] - '0';
+        	  // Attenuation
+        	  strstr_substring(buf, "ATTN:", "FIM", 5);
+        	  float float_atn = atof(out);
+
+        	  if(float_atn >= 0.0f && float_atn <= 31.75f) {
+        		  cfg.Atten = float_atn;
+        	  }
+        	  else {
+        		  cfg.Atten = 0.0f;
+        	  }
+        	  // Atualiza Estado
+        	  if(cfg.BW) {
+        		  HAL_GPIO_WritePin(BW_SEL_GPIO_Port, BW_SEL_Pin, GPIO_PIN_SET);
+        	  }
+        	  else {
+        		  HAL_GPIO_WritePin(BW_SEL_GPIO_Port, BW_SEL_Pin, GPIO_PIN_RESET);
+        	  }
+        	  //
+        	  PE43711(cfg.Atten);
           }
     	  //
     	  else

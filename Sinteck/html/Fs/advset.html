@@ -159,6 +159,7 @@
 		
         <li><a class="group">SETUP</a></li>        
         <li><a id="confaudio" href="audio.html">Audio</a></li>
+		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
         <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
@@ -168,45 +169,32 @@
         <li><a id="profile" href="profile.html">Station Profile</a></li>
         <li><a class="group">TOOLS</a></li>
         <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+		<li><a id="MP3" href="mp3.html">MP3</a></li>
         <li><a id="FAIL" href="Fail.html">Fail List</a></li>
       </ul>                
     </div>
 	
     <div id="section">		
          <form>
-            <h3>Foldback:</h3>
-            <fieldset>
-                <label for="maxipa">MAX IPA (A):</label>
-                <input type="number" id="maxipa" name="maxipa" step="0.1" min="5" max="65.0" oninput="checkLength(this)"/><br>
-            </fieldset>
-            <fieldset>
-                <label for="maxvswr">MAX VSWR (W):</label>
-                <input type="number" id="maxswr" name="maxswr" step="1.0" min="1" max="30"/><br>
-            </fieldset>
-            <fieldset>
-                <label for="maxtemp">MAX TEMP (°C):</label>
-                <input type="number" id="maxtemp" name="maxtemp" step="1.0" min="30" max="60"/><br>
-            </fieldset>
-            <br><br>
             <h3>Gain Adjust:</h3>
             <fieldset>
-                <label for="gainfwd">FWD PWR:</label>
+                <label for="gainfwd">RSSI SIGNAL:</label>
                 <input type="number" id="gainfwd" name="gainfwd" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
             <fieldset>
-                <label for="gainref">REF PWR:</label>
+                <label for="gainref">RSSI  LIMIT:</label>
                 <input type="number" id="gainref" name="gainref" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
             <fieldset>
-                <label for="gainipa">IPA:</label>
+                <label for="gainipa">MPX:</label>
                 <input type="number" id="gainipa" name="gainipa" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
             <fieldset>
-                <label for="gainvpa">VPA:</label>
+                <label for="gainvpa">LEFT:</label>
                 <input type="number" id="gainvpa" name="gainvpa" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
             <fieldset>
-                <label for="gaintemp">INTL TEMP:</label>
+                <label for="gaintemp">RIGHT:</label>
                 <input type="number" id="gaintemp" name="gaintemp" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
         </form>
@@ -219,7 +207,7 @@
         <h5 hidden>Teste1: <span id="teste1"></span></h5>
         <br><h1></h1>
         <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-		<br><br><br><br><br>
+		<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
     </div>
 		
     <div id="footer">

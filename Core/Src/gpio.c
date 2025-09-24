@@ -79,9 +79,6 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(SEL_75_50_GPIO_Port, SEL_75_50_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(ST_MO_GPIO_Port, ST_MO_Pin, GPIO_PIN_SET);
-
   /*Configure GPIO pins : CLK_IO_Pin DATA_IO_Pin EEPROM_HOLD_Pin BUZZER_Pin
                            RELAY_1_Pin RELAY_2_Pin */
   GPIO_InitStruct.Pin = CLK_IO_Pin|DATA_IO_Pin|EEPROM_HOLD_Pin|BUZZER_Pin
@@ -103,10 +100,8 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LED_FAIL_Pin LED_RSSI_Pin ST_MO_Pin DSP__MONO_Pin
-                           DSP_AUDIO_Pin */
-  GPIO_InitStruct.Pin = LED_FAIL_Pin|LED_RSSI_Pin|ST_MO_Pin|DSP__MONO_Pin
-                          |DSP_AUDIO_Pin;
+  /*Configure GPIO pins : LED_FAIL_Pin LED_RSSI_Pin DSP__MONO_Pin DSP_AUDIO_Pin */
+  GPIO_InitStruct.Pin = LED_FAIL_Pin|LED_RSSI_Pin|DSP__MONO_Pin|DSP_AUDIO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -149,11 +144,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : FM_DEM_Pin */
-  GPIO_InitStruct.Pin = FM_DEM_Pin;
+  /*Configure GPIO pins : ST_MO_Pin FM_DEM_Pin */
+  GPIO_InitStruct.Pin = ST_MO_Pin|FM_DEM_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(FM_DEM_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
 

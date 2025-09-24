@@ -22,6 +22,7 @@
 		
         <li><a class="group">SETUP</a></li>        
         <li><a id="confaudio" href="audio.html">Audio</a></li>
+		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
         <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
@@ -31,6 +32,7 @@
         <li><a id="profile" href="profile.html">Station Profile</a></li>
         <li><a class="group">TOOLS</a></li>
         <li><a id="confhold" href="confighold.html">Config Hold/Factory Settings</a></li>
+		<li><a id="MP3" href="mp3.html">MP3</a></li>
         <li><a id="FAIL" href="Fail.html">Fail List</a></li>
       </ul>                
     </div>
@@ -108,13 +110,15 @@
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
-						document.getElementById("FWD").innerHTML = this.responseText.substring(this.responseText.indexOf("FWD:")+4,this.responseText.indexOf("REF:")-1);
-						document.getElementById("REF").innerHTML = this.responseText.substring(this.responseText.indexOf("REF:")+4,this.responseText.indexOf("TEMP:")-1);
-						document.getElementById("TEMP").innerHTML = this.responseText.substring(this.responseText.indexOf("TEMP:")+5,this.responseText.indexOf("VPA:")-1);
-						document.getElementById("VPA").innerHTML = this.responseText.substring(this.responseText.indexOf("VPA:")+4,this.responseText.indexOf("IPA:")-1);
-						document.getElementById("IPA").innerHTML = this.responseText.substring(this.responseText.indexOf("IPA:")+4,this.responseText.indexOf("UPTIME:")-1);
-						document.getElementById("UPTIME").innerHTML = this.responseText.substring(this.responseText.indexOf("UPTIME:")+7,this.responseText.indexOf("EFIC:")-1);
-						document.getElementById("efficiency").innerHTML = this.responseText.substring(this.responseText.indexOf("EFIC:")+5,this.responseText.indexOf("TIPO:")-1)
+						document.getElementById("RSSIS").innerHTML = this.responseText.substring(this.responseText.indexOf("RSSIS:")+6,this.responseText.indexOf("RSSIL:")-1);
+						document.getElementById("RSSIL").innerHTML = this.responseText.substring(this.responseText.indexOf("RSSIL:")+6,this.responseText.indexOf("19KHZ:")-1);
+						document.getElementById("19KHZ").innerHTML = this.responseText.substring(this.responseText.indexOf("19KHZ:")+6,this.responseText.indexOf("57KHZ:")-1);
+						document.getElementById("57KHZ").innerHTML = this.responseText.substring(this.responseText.indexOf("57KHZ:")+6,this.responseText.indexOf("MPX:")-1);
+						document.getElementById("MPX").innerHTML = this.responseText.substring(this.responseText.indexOf("MPX:")+4,this.responseText.indexOf("MONO:")-1);
+						document.getElementById("MONO").innerHTML = this.responseText.substring(this.responseText.indexOf("MONO:")+5,this.responseText.indexOf("LEFT:")-1)
+						document.getElementById("LEFT").innerHTML = this.responseText.substring(this.responseText.indexOf("LEFT:")+5,this.responseText.indexOf("RIGHT:")-1)
+						document.getElementById("RIGHT").innerHTML = this.responseText.substring(this.responseText.indexOf("RIGHT:")+6,this.responseText.indexOf("UPTIME:")-1)
+						document.getElementById("UPTIME").innerHTML = this.responseText.substring(this.responseText.indexOf("UPTIME:")+7,this.responseText.indexOf("TIPO:")-1);
 						document.getElementById("tipo").innerHTML = this.responseText.substring(this.responseText.indexOf("TIPO:")+5,this.responseText.indexOf("EXTTEMP:")-1);
 						document.getElementById("exttemp").innerHTML = this.responseText.substring(this.responseText.indexOf("EXTTEMP:")+8,this.responseText.indexOf("MODEL:")-1);
 						document.getElementById("MODEL").innerHTML = this.responseText.substring(this.responseText.indexOf("MODEL:")+6,this.responseText.indexOf("RDS:")-1);
@@ -129,15 +133,9 @@
 						document.getElementById("CLOCK").innerHTML = this.responseText.substring(this.responseText.indexOf("CLOCK:")+6,this.responseText.indexOf("B1:")-1);
 						document.getElementById("B1").innerHTML = this.responseText.substring(this.responseText.indexOf("B1:")+3,this.responseText.indexOf("B2:")-1);
 						document.getElementById("B2").innerHTML = this.responseText.substring(this.responseText.indexOf("B2:")+3,this.responseText.indexOf("B3:")-1);
-						document.getElementById("B3").innerHTML = this.responseText.substring(this.responseText.indexOf("B3:")+3,this.responseText.indexOf("FIM")-1);
-						//
-                        var meter_mpx1 = document.getElementById('BarMPX1');
-                        meter_mpx1.value = document.getElementById("B1").innerHTML
-                        var meter_mpx2 = document.getElementById('BarMPX2');
-                        meter_mpx2.value = document.getElementById("B2").innerHTML
-                        var meter_mpx3 = document.getElementById('BarMPX3');
-                        meter_mpx3.value = document.getElementById("B3").innerHTML
-                        //
+						document.getElementById("B3").innerHTML = this.responseText.substring(this.responseText.indexOf("B3:")+3,this.responseText.indexOf("DEM:")-1);
+						document.getElementById("DEM").innerHTML = this.responseText.substring(this.responseText.indexOf("DEM:")+4,this.responseText.indexOf("STEREO:")-1);
+						document.getElementById("STEREO").innerHTML = this.responseText.substring(this.responseText.indexOf("STEREO:")+7,this.responseText.indexOf("FIM")-1);
                     }
                 };
                 xhttp.open("GET", "readTELEMETRY", true);
@@ -190,22 +188,22 @@
 			</table>
 			<h2></h2>
 			<table>
-            	<tr><td><h3>Forward</h3></td>  <td><h3><span id="FWD">0</span><br></h3></td><td><a href="Forward_Graph.html"><i style="font-size:24px" class="fa">&#xf080;</i></a></td></tr>
-				<tr><td><h3>Reflected</h3></td>  <td><h3><span id="REF">0</span><br></h3></td><td><a href="Reflected_Graph.html"><i style="font-size:24px" class="fa">&#xf080;</i></a></td></tr>
-				<tr><td><h3>Temperature</h3></td>  <td><h3><span id="TEMP">0</span><br></h3></td><td><a href="Temperature_Graph.html"><i style="font-size:24px" class="fa">&#xf080;</i></a></td></tr>
-				<tr><td><h3>VPA</h3></td> <td><h3><span id="VPA">0</span><br></h3></td><td></td></tr>
-				<tr><td><h3>IPA</h3></td> <td><h3><span id="IPA">0</span><br></h3></td><td></td></tr>
-				<tr><td><h3>Efficiency</h3></td> <td><h3><span id="efficiency">0</span><br></h3></td><td></td></tr>
-                <tr><td><h3>UpTime</h3></td> <td><h3><span id="UPTIME">0</span><br></h3></td><td></td></tr>
+            	<tr><td><h3>RSSI Signal</h3></td>  <td><h3><span id="RSSIS">0</span><br></h3></td></tr>
+				<tr><td><h3>RSSI Limit</h3></td>  <td><h3><span id="RSSIL">0</span><br></h3></td></tr>
+				<tr><td><h3>19KHz</h3></td>  <td><h3><span id="19KHZ">0</span><br></h3></td></tr>
+				<tr><td><h3>57KHz</h3></td> <td><h3><span id="57KHZ">0</span><br></h3></td></tr>
+				<tr><td><h3>MPX</h3></td> <td><h3><span id="MPX">0</span><br></h3></td></tr>
+				<tr><td><h3>MONO</h3></td> <td><h3><span id="MONO">0</span><br></h3></td></tr>
+                <tr><td><h3>LEFT</h3></td> <td><h3><span id="LEFT">0</span><br></h3></td></tr>
+				<tr><td><h3>RIGHT</h3></td> <td><h3><span id="RIGHT">0</span><br></h3></td></tr>
+				<tr><td><h3></h3></td> <td><h3><span id="vago1"></span><br></h3></td></tr>
+				<tr><td><h3>DEM</h3></td> <td><h3><span id="DEM">0</span><br></h3></td></tr>
+				<tr><td><h3>STEREO</h3></td> <td><h3><span id="STEREO">0</span><br></h3></td></tr>
+				<tr><td><h3></h3></td> <td><h3><span id="vago"></span><br></h3></td></tr>
+				<tr><td><h3>UpTime</h3></td> <td><h3><span id="UPTIME">0</span><br></h3></td></tr>
 			</table>
-            <h6><span class="espaco"></span>&nbsp &nbsp &nbsp 3KHz <span class="espaco"></span> 30KHz <span class="espaco"></span><span class="espaco"></span><span class="espaco"></span> &nbsp &nbsp 75KHz &nbsp &nbsp 80KHz &nbsp &nbsp 105KHz <span class="espaco"></span><span class="espaco"></span> 144KHz</h6>
-            <h3>MPX 1:&nbsp<meter name="testempx" min="0" max="48" low="24" high="31" optimum="25" value="1"id="BarMPX1" align="right" ></meter></h3>
-            <h3>MPX 2:&nbsp<meter name="testeleft" min="0" max="48" low="38" high="44" optimum="40" value="1"id="BarMPX2" align="right"></meter></h3>
-            <h3>MPX 3:&nbsp<meter name="testeright" min="0" max="48" low="38" high="44" optimum="40" value="1"id="BarMPX3" align="right"></meter></h3>
-            <h2></h2><br><br>
-            <button type="button" class="myButtonON" onclick="sendData(1)">RF ON</button> <span class="espaco"></span>
-            <button type="button" class="myButtonOFF" onclick="sendData(2)">RF OFF</button> <span class="espaco"></span>
-            
+			<h2></h2>
+         
             <h5 hidden>StationName: <span id="station_debug">0</span></h5>
             <h5 hidden>City: <span id="city_debug">0</span></h5>
             <h5 hidden>State: <span id="state_debug">0</span></h5>
@@ -221,7 +219,7 @@
 			<h5 hidden>B2: <span id="B2"></span></h5>
 			<h5 hidden>B3: <span id="B3"></span></h5>
             <h2></h2>
-			<br><br><br><br>
+			<br><br><br><br><br><br><br><br>
         </p>
     </div>
 		
