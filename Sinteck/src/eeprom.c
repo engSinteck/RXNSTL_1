@@ -314,7 +314,7 @@ void Carrega_Prog_Default(void)
 	rds.ptyn[8] = 0;   rds.ptyn[9] = 0;
 
 	// Program Identification
-	rds.pi[0] = 0; rds.pi[1] = 0; rds.pi[2] = 0; rds.pi[3] = 0;
+	rds.pi[0] = '1'; rds.pi[1] = '2'; rds.pi[2] = '3'; rds.pi[3] = '4';
 
 	// Alternative frequency
 	rds.af[0] = 0; rds.af[1] = 0; rds.af[2] = 0; rds.af[3] = 0; rds.af[4] = 0; rds.af[5] = 0;

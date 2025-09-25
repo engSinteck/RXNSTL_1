@@ -8,7 +8,7 @@
 #ifndef SRC_DEFINES_H_
 #define SRC_DEFINES_H_
 
-#define		PRG_REVISION		4
+#define		PRG_REVISION		5
 #define		MODELO				0
 
 // Enderecos EEPROM

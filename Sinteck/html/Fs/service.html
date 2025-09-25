@@ -114,30 +114,25 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("strsn").innerHTML = this.responseText.substring(this.responseText.indexOf("SN:")+3,this.responseText.indexOf("PWMD:")-1);
-					document.getElementById("pwmdriver").innerHTML = this.responseText.substring(this.responseText.indexOf("PWMD:")+5,this.responseText.indexOf("PWM1:")-1);
-                    document.getElementById("pwmbias").innerHTML = this.responseText.substring(this.responseText.indexOf("PWM1:")+5,this.responseText.indexOf("PWM2:")-1);
-					document.getElementById("pwmfan2").innerHTML = this.responseText.substring(this.responseText.indexOf("PWM2:")+5,this.responseText.indexOf("FWD:")-1);
-					document.getElementById("p1").innerHTML = document.getElementById("pwmfan2").innerHTML;
-					document.getElementById("fwd").innerHTML = this.responseText.substring(this.responseText.indexOf("FWD:")+4,this.responseText.indexOf("REF:")-1);
-					document.getElementById("ref").innerHTML = this.responseText.substring(this.responseText.indexOf("REF:")+4,this.responseText.indexOf("VPA:")-1);
-					document.getElementById("vpa").innerHTML = this.responseText.substring(this.responseText.indexOf("VPA:")+4,this.responseText.indexOf("IPA:")-1);
-					document.getElementById("ipa").innerHTML = this.responseText.substring(this.responseText.indexOf("IPA:")+4,this.responseText.indexOf("TEMP:")-1);
-					document.getElementById("temp").innerHTML = this.responseText.substring(this.responseText.indexOf("TEMP:")+5,this.responseText.indexOf("RST:")-1);
+                    document.getElementById("strsn").innerHTML = this.responseText.substring(this.responseText.indexOf("SN:")+3,this.responseText.indexOf("PWM:")-1);
+                    document.getElementById("pwmdsp").innerHTML = this.responseText.substring(this.responseText.indexOf("PWM:")+4,this.responseText.indexOf("BAT:")-1);
+					document.getElementById("batt").innerHTML = this.responseText.substring(this.responseText.indexOf("BAT:")+4,this.responseText.indexOf("FM:")-1);
+					document.getElementById("fmdem").innerHTML = this.responseText.substring(this.responseText.indexOf("FM:")+3,this.responseText.indexOf("STMO:")-1);
+					document.getElementById("stmo").innerHTML = this.responseText.substring(this.responseText.indexOf("STMO:")+5,this.responseText.indexOf("BW:")-1);
+					document.getElementById("bw").innerHTML = this.responseText.substring(this.responseText.indexOf("BW:")+3,this.responseText.indexOf("ATN:")-1);
+					document.getElementById("atn").innerHTML = this.responseText.substring(this.responseText.indexOf("ATN:")+4,this.responseText.indexOf("DSPSEL:")-1);
+					document.getElementById("dspsel").innerHTML = this.responseText.substring(this.responseText.indexOf("DSPSEL:")+7,this.responseText.indexOf("DSP1:")-1);
+					document.getElementById("dsp1").innerHTML = this.responseText.substring(this.responseText.indexOf("DSP1:")+5,this.responseText.indexOf("DSP2:")-1);
+					document.getElementById("dsp2").innerHTML = this.responseText.substring(this.responseText.indexOf("DSP2:")+5,this.responseText.indexOf("RST:")-1);
 					document.getElementById("resetcause").innerHTML = this.responseText.substring(this.responseText.indexOf("RST:")+4,this.responseText.indexOf("ADC0:")-1);
 					document.getElementById("adc0").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC0:")+5,this.responseText.indexOf("ADC1:")-1);
 					document.getElementById("adc1").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC1:")+5,this.responseText.indexOf("ADC2:")-1);
 					document.getElementById("adc2").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC2:")+5,this.responseText.indexOf("ADC3:")-1);
 					document.getElementById("adc3").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC3:")+5,this.responseText.indexOf("ADC4:")-1);
-					document.getElementById("adc4").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC4:")+5,this.responseText.indexOf("CH0:")-1);
-					document.getElementById("ch0").innerHTML = this.responseText.substring(this.responseText.indexOf("CH0:")+4,this.responseText.indexOf("CH1:")-1);
-					document.getElementById("ch1").innerHTML = this.responseText.substring(this.responseText.indexOf("CH1:")+4,this.responseText.indexOf("CH2:")-1);
-					document.getElementById("ch2").innerHTML = this.responseText.substring(this.responseText.indexOf("CH2:")+4,this.responseText.indexOf("CH3:")-1);
-					document.getElementById("ch3").innerHTML = this.responseText.substring(this.responseText.indexOf("CH3:")+4,this.responseText.indexOf("CH4:")-1);
-					document.getElementById("ch4").innerHTML = this.responseText.substring(this.responseText.indexOf("CH4:")+4,this.responseText.indexOf("CH5:")-1);
-					document.getElementById("ch5").innerHTML = this.responseText.substring(this.responseText.indexOf("CH5:")+4,this.responseText.indexOf("CH6:")-1);
-					document.getElementById("ch6").innerHTML = this.responseText.substring(this.responseText.indexOf("CH6:")+4,this.responseText.indexOf("CH7:")-1);
-					document.getElementById("ch7").innerHTML = this.responseText.substring(this.responseText.indexOf("CH7:")+4,this.responseText.indexOf("FIM")-1);
+					document.getElementById("adc4").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC4:")+5,this.responseText.indexOf("ADC5:")-1);
+					document.getElementById("adc5").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC5:")+5,this.responseText.indexOf("ADC6:")-1);
+					document.getElementById("adc6").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC6:")+5,this.responseText.indexOf("ADC7:")-1);
+					document.getElementById("adc7").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC7:")+5,this.responseText.indexOf("FIM")-1);
                 }
             };
             xhttp.open("GET", "readService", true);
@@ -177,22 +172,6 @@
             xhttp.send();
         }
         
-        function sendpwm1() {
-            var resp = "";
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("RFState").innerHTML =
-                    this.responseText;
-                }
-            };
-            var resp1 = "setPWM1=";
-            var resp = resp1.concat("", "PWM:", document.getElementById("pwmdriver").value,";FIM");
-            //alert(resp)
-            xhttp.open("GET", resp, true);
-            xhttp.send();
-        }
-        
         function sendpwm2() {
             var resp = "";
             var xhttp = new XMLHttpRequest();
@@ -209,22 +188,6 @@
             xhttp.send();
         }
         
-        function sendpwmfan() {
-            var resp = "";
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("RFState").innerHTML =
-                    this.responseText;
-                }
-            };
-            var resp1 = "setPWMFAN=";
-            var resp = resp1.concat("", "PWM:", document.getElementById("pwmfan").value,";FIM");
-            //alert(resp)
-            xhttp.open("GET", resp, true);
-            xhttp.send();
-        }
-	        
         function sendsn() {
             var resp = "";
             var xhttp = new XMLHttpRequest();
@@ -239,18 +202,6 @@
             
             //alert(resp);
             xhttp.open("GET", resp, true);
-            xhttp.send();
-        }
-        
-        function sendData1(status) {
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("RFState").innerHTML =
-                    this.responseText;
-                }
-            };
-            xhttp.open("GET", "RFState="+status, true);
             xhttp.send();
         }
         
@@ -277,31 +228,7 @@
             xhttp.send();
         }
         
-        function checkLength(elem) {
-            // checking if input value is more than Model
-            if (elem.value > 6000) {
-                alert( "Maximum Value: " + 6000 )
-                elem.value = 6000;
-            }
-        }
-        
-        function checkLengthv(elem) {
-            // checking if input value is more than Model
-            if (elem.value > 53) {
-                alert( "Maximum Value: " + 53 )
-                elem.value = 53;
-            }
-        }
-        
         function checkpwm(elem) {
-            // checking if input value is more than Model
-            if (elem.value > 4095) {
-                alert( "Maximum Value: " + 4095 )
-                elem.value = 4095;
-            }
-        }
-        
-        function checkpwmfan(elem) {
             // checking if input value is more than Model
             if (elem.value > 4095) {
                 alert( "Maximum Value: " + 4095 )
@@ -314,62 +241,42 @@
             <input type="checkbox" id="cfg1" name="cfg1"><button type="button" class="myButton1" onclick="sendService()">Send </button>
         </fieldset>
         <fieldset>
-            <label for="pwmdriver">PWM Driver:</label> 
-            <input type="number" id="pwmdriver" name="pwmdriver" min="0" max="4095" value="0" oninput="checkpwm(this)"/><button type="button" class="myButton1" onclick="sendpwm1()">Send </button>
-        </fieldset>
-        <fieldset>
-            <label for="pwmbias">PWM Bias:</label> 
+            <label for="pwmbias">PWM:</label> 
             <input type="number" id="pwmbias" name="pwmbias" min="0" max="4095" value="0" oninput="checkpwm(this)"/><button type="button" class="myButton1" onclick="sendpwm2()">Send </button>
-        </fieldset>
-        <fieldset>
-            <label for="pwmfan">PWM FAN:</label> 
-            <input type="number" id="pwmfan" name="pwmfan" min="1044" max="4095" value="0" oninput="checkpwmfan(this)"/><button type="button" class="myButton1" onclick="sendpwmfan()">Send </button>
         </fieldset>
         <fieldset>
             <label for="sn">Serial Number:</label>
             <input type='text' id="sn" name="sn" onkeypress='validate(event)' oninput="checkLengthsn(this)" maxlength="8" size="8" /><button type="button" class="myButton1" onclick="sendsn()">Send </button>
         </fieldset>
-		<br><br>
-        <fieldset>
-            <button type="button" class="myButtonSON" onclick="sendData1(1)">RF ON</button>
-            <button type="button" class="myButtonSMODE" onclick="sendData1(3)">Safe-Mode</button>
-            <button type="button" class="myButtonSOFF" onclick="sendData1(2)">RF OFF</button>
-            Status: <span id="rf">0</span>
-        </fieldset>
-        <br>
+		<br>
         <p style="background-color:LightGray;"></p>
         <h4>Servico: <span id="srv">0</span></h4>
-        <h4>PWM Driver: <span id="pwmdriver">0</span></h4>
-        <h4>PWM Bias: <span id="pwmbias">0</span></h4>
-        <h4>PWM FAN: <span id="pwmfan2">0</span></h4>
-        <h4>Forward: <span id="fwd">0</span></h4>
-        <h4>Reflected: <span id="ref">0</span></h4>
-        <h4>VPA: <span id="vpa">0</span></h4>
-        <h4>IPA: <span id="ipa">0</span></h4>
-        <h4>Temp: <span id="temp">0</span></h4>
+        <h4>PWM: <span id="pwmdsp">0</span></h4>
+        <h4>Bateria: <span id="batt">0</span></h4>
+        <h4>FM DEM.: <span id="fmdem">0</span></h4>
+        <h4>STEREO : <span id="stmo">0</span></h4>
+        <h4>BW: <span id="bw">0</span></h4>
+        <h4>Atenuador: <span id="atn">0</span></h4>
+		<h4>DSP SEL. : <span id="dspsel">0</span></h4>
+		<h4>DSP 1: <span id="dsp1">0</span></h4>
+		<h4>DSP 2: <span id="dsp2">0</span></h4>
 		<h5></h5>
-		<h4>MCP3208</h4>
-		<h5>CH0:<span id="ch0">0</span></h5>
-		<h5>CH1:<span id="ch1">0</span></h5> 
-		<h5>CH2:<span id="ch2">0</span></h5> 
-		<h5>CH3:<span id="ch3">0</span></h5> 
-		<h5>CH4:<span id="ch4">0</span></h5> 
-		<h5>CH5:<span id="ch5">0</span></h5> 
-		<h5>CH6:<span id="ch6">0</span></h5> 
-		<h5>CH7:<span id="ch7">0</span></h5>
-        <h5></h5>		
         <h4>ADC STM32</h4>
-		<h5>FWD:<span id="adc0">0</span></h5>
-		<h5>REF:<span id="adc1">0</span></h5>  
-		<h5>TEMP:<span id="adc2">0</span></h5>  
-		<h5>IPA:<span id="adc3">0</span></h5>  
-		<h5>VPA:<span id="adc4">0</span></h5>
+		<h5>RSSI 1:<span id="adc0">0</span></h5>
+		<h5>RSSI 2:<span id="adc1">0</span></h5>  
+		<h5>19KHz:<span id="adc2">0</span></h5>  
+		<h5>57KHz:<span id="adc3">0</span></h5>  
+		<h5>MPX:<span id="adc4">0</span></h5>
+		<h5>MONO:<span id="adc5">0</span></h5>
+		<h5>LEFT:<span id="adc6">0</span></h5>
+		<h5>RIGHT:<span id="adc7">0</span></h5>
 		<h5></h5>
 		<h4>Reset Cause: <span id="resetcause">0</span></h4>
 		<h5 hidden>SN: <span id="strsn"></span></h5>
 		<h5 hidden>SN1: <span id="strsn1"></span></h5>
 		<h5 hidden>P1: <span id="p1"></span></h5>
 		<h5 hidden>P2: <span id="p2"></span></h5>
+		<br><br><br>
     </div>
 		
     <div id="footer">

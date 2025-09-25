@@ -998,15 +998,15 @@ static void http_server_serve(struct netconn *conn)
 
         	  memset(buf_html, 0, 2500);
 		      sprintf(buf_html, "%s RSSIS:0x%X &#9 [ %d ] &#9 mV:%0.2f;RSSIL:0x%X [ %d ]  mV:%0.2f;19KHZ:0x%X [ %d ]  mV:%0.2f;57KHZ:0x%X [ %d ]  mV:%0.2f;MPX:0x%X [ %d ]  mV:%0.2f;MONO:0x%X [ %d ]  mV:%0.2f;LEFT:0x%X [ %d ]  mV:%0.2f;RIGHT:0x%X [ %d ]  mV:%0.2f;UPTIME:%s;TIPO:%d;EXTTEMP:%s;MODEL:%s;RDS:%s;FREQ:%s;SOURCE:%s;VERMCU:%s;VERMEM:%s;STS:%s;FAIL:%s;BAT:%s;CLOCK:%02d/%02d/%04d %02d:%02d:%02d;B1:%d;B2:%d;B3:%d;DEM:%d;STEREO:%d;FIM\n",
-		    		  http_200_OK, adc_values[3], adc_values[3], (float)((3000.0/65535)*adc_values[3]),
-					               adc_values[4], adc_values[4], (float)((3000.0/65535)*adc_values[4]),
+		    		  http_200_OK, adc_values[0], adc_values[0], (float)((3000.0/65535)*adc_values[0]),
+					               adc_values[1], adc_values[1], (float)((3000.0/65535)*adc_values[1]),
+								   adc_values[2], adc_values[2], (float)((3000.0/65535)*adc_values[2]),
+								   adc_values[3], adc_values[3], (float)((3000.0/65535)*adc_values[3]),
+								   adc_values[4], adc_values[4], (float)((3000.0/65535)*adc_values[4]),
 								   adc_values[5], adc_values[5], (float)((3000.0/65535)*adc_values[5]),
-								   adc_values[8], adc_values[8], (float)((3000.0/65535)*adc_values[8]),
-								   adc_values[0], adc_values[0], (float)((3000.0/65535)*adc_values[0]),
-								   adc_values[1], adc_values[1], (float)((3000.0/65535)*adc_values[1]),
 								   adc_values[6], adc_values[6], (float)((3000.0/65535)*adc_values[6]),
 								   adc_values[7], adc_values[7], (float)((3000.0/65535)*adc_values[7]),
-								   str_uptime, 0, "25.0°C", "RXNSTL 900MHz", str_rds, str_freq, str_source, str_ver, str_ver3, str_sts, "OK", str_bat, gDate.Date, gDate.Month, 2000+gDate.Year, gTime.Hours, gTime.Minutes, gTime.Seconds, 5, 10, 18,
+								   str_uptime, 0, "25.0°C", "RXNSTL 900MHz", str_rds, str_freq, str_source, str_ver, str_ver3, "OK", "OK", str_bat, gDate.Date, gDate.Month, 2000+gDate.Year, gTime.Hours, gTime.Minutes, gTime.Seconds, 5, 10, 18,
 								   Status_FMDem, Status_Stereo);
 		      netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }
@@ -1414,21 +1414,18 @@ static void http_server_serve(struct netconn *conn)
         			                              cfg.SerialNumber[2], cfg.SerialNumber[3],
 												  cfg.SerialNumber[4], cfg.SerialNumber[5],
 												  cfg.SerialNumber[6], cfg.SerialNumber[7]);
-        	  sprintf(buf_html, "%s SN:%s;PWMD:%d;PWM1:%d;PWM2:%d;FWD:%0.1f;REF:%0.1f;VPA:%0.1f;IPA:%0.1f;TEMP:%0.1f;RST:%s;ADC0: 0x%X [ %d ] mV: %0.2f;ADC1: 0x%X [ %d ] mV: %0.2f;ADC2: 0x%X [ %d ] mV: %0.2f;ADC3: 0x%X [ %d ] mV: %0.2f;ADC4: 0x%X [ %d ] mV: %0.2f;CH0: 0x%X [ %d ] mV: %0.2f;CH1: 0x%X [ %d ] mV: %0.2f;CH2: 0x%X [ %d ] mV: %0.2f;CH3: 0x%X [ %d ] mV: %0.2f;CH4: 0x%X [ %d ] mV: %0.2f;CH5: 0x%X [ %d ] mV: %0.2f;CH6: 0x%X [ %d ] mV: %0.2f;CH7: 0x%X [ %d ] mV: %0.2f;FIM",
-        			  http_200_OK, str_sn, 0, Realtime.pwm_bias, Realtime.pwm_fan, Realtime.Forward, Realtime.Reflected, Realtime.VPA, Realtime.IPA, Realtime.Temperature, reset_cause_get_name(reset_cause),
+        	  sprintf(buf_html, "%s SN:%s;PWM:%d;BAT:%d;FM:%d;STMO:%d;BW:%d;ATN:%0.1f;DSPSEL:%d;DSP1:%d;DSP2:%d;RST:%s;ADC0: 0x%X [ %d ] mV: %0.2f;ADC1: 0x%X [ %d ] mV: %0.2f;ADC2: 0x%X [ %d ] mV: %0.2f;ADC3: 0x%X [ %d ] mV: %0.2f;ADC4: 0x%X [ %d ] mV: %0.2f;ADC5: 0x%X [ %d ] mV: %0.2f;ADC6: 0x%X [ %d ] mV: %0.2f;ADC7: 0x%X [ %d ] mV: %0.2f;FIM",
+        			  http_200_OK, str_sn, Realtime.DSP_PWM, Status_Battery, Status_FMDem, Status_Stereo, cfg.BW, cfg.Atten, Realtime.DSP_Cfg, Realtime.DSP_Bit_1, Realtime.DSP_Bit_2,
+					  reset_cause_get_name(reset_cause),
 					  adc_values[0], adc_values[0], (float)((3000.0/65535)*adc_values[0]),
 					  adc_values[1], adc_values[1], (float)((3000.0/65535)*adc_values[1]),
 					  adc_values[2], adc_values[2], (float)((3000.0/65535)*adc_values[2]),
 					  adc_values[3], adc_values[3], (float)((3000.0/65535)*adc_values[3]),
 					  adc_values[4], adc_values[4], (float)((3000.0/65535)*adc_values[4]),
-					  adc_ext[0], adc_ext[1], (float)((3000.0/4095.0)*adc_ext[1]),
-					  adc_ext[1], adc_ext[2], (float)((3000.0/4095.0)*adc_ext[2]),
-					  adc_ext[2], adc_ext[3], (float)((3000.0/4095.0)*adc_ext[3]),
-					  adc_ext[3], adc_ext[4], (float)((3000.0/4095.0)*adc_ext[4]),
-					  adc_ext[4], adc_ext[5], (float)((3000.0/4095.0)*adc_ext[5]),
-					  adc_ext[5], adc_ext[6], (float)((3000.0/4095.0)*adc_ext[6]),
-        	          adc_ext[6], adc_ext[7], (float)((3000.0/4095.0)*adc_ext[7]),
-					  adc_ext[7], adc_ext[8], (float)((3000.0/4095.0)*adc_ext[8]) );
+					  adc_values[5], adc_values[5], (float)((3000.0/65535)*adc_values[5]),
+					  adc_values[6], adc_values[6], (float)((3000.0/65535)*adc_values[6]),
+					  adc_values[7], adc_values[7], (float)((3000.0/65535)*adc_values[7]) );
+
 
         	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }

@@ -153,7 +153,6 @@
                         document.getElementById("type").value = 0;
                     }
                     
-                    document.getElementById("stname").value = this.responseText.substring(this.responseText.indexOf("STATION:")+8,this.responseText.indexOf("PI:")-1);
                     document.getElementById("stname1").value = this.responseText.substring(this.responseText.indexOf("STATION:")+8,this.responseText.indexOf("PI:")-1);
                     document.getElementById("pi").value = this.responseText.substring(this.responseText.indexOf("PI:")+3,this.responseText.indexOf("PTY:")-1);
                     document.getElementById("pty1").value = this.responseText.substring(this.responseText.indexOf("PTY:")+4,this.responseText.indexOf("PTYN:")-1) - '0';
@@ -166,11 +165,8 @@
                     document.getElementById("af4").value = this.responseText.substring(this.responseText.indexOf("AF4:")+4,this.responseText.indexOf("AF5:")-1);
                     document.getElementById("af5").value = this.responseText.substring(this.responseText.indexOf("AF5:")+4,this.responseText.indexOf("TEXT:")-1);
                     
-                    document.getElementById("rdstext").innerHTML = this.responseText.substring(this.responseText.indexOf("TEXT:")+5,this.responseText.indexOf("DPS1:")-1);
                     document.getElementById("rdstext1").value = this.responseText.substring(this.responseText.indexOf("TEXT:")+5,this.responseText.indexOf("DPS1:")-1);
                     document.getElementById("dps1").value = document.getElementById("dps1_debug").innerHTML;
-                    document.getElementById("rdsversion").innerHTML = this.responseText.substring(this.responseText.indexOf("VER:")+4,this.responseText.indexOf("SYNC:")-1);
-                    document.getElementById("rdssync").innerHTML = this.responseText.substring(this.responseText.indexOf("SYNC:")+5,this.responseText.indexOf("REMOTE:")-1);
                     document.getElementById("remote2").innerHTML = this.responseText.substring(this.responseText.indexOf("REMOTE:")+7,this.responseText.indexOf("PORT_UDP:")-1);
                     if(this.responseText.substring(this.responseText.indexOf("REMOTE:")+7,this.responseText.indexOf("PORT_UDP:")-1) == '1') {
                         document.getElementById("enableremote").checked = true;
@@ -589,12 +585,6 @@
     </script>
 		
     <div id="section">
-        <p style="background-color:LightGray;"></p>
-        <p>Version: <span id="rdsversion">0</span></p>
-        <p>Sync: <span id="rdssync">0</span></p>
-        <p /hidden>St. Name: <span id="stname">0</span></p>
-        <p /hidden>Text: <span id="rdstext">0</span></p>
-        <p style="background-color:LightGray;"></p>
         <h3>Configure Remote: </h3>
         <label for="enableremote">Enable Remote</label>
         <input type="checkbox" id="enableremote" name="enableremote"><br>
@@ -1747,7 +1737,7 @@
         <h5 /hidden> PORT_UDP: <span id="portudp1">0</span></h5>
         <h5 hidden>Lock: <span id="lock">0</span></h5>
         <h5 hidden>Teste1: <span id="teste1"></span></h5>
-        <br><br><br><br><br><br><br>
+        <br><br><br><br><br><br><br><br><br><br><br>
     </div>
 		
     <div id="footer">
