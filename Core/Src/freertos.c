@@ -49,6 +49,7 @@
 #include "../Sinteck/src/uuid.h"
 #include "../Sinteck/display/Drv_SSD1963.h"
 #include "../Sinteck/src/stm32_qspi_512.h"
+#include "../Sinteck/src/SAA6579.h"
 #include "../Sinteck/lvgl/lvgl.h"
 #include "../Sinteck/lv_fs_if/lv_fs_if.h"
 #include "../Sinteck/tcp/httpserver_netconn.h"
@@ -141,6 +142,7 @@ extern SYS_Realtime Realtime;
 
 uint8_t Telemetry_State = 0;
 uint32_t timer_teste = 0;
+uint32_t rds_report = 0;
 
 extern Cfg_var cfg;
 extern license_var lic;
@@ -495,6 +497,13 @@ void StartTaskMain(void *argument)
 
 	  // Leitura GPIO BattInput
 	  Read_Remote();
+
+	  // RDS
+	  RDS_Task();
+	  if (HAL_GetTick() - rds_report > 5000) {
+		  RDS_PrintStats();
+		  rds_report = HAL_GetTick();
+	  }
 
 	  // Protecao Watch-Dog
 	  HAL_IWDG_Refresh(&hiwdg1);
