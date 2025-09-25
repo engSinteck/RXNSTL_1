@@ -40,9 +40,9 @@ void MX_I2S2_Init(void)
   hi2s2.Instance = SPI2;
   hi2s2.Init.Mode = I2S_MODE_MASTER_FULLDUPLEX;
   hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
-  hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
+  hi2s2.Init.DataFormat = I2S_DATAFORMAT_24B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_DISABLE;
-  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K;
+  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_192K;
   hi2s2.Init.CPOL = I2S_CPOL_LOW;
   hi2s2.Init.FirstBit = I2S_FIRSTBIT_MSB;
   hi2s2.Init.WSInversion = I2S_WS_INVERSION_DISABLE;
@@ -72,7 +72,7 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* i2sHandle)
   /** Initializes the peripherals clock
   */
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI2;
-    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL;
+    PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PIN;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
     {
       Error_Handler();

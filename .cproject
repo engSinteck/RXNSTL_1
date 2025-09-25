@@ -160,14 +160,14 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
+						<entry excluding="Tools/Licenca/keygen.c|html/fsdata_custom.c|MQTT/MQTTInterface_SSL.c|iperf/iperf_server.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Sinteck"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="MBEDTLS"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_HOST"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+						<entry excluding="Third_Party/LwIP/src/apps/http/makefsdata/makefsdata.c|MBEDTLS|Third_Party/LwIP/src/apps/http/fsdata_custom.c|Third_Party/LwIP/src/apps/httpd/fsdata.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="FATFS"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="LWIP"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="MBEDTLS"/>
-						<entry excluding="Third_Party/LwIP/src/apps/http/makefsdata/makefsdata.c|MBEDTLS|Third_Party/LwIP/src/apps/http/fsdata_custom.c|Third_Party/LwIP/src/apps/httpd/fsdata.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
-						<entry excluding="Tools/Licenca/keygen.c|html/fsdata_custom.c|MQTT/MQTTInterface_SSL.c|iperf/iperf_server.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Sinteck"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_HOST"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -319,14 +319,14 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
+						<entry excluding="Tools/Licenca/keygen.c|html/fsdata_custom.c|MQTT/MQTTInterface_SSL.c|iperf/iperf_server.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Sinteck"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MBEDTLS"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_HOST"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
+						<entry excluding="Third_Party/LwIP/src/apps/http/makefsdata/makefsdata.c|MBEDTLS|Third_Party/LwIP/src/apps/http/fsdata_custom.c|Third_Party/LwIP/src/apps/httpd/fsdata.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="FATFS"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="LWIP"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MBEDTLS"/>
-						<entry excluding="Third_Party/LwIP/src/apps/http/makefsdata/makefsdata.c|MBEDTLS|Third_Party/LwIP/src/apps/http/fsdata_custom.c|Third_Party/LwIP/src/apps/httpd/fsdata.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Middlewares"/>
-						<entry excluding="Tools/Licenca/keygen.c|html/fsdata_custom.c|MQTT/MQTTInterface_SSL.c|iperf/iperf_server.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Sinteck"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="USB_HOST"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
