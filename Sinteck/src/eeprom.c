@@ -249,7 +249,7 @@ void Carrega_Prog_Default(void)
 	// RF
 	cfg.modo = 0;
 	cfg.BW = 0;
-	cfg.Atten = 4.0f;
+	cfg.Atten = 0.0f;
 	RF_Disable();
 
 	// Audio
@@ -324,16 +324,12 @@ void Carrega_Prog_Default(void)
 	memset(rds.rt1, 0, 72);			// Text 1  72 Caracteres
 
 	// Advanced Settings
-	// Limites
-	adv.MaxIpa  = 10.0f;
-	adv.MaxVswr = 5.0f;
-	adv.MaxTemp = 55.0f;
 	// Offset
-	adv.GainFWD  = 1.00f;
-	adv.GainSWR  = 1.00f;
-	adv.GainIPA  = 1.00f;
-	adv.GainVPA  = 1.00f;
-	adv.GainTemp = 1.00f;
+	adv.GainRSSI1  = 1.00f;
+	adv.GainRSSI2  = 1.00f;
+	adv.GainMPX    = 1.00f;
+	adv.GainLeft   = 1.00f;
+	adv.GainRight  = 1.00f;
 
 	// Atenuação
 	cfg.Atten = 0.0f;
@@ -391,20 +387,20 @@ void Carrega_Prog_Default(void)
 	EEPROM_Write(ADDR_RDS_RT,     (uint8_t*)&rds.rt1,              72);
 
 	// Advanced Settings
-	EEPROM_Write(ADDR_ADV_MAXIPA,   (uint8_t*)&adv.MaxIpa, sizeof(adv.MaxIpa));
-	EEPROM_Write(ADDR_ADV_MAXVSWR,  (uint8_t*)&adv.MaxVswr, sizeof(adv.MaxVswr));
-	EEPROM_Write(ADDR_ADV_MAXTEMP,  (uint8_t*)&adv.MaxTemp, sizeof(adv.MaxTemp));
-	EEPROM_Write(ADDR_ADV_GAINFWD,  (uint8_t*)&adv.GainFWD, sizeof(adv.GainFWD));
-	EEPROM_Write(ADDR_ADV_GAINREF,  (uint8_t*)&adv.GainSWR, sizeof(adv.GainSWR));
-	EEPROM_Write(ADDR_ADV_GAINIPA,  (uint8_t*)&adv.GainIPA, sizeof(adv.GainIPA));
-	EEPROM_Write(ADDR_ADV_GAINVPA,  (uint8_t*)&adv.GainVPA, sizeof(adv.GainVPA));
-	EEPROM_Write(ADDR_ADV_GAINTEMP, (uint8_t*)&adv.GainTemp, sizeof(adv.GainTemp));
+	EEPROM_Write(ADDR_ADV_RSSI1,  (uint8_t*)&adv.GainRSSI1, sizeof(adv.GainRSSI1));
+	EEPROM_Write(ADDR_ADV_RSSI2,  (uint8_t*)&adv.GainRSSI2, sizeof(adv.GainRSSI2));
+	EEPROM_Write(ADDR_ADV_MPX,  (uint8_t*)&adv.GainMPX, sizeof(adv.GainMPX));
+	EEPROM_Write(ADDR_ADV_LEFT,  (uint8_t*)&adv.GainLeft, sizeof(adv.GainLeft));
+	EEPROM_Write(ADDR_ADV_RIGHT, (uint8_t*)&adv.GainRight, sizeof(adv.GainRight));
 
 	// Salva Profille
 	EEPROM_Write(ADDR_PROF_STATION, (uint8_t*)&Profile.Station, 50);
 	EEPROM_Write(ADDR_PROF_CITY,    (uint8_t*)&Profile.City,    50);
 	EEPROM_Write(ADDR_PROF_STATE,   (uint8_t*)&Profile.State,   50);
 	EEPROM_Write(ADDR_PROF_COUNTRY, (uint8_t*)&Profile.Country, 50);
+
+	EEPROM_Write(ADDR_CFG_BW, (uint8_t*)&cfg.BW, 1);
+	EEPROM_Write(ADDR_CFG_ATN, (uint8_t*)&cfg.Atten, 4);
 }
 
 void ReadIdEeprom(void)
@@ -469,15 +465,11 @@ void ReadConfig(void)
 	EEPROM_Read(ADDR_RDS_RT,     (uint8_t*)&rds.rt1,              72);
 
 	// Advanced Settings
-	EEPROM_Read(ADDR_ADV_MAXIPA, (uint8_t*)&adv.MaxIpa, sizeof(adv.MaxIpa));
-	EEPROM_Read(ADDR_ADV_MAXVSWR, (uint8_t*)&adv.MaxVswr, sizeof(adv.MaxVswr));
-	EEPROM_Read(ADDR_ADV_MAXTEMP, (uint8_t*)&adv.MaxTemp, sizeof(adv.MaxTemp));
-
-	EEPROM_Read(ADDR_ADV_GAINFWD, (uint8_t*)&adv.GainFWD, sizeof(adv.GainFWD));
-	EEPROM_Read(ADDR_ADV_GAINREF, (uint8_t*)&adv.GainSWR, sizeof(adv.GainSWR));
-	EEPROM_Read(ADDR_ADV_GAINIPA, (uint8_t*)&adv.GainIPA, sizeof(adv.GainIPA));
-	EEPROM_Read(ADDR_ADV_GAINVPA, (uint8_t*)&adv.GainVPA, sizeof(adv.GainVPA));
-	EEPROM_Read(ADDR_ADV_GAINTEMP, (uint8_t*)&adv.GainTemp, sizeof(adv.GainTemp));
+	EEPROM_Read(ADDR_ADV_RSSI1, (uint8_t*)&adv.GainRSSI1, sizeof(adv.GainRSSI1));
+	EEPROM_Read(ADDR_ADV_RSSI2, (uint8_t*)&adv.GainRSSI2, sizeof(adv.GainRSSI2));
+	EEPROM_Read(ADDR_ADV_MPX,   (uint8_t*)&adv.GainMPX, sizeof(adv.GainMPX));
+	EEPROM_Read(ADDR_ADV_LEFT,  (uint8_t*)&adv.GainLeft, sizeof(adv.GainLeft));
+	EEPROM_Read(ADDR_ADV_RIGHT, (uint8_t*)&adv.GainRight, sizeof(adv.GainRight));
 
 	// Serial Number
 	EEPROM_Read(ADDR_SN, (uint8_t*)&cfg.SerialNumber[0], 8);
@@ -520,6 +512,9 @@ void ReadConfig(void)
 		//falha |= 1ULL << FAIL_LICENSE;
 		//Alarme_Ins(FAIL_LICENSE, 0, 0);
 	}
+
+	EEPROM_Read(ADDR_CFG_BW, (uint8_t*)&cfg.BW, 1);
+	EEPROM_Read(ADDR_CFG_ATN, (uint8_t*)&cfg.Atten, 4);
 
 	 UpdateValores();
 }
@@ -680,14 +675,11 @@ void Telemetry_save(void)
 			break;
 		case 11:
 			// Advanced Settings
-			EEPROM_Write(ADDR_ADV_MAXIPA,   (uint8_t*)&adv.MaxIpa, sizeof(adv.MaxIpa));
-			EEPROM_Write(ADDR_ADV_MAXVSWR,  (uint8_t*)&adv.MaxVswr, sizeof(adv.MaxVswr));
-			EEPROM_Write(ADDR_ADV_MAXTEMP,  (uint8_t*)&adv.MaxTemp, sizeof(adv.MaxTemp));
-			EEPROM_Write(ADDR_ADV_GAINFWD,  (uint8_t*)&adv.GainFWD, sizeof(adv.GainFWD));
-			EEPROM_Write(ADDR_ADV_GAINREF,  (uint8_t*)&adv.GainSWR, sizeof(adv.GainSWR));
-			EEPROM_Write(ADDR_ADV_GAINIPA,  (uint8_t*)&adv.GainIPA, sizeof(adv.GainIPA));
-			EEPROM_Write(ADDR_ADV_GAINVPA,  (uint8_t*)&adv.GainVPA, sizeof(adv.GainVPA));
-			EEPROM_Write(ADDR_ADV_GAINTEMP, (uint8_t*)&adv.GainTemp, sizeof(adv.GainTemp));
+			EEPROM_Write(ADDR_ADV_RSSI1,  (uint8_t*)&adv.GainRSSI1, sizeof(adv.GainRSSI1));
+			EEPROM_Write(ADDR_ADV_RSSI2,  (uint8_t*)&adv.GainRSSI2, sizeof(adv.GainRSSI2));
+			EEPROM_Write(ADDR_ADV_MPX,    (uint8_t*)&adv.GainMPX,   sizeof(adv.GainMPX));
+			EEPROM_Write(ADDR_ADV_LEFT,   (uint8_t*)&adv.GainLeft,  sizeof(adv.GainLeft));
+			EEPROM_Write(ADDR_ADV_RIGHT,  (uint8_t*)&adv.GainRight, sizeof(adv.GainRight));
 			flag_telemetry = 0;
 			break;
 		case 12:
@@ -793,6 +785,11 @@ void Telemetry_save(void)
 				lic.licenseTimer = retlic;
 				EEPROM_Write(ADDR_TMR_LIC, (uint8_t*)&lic.licenseTimer, 4);
 			}
+			flag_telemetry = 0;
+			break;
+		case 38:
+			EEPROM_Write(ADDR_CFG_BW, (uint8_t*)&cfg.BW, 1);
+			EEPROM_Write(ADDR_CFG_ATN, (uint8_t*)&cfg.Atten, 4);
 			flag_telemetry = 0;
 			break;
 		case 253:

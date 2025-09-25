@@ -95,14 +95,11 @@ size_t json_config( char* dest)
 	dest = json_objClose( dest );
 	// Advanced Settings
 	dest = json_objOpen( dest, "AdvancedSettings" );
-	dest = json_float( dest, "MaxIPA", adv.MaxIpa);
-	dest = json_float( dest, "MaxVSWR", adv.MaxVswr );
-	dest = json_float( dest, "MaxTemp", adv.MaxTemp );
-	dest = json_float( dest, "OffsetForward", adv.GainFWD );
-	dest = json_float( dest, "OffsetReflected", adv.GainSWR );
-	dest = json_float( dest, "OffsetIPA", adv.GainIPA );
-	dest = json_float( dest, "OffsetVPA", adv.GainVPA );
-	dest = json_float( dest, "OffsetTemperature", adv.GainTemp );
+	dest = json_float( dest, "OffsetRSSI1", adv.GainRSSI1 );
+	dest = json_float( dest, "OffsetRSSI2", adv.GainRSSI2 );
+	dest = json_float( dest, "OffsetMPX", adv.GainMPX );
+	dest = json_float( dest, "OffsetLeft", adv.GainLeft );
+	dest = json_float( dest, "OffsetRight", adv.GainRight );
 	dest = json_objClose( dest );
 	// Network
 	dest = json_objOpen( dest, "Connectivity" );

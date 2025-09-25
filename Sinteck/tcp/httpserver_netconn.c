@@ -142,6 +142,12 @@ extern unsigned long stacked_hfsr;
 extern unsigned long stacked_dfsr;
 extern unsigned long stacked_afsr;
 
+extern struct netif gnetif;
+extern ip4_addr_t ipaddr;
+extern ip4_addr_t netmask;
+extern ip4_addr_t gw;
+extern ip4_addr_t dnsaddr;
+
 extern volatile uint16_t adc_values[];
 extern uint16_t adc_ext[];
 
@@ -684,6 +690,66 @@ static void http_server_serve(struct netconn *conn)
   					"1.1.1.1", cfg.EnableSNMP );
     		  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
     	  }
+    	  else if((strncmp(buf, "GET /setNetwork=", 16) == 0)) {
+    		  resp_http_200(conn);
+    	      strstr_substring(buf, "IP1:", "IP2:", 4);
+    	      cfg.IP_ADDR[0] = atoi(out);
+    	      strstr_substring(buf, "IP2:", "IP3:", 4);
+    	      cfg.IP_ADDR[1] = atoi(out);
+    	      strstr_substring(buf, "IP3:", "IP4:", 4);
+    	      cfg.IP_ADDR[2] = atoi(out);
+    	      strstr_substring(buf, "IP4:", "MASK1:", 4);
+    	      cfg.IP_ADDR[3] = atoi(out);
+    	      //
+    	      strstr_substring(buf, "MASK1:", "MASK2:", 6);
+    	      cfg.MASK_ADDR[0] = atoi(out);
+    	      strstr_substring(buf, "MASK2:", "MASK3:", 6);
+    	      cfg.MASK_ADDR[1] = atoi(out);
+    	      strstr_substring(buf, "MASK3:", "MASK4:", 6);
+    	      cfg.MASK_ADDR[2] = atoi(out);
+    	      strstr_substring(buf, "MASK4:", "GW1:", 6);
+    	      cfg.MASK_ADDR[3] = atoi(out);
+    	      //
+    	      strstr_substring(buf, "GW1:", "GW2:", 4);
+    	      cfg.GW_ADDR[0] = atoi(out);
+    	      strstr_substring(buf, "GW2:", "GW3:", 4);
+    	      cfg.GW_ADDR[1] = atoi(out);
+    	      strstr_substring(buf, "GW3:", "GW4:", 4);
+    	      cfg.GW_ADDR[2] = atoi(out);
+    	      strstr_substring(buf, "GW4:", "DNS1:", 4);
+    	      cfg.GW_ADDR[3] = atoi(out);
+    	      //
+    	      strstr_substring(buf, "DNS1:", "DNS2:", 5);
+    	      cfg.DNS_ADDR[0] = atoi(out);
+    	      strstr_substring(buf, "DNS2:", "DNS3:", 5);
+    	      cfg.DNS_ADDR[1] = atoi(out);
+    	      strstr_substring(buf, "DNS3:", "DNS4:", 5);
+    	      cfg.DNS_ADDR[2] = atoi(out);
+    	      strstr_substring(buf, "DNS4:", "PORT:", 5);
+    	      cfg.DNS_ADDR[3] = atoi(out);
+    	      strstr_substring(buf, "PORT:", "FIM", 5);
+    	      cfg.PortWEB = atoi(out);
+    	      //
+    	      // Atualiza IPS
+    	      IP4_ADDR(&ipaddr, cfg.IP_ADDR[0], cfg.IP_ADDR[1], cfg.IP_ADDR[2], cfg.IP_ADDR[3]);
+    	      IP4_ADDR(&netmask, cfg.MASK_ADDR[0], cfg.MASK_ADDR[1] , cfg.MASK_ADDR[2], cfg.MASK_ADDR[3]);
+    	      IP4_ADDR(&gw, cfg.GW_ADDR[0], cfg.GW_ADDR[1], cfg.GW_ADDR[2], cfg.GW_ADDR[3]);
+    	      IP4_ADDR(&dnsaddr, cfg.DNS_ADDR[0], cfg.DNS_ADDR[1], cfg.DNS_ADDR[2], cfg.DNS_ADDR[3]);
+    	      dns_setserver(0, &dnsaddr);
+    	      netif_set_addr(&gnetif, &ipaddr, &netmask, &gw);
+
+    	      flag_telemetry = 12;
+    	  }
+    	  else if((strncmp(buf, "GET /setSNMP=", 13) == 0)) {
+    		  resp_http_200(conn);
+    		  if(buf[13] == '1') {
+    			  cfg.EnableSNMP = 1;
+    		  }
+    		  else {
+    			  cfg.EnableSNMP = 0;
+    		  }
+    		  flag_telemetry = 31;
+    	  }
     	  else if((strncmp(buf, "GET /GetSaveToken=", 18) == 0)) {
     		  resp_http_200(conn);
     	      flag_telemetry = 25;
@@ -703,7 +769,7 @@ static void http_server_serve(struct netconn *conn)
     	      				    cfg.PassUser[0],  cfg.PassUser[1],  cfg.PassUser[2],  cfg.PassUser[3]);
     	      netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
     	  }
-    	  else if((strncmp(buf, "GET /setPassword=", 17) == 0)) {
+    	  else if((strncmp(buf, "GET /Password=", 17) == 0)) {
     		  resp_http_200(conn);
     		  if( (buf[17] >= '0' && buf[17] <= '9') && (buf[18] >= '0' && buf[18] <= '9')  &&
     	          (buf[19] >= '0' && buf[19] <= '9') && (buf[20] >= '0' && buf[20] <= '9') ) {
@@ -1254,92 +1320,47 @@ static void http_server_serve(struct netconn *conn)
         	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }
           else if((strncmp(buf, "GET /readAdvSet", 15) == 0)) {
-        	  sprintf(buf_html, "%s MODEL:%d;ADV:%d;MAXIPA:%0.1f;MAXSWR:%0.0f;MINAC:%0.0f;MAXTEMP:%0.0f;GFWD:%1.2f;GREF:%1.2f;GIPA:%1.2f;GVPA:%1.2f;GTEMP:%1.2f;FIM:",
-              				     http_200_OK, 0, 0, adv.MaxIpa, adv.MaxVswr, 0.0f, adv.MaxTemp, adv.GainFWD, adv.GainSWR, adv.GainIPA, adv.GainVPA, adv.GainTemp);
+        	  sprintf(buf_html, "%s RSSI1:%1.2f;RSSI2:%1.2f;MPX:%1.2f;LEFT:%1.2f;RIGHT:%1.2f;FIM",
+              				     http_200_OK, adv.GainRSSI1, adv.GainRSSI2, adv.GainMPX, adv.GainLeft, adv.GainRight);
         	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
           }
           else if((strncmp(buf, "GET /setAdvSet=", 15) == 0)) {
         	  resp_http_200(conn);
-        	  strstr_substring(buf, "EN:", "MAXIPA:", 3);
-
-        	  float float_f1 = atof(out);
-        	  if(float_f1 < 5.0f) {
-        		  adv.MaxIpa = 5.0f;
-        	  }
-        	  else if(float_f1 > 3.0){
-        		  adv.MaxIpa = 5.0;
-        	  }
-        	  else {
-        		  adv.MaxIpa = float_f1;
-        	  }
-
-        	  strstr_substring(buf, "MAXSWR:", "MINAC:", 7);
-        	  float_f1 = atof(out);
-        	  if(float_f1 < 15.0f) {
-        		  adv.MaxVswr = 15.0f;
-        	  }
-        	  else if(float_f1 > 30.0){
-        		  adv.MaxVswr = 30.0;
-        	  }
-        	  else {
-        		  adv.MaxVswr = float_f1;
-        	  }
-
-        	  strstr_substring(buf, "MAXTEMP:", "GFWD:", 8);
-        	  float_f1 = atof(out);
-        	  if(float_f1 < 30.0f) {
-        		  adv.MaxTemp = 30.0f;
-        	  }
-        	  else if(float_f1 > 60.0f){
-        		  adv.MaxTemp = 60.0f;
-        	  }
-        	  else {
-        		  adv.MaxTemp = float_f1;
-        	  }
-
-        	  strstr_substring(buf, "GFWD:", "GREF:", 5);
+        	  strstr_substring(buf, "RSSI1:", "RSSI2:", 6);
         	  if(atof(out) > 0.09 && atof(out) <= 2.00) {
-        		  adv.GainFWD = atof(out);
+        		  adv.GainRSSI1 = atof(out);
         	  }
         	  else {
-        		  adv.GainFWD = 1.0f;
+        		  adv.GainRSSI1 = 1.0f;
         	  }
-        	  strstr_substring(buf, "GREF:", "GIPA:", 5);
+        	  strstr_substring(buf, "RSSI2:", "MPX:", 6);
         	  if(atof(out) > 0.09 && atof(out) <= 2.00) {
-        		  adv.GainSWR = atof(out);
+        		  adv.GainRSSI2 = atof(out);
         	  }
         	  else {
-        		  adv.GainSWR = 1.0f;
+        		  adv.GainRSSI2 = 1.0f;
         	  }
-        	  strstr_substring(buf, "GIPA:", "GVPA:", 5);
+        	  strstr_substring(buf, "MPX:", "LEFT:", 4);
         	  if(atof(out) > 0.09 && atof(out) <= 2.00) {
-        		  adv.GainIPA = atof(out);
+        		  adv.GainMPX = atof(out);
         	  }
         	  else {
-        		  adv.GainIPA = 1.0f;
+        		  adv.GainMPX = 1.0f;
         	  }
-        	  strstr_substring(buf, "GVPA:", "GTEMP:", 5);
+        	  strstr_substring(buf, "LEFT:", "RIGHT:", 5);
         	  if(atof(out) > 0.09 && atof(out) <= 2.00) {
-        		  adv.GainVPA = atof(out);
+        		  adv.GainLeft = atof(out);
         	  }
         	  else {
-        		  adv.GainVPA = 1.0f;
+        		  adv.GainLeft = 1.0f;
         	  }
-        	  strstr_substring(buf, "GTEMP:", "GDRV:", 6);
+        	  strstr_substring(buf, "RIGHT:", "FIM:", 6);
         	  if(atof(out) > 0.09 && atof(out) <= 2.00) {
-        		  adv.GainTemp = atof(out);
+        		  adv.GainRight = atof(out);
         	  }
         	  else {
-        		  adv.GainTemp = 1.0f;
+        		  adv.GainRight = 1.0f;
         	  }
-        	  strstr_substring(buf, "GDRV:", "GAC:", 5);
-        	  if(atof(out) > 0.09 && atof(out) <= 2.00) {
-        		  adv.GainTemp = atof(out);
-        	  }
-        	  else {
-        		  adv.GainTemp = 1.0f;
-              }
-
         	  flag_telemetry = 11;
           }
           else if((strncmp(buf, "GET /readMaxSN", 14) == 0)) {
@@ -1438,6 +1459,7 @@ static void http_server_serve(struct netconn *conn)
         	  }
         	  //
         	  PE43711(cfg.Atten);
+
           }
     	  //
     	  else

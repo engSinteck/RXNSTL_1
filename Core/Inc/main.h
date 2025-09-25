@@ -262,14 +262,11 @@ typedef struct {
 } license_var;
 
 typedef struct {
-	volatile float MaxIpa;
-	volatile float MaxVswr;
-	volatile float MaxTemp;
-	volatile float GainFWD;
-	volatile float GainSWR;
-	volatile float GainIPA;
-	volatile float GainVPA;
-	volatile float GainTemp;
+	volatile float GainRSSI1;
+	volatile float GainRSSI2;
+	volatile float GainMPX;
+	volatile float GainLeft;
+	volatile float GainRight;
 } AdvancedSettings;
 
 typedef struct {

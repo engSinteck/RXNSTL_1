@@ -8,7 +8,7 @@
 #ifndef SRC_DEFINES_H_
 #define SRC_DEFINES_H_
 
-#define		PRG_REVISION		3
+#define		PRG_REVISION		4
 #define		MODELO				0
 
 // Enderecos EEPROM
@@ -64,11 +64,11 @@
 #define ADDR_PASSUSER			76			// 4
 #define ADDR_VSWRVALUE			80			// 4
 #define ADDR_FWDNULL			84			// 4
-#define ADDR_ADV_FWD			88			// 4
-#define ADDR_ADV_REF			92			// 4
-#define ADDR_ADV_IPA			96			// 4
-#define ADDR_ADV_VPA			100			// 4
-#define ADDR_ADV_TEMP			104			// 4
+#define ADDR_ADV_RSSI1			88			// 4
+#define ADDR_ADV_RSSI2			92			// 4
+#define ADDR_ADV_MPX			96			// 4
+#define ADDR_ADV_LEFT			100			// 4
+#define ADDR_ADV_RIGHT			104			// 4
 #define ADDR_FOLD_IPA			108			// 4
 #define ADDR_FOLD_VSWR			112			// 4
 #define ADDR_FOLD_TEMP			116			// 4
@@ -114,6 +114,8 @@
 #define ADDR_PROF_CITY			576			// 64
 #define ADDR_PROF_STATE			640			// 64
 #define ADDR_PROF_COUNTRY		704			// 64
+#define ADDR_CFG_BW				768			// 1
+#define ADDR_CFG_ATN			769			// 4
 
 // Mapeamento de Falhas
 #define FAIL_PLLLOCK            0           // Falha PLL Nao LOCK

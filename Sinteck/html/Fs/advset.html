@@ -50,15 +50,12 @@
                 }
             };
             var resp1 = "setAdvSet=";
-            var vr4 = "MAXIPA:" + document.getElementById("maxipa").value;
-            var vr5 = "MAXSWR:" + document.getElementById("maxswr").value;
-            var vr7 = "MAXTEMP:" + document.getElementById("maxtemp").value;
-            var vr8 = "GFWD:" + document.getElementById("gainfwd").value;
-            var vr9 = "GREF:" + document.getElementById("gainref").value;
-            var vr10 = "GIPA:" + document.getElementById("gainipa").value;
-            var vr11 = "GVPA:" + document.getElementById("gainvpa").value;
-            var vr12 = "GTEMP:" + document.getElementById("gaintemp").value;
-            var resp = resp1.concat("", vr4, ";", vr5, ";", vr7, ";", vr8, ";", vr9, ";", vr10, ";", vr11, ";", vr12,";", "FIM:");
+            var vr8 = "RSSI1:"  + document.getElementById("gainrssi1").value;
+            var vr9 = "RSSI2:"  + document.getElementById("gainrssi2").value;
+            var vr10 = "MPX:"   + document.getElementById("gainmpx").value;
+            var vr11 = "LEFT:"  + document.getElementById("gainleft").value;
+            var vr12 = "RIGHT:" + document.getElementById("gainright").value;
+            var resp = resp1.concat("", vr8, ";", vr9, ";", vr10, ";", vr11, ";", vr12,";", "FIM:");
             //alert(resp);
             if (confirm("Confirm !")) {
                 xhttp.open("GET", resp, true);
@@ -74,16 +71,11 @@
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
                     //
-                    document.getElementById("model").innerHTML = this.responseText.substring(this.responseText.indexOf("MODEL:")+6,this.responseText.indexOf("ADV:")-1);
-                    document.getElementById("maxipa").value = this.responseText.substring(this.responseText.indexOf("MAXIPA:")+7,this.responseText.indexOf("MAXSWR:")-1);
-                    document.getElementById("maxswr").value = this.responseText.substring(this.responseText.indexOf("MAXSWR:")+7,this.responseText.indexOf("MINAC:")-1);
-                    document.getElementById("maxtemp").value = this.responseText.substring(this.responseText.indexOf("MAXTEMP:")+8,this.responseText.indexOf("GFWD:")-1);
-                    //
-                    document.getElementById("gainfwd").value = this.responseText.substring(this.responseText.indexOf("GFWD:")+5,this.responseText.indexOf("GREF:")-1);
-                    document.getElementById("gainref").value = this.responseText.substring(this.responseText.indexOf("GREF:")+5,this.responseText.indexOf("GIPA:")-1);
-                    document.getElementById("gainipa").value = this.responseText.substring(this.responseText.indexOf("GIPA:")+5,this.responseText.indexOf("GVPA:")-1);
-                    document.getElementById("gainvpa").value = this.responseText.substring(this.responseText.indexOf("GVPA:")+5,this.responseText.indexOf("GTEMP:")-1);
-                    document.getElementById("gaintemp").value = this.responseText.substring(this.responseText.indexOf("GTEMP:")+6,this.responseText.indexOf("FIM:")-1);
+                    document.getElementById("gainrssi1").value = this.responseText.substring(this.responseText.indexOf("RSSI1:")+6,this.responseText.indexOf("RSSI2:")-1);
+                    document.getElementById("gainrssi2").value = this.responseText.substring(this.responseText.indexOf("RSSI2:")+6,this.responseText.indexOf("MPX:")-1);
+                    document.getElementById("gainmpx").value = this.responseText.substring(this.responseText.indexOf("MPX:")+4,this.responseText.indexOf("LEFT:")-1);
+                    document.getElementById("gainleft").value = this.responseText.substring(this.responseText.indexOf("LEFT:")+5,this.responseText.indexOf("RIGHT:")-1);
+                    document.getElementById("gainright").value = this.responseText.substring(this.responseText.indexOf("RIGHT:")+6,this.responseText.indexOf("FIM")-1);
                     //
                 }
             };
@@ -178,24 +170,24 @@
          <form>
             <h3>Gain Adjust:</h3>
             <fieldset>
-                <label for="gainfwd">RSSI SIGNAL:</label>
-                <input type="number" id="gainfwd" name="gainfwd" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+                <label for="gainrssi1">RSSI SIGNAL:</label>
+                <input type="number" id="gainrssi1" name="gainrssi1" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
             <fieldset>
-                <label for="gainref">RSSI  LIMIT:</label>
-                <input type="number" id="gainref" name="gainref" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+                <label for="gainrssi2">RSSI  LIMIT:</label>
+                <input type="number" id="gainrssi2" name="gainrssi2" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
             <fieldset>
-                <label for="gainipa">MPX:</label>
-                <input type="number" id="gainipa" name="gainipa" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+                <label for="gainmpx">MPX:</label>
+                <input type="number" id="gainmpx" name="gainmpx" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
             <fieldset>
-                <label for="gainvpa">LEFT:</label>
-                <input type="number" id="gainvpa" name="gainvpa" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+                <label for="gainleft">LEFT:</label>
+                <input type="number" id="gainleft" name="gainleft" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
             <fieldset>
-                <label for="gaintemp">RIGHT:</label>
-                <input type="number" id="gaintemp" name="gaintemp" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
+                <label for="gainright">RIGHT:</label>
+                <input type="number" id="gainright" name="gainright" step="0.01" min="0.09" max="2.0" value="1.0" oninput="restrictNumberInput(this)"/><br>
             </fieldset>
         </form>
         <br><br>
