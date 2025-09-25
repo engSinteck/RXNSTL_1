@@ -65,7 +65,7 @@ void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOB, LED_FAIL_Pin|LED_RSSI_Pin|DSP__MONO_Pin|DSP_AUDIO_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, RDCL_Pin|GPIO_USB_Pin|AES192_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, GPIO_USB_Pin|AES192_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_LOCK_GPIO_Port, LED_LOCK_Pin, GPIO_PIN_RESET);
@@ -107,18 +107,24 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RDCL_Pin GPIO_USB_Pin AES192_Pin SEL_75_50_Pin */
-  GPIO_InitStruct.Pin = RDCL_Pin|GPIO_USB_Pin|AES192_Pin|SEL_75_50_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+  /*Configure GPIO pin : RDCL_Pin */
+  GPIO_InitStruct.Pin = RDCL_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(RDCL_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : RDDA_Pin */
   GPIO_InitStruct.Pin = RDDA_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(RDDA_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : GPIO_USB_Pin AES192_Pin SEL_75_50_Pin */
+  GPIO_InitStruct.Pin = GPIO_USB_Pin|AES192_Pin|SEL_75_50_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pins : LED_LOCK_Pin EN_MB1501_Pin EN_ATTN_RF_Pin BW_SEL_Pin
                            AUDIO_MUTE_Pin */

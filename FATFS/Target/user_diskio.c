@@ -35,7 +35,9 @@
 /* Includes ------------------------------------------------------------------*/
 #include <string.h>
 #include "ff_gen_drv.h"
-
+//#include "W25QXX.h"
+#include <stdio.h>
+#include "../Sinteck/src/stm32_qspi_512.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 
@@ -49,22 +51,22 @@ static volatile DSTATUS Stat = STA_NOINIT;
 DSTATUS USER_initialize (BYTE pdrv);
 DSTATUS USER_status (BYTE pdrv);
 DRESULT USER_read (BYTE pdrv, BYTE *buff, DWORD sector, UINT count);
-#if _USE_WRITE == 1
-  DRESULT USER_write (BYTE pdrv, const BYTE *buff, DWORD sector, UINT count);
-#endif /* _USE_WRITE == 1 */
-#if _USE_IOCTL == 1
+#if FF_FS_READONLY == 0
+  DRESULT USER_write (BYTE pdrv, const BYTE *buff, DWORD sector, UINT count);  
+#endif /* FF_FS_READONLY == 0 */
+#if FF_MAX_SS != FF_MIN_SS
   DRESULT USER_ioctl (BYTE pdrv, BYTE cmd, void *buff);
-#endif /* _USE_IOCTL == 1 */
+#endif /* FF_MAX_SS != FF_MIN_SS */
 
 Diskio_drvTypeDef  USER_Driver =
 {
   USER_initialize,
   USER_status,
-  USER_read,
-#if  _USE_WRITE
+  USER_read, 
+#if  FF_USE_WRITE
   USER_write,
-#endif  /* _USE_WRITE == 1 */
-#if  _USE_IOCTL == 1
+#endif  /* _USE_WRITE == 1 */  
+#if  FF_USE_IOCTL == 1
   USER_ioctl,
 #endif /* _USE_IOCTL == 1 */
 };
@@ -82,12 +84,13 @@ DSTATUS USER_initialize (
 {
   /* USER CODE BEGIN INIT */
     Stat = STA_NOINIT;
+    Stat = ~STA_NOINIT;
     return Stat;
   /* USER CODE END INIT */
 }
-
+ 
 /**
-  * @brief  Gets Disk Status
+  * @brief  Gets Disk Status 
   * @param  pdrv: Physical drive number (0..)
   * @retval DSTATUS: Operation status
   */
@@ -96,13 +99,13 @@ DSTATUS USER_status (
 )
 {
   /* USER CODE BEGIN STATUS */
-    Stat = STA_NOINIT;
-    return Stat;
+    //Stat = STA_NOINIT;
+    return FR_OK;
   /* USER CODE END STATUS */
 }
 
 /**
-  * @brief  Reads Sector(s)
+  * @brief  Reads Sector(s) 
   * @param  pdrv: Physical drive number (0..)
   * @param  *buff: Data buffer to store read data
   * @param  sector: Sector address (LBA)
@@ -117,7 +120,17 @@ DRESULT USER_read (
 )
 {
   /* USER CODE BEGIN READ */
-    return RES_OK;
+		//logI("User_Read: pdrv: %d  Sector: %ld  Count: %d\n\r", pdrv, sector, count);
+		for(;count>0;count--) {
+			if(BSP_QSPI_Read(buff, sector*FF_MIN_SS, FF_MIN_SS) != QSPI_OK) {
+				return RES_ERROR;
+			}
+			sector++;
+			buff += FF_MIN_SS;			// 512;
+		}
+		/* wait until the read operation is finished */
+
+	    return RES_OK;
   /* USER CODE END READ */
 }
 
@@ -129,20 +142,28 @@ DRESULT USER_read (
   * @param  count: Number of sectors to write (1..128)
   * @retval DRESULT: Operation result
   */
-#if _USE_WRITE == 1
+#if FF_FS_READONLY == 0
 DRESULT USER_write (
 	BYTE pdrv,          /* Physical drive nmuber to identify the drive */
 	const BYTE *buff,   /* Data to be written */
 	DWORD sector,       /* Sector address in LBA */
 	UINT count          /* Number of sectors to write */
 )
-{
+{ 
   /* USER CODE BEGIN WRITE */
-  /* USER CODE HERE */
-    return RES_OK;
+	  /* USER CODE HERE */
+		for(;count>0;count--) {
+//			if(BSP_QSPI_Write(buff, sector*FF_MIN_SS, FF_MIN_SS) != QSPI_OK) {
+//				return RES_ERROR;
+//			}
+//			sector++;
+//			buff += FF_MIN_SS;
+		}
+
+	    return RES_OK;
   /* USER CODE END WRITE */
 }
-#endif /* _USE_WRITE == 1 */
+#endif /* FF_FS_READONLY == 0 */
 
 /**
   * @brief  I/O control operation
@@ -151,7 +172,7 @@ DRESULT USER_write (
   * @param  *buff: Buffer to send/receive control data
   * @retval DRESULT: Operation result
   */
-#if _USE_IOCTL == 1
+#if FF_MAX_SS != FF_MIN_SS
 DRESULT USER_ioctl (
 	BYTE pdrv,      /* Physical drive nmuber (0..) */
 	BYTE cmd,       /* Control code */
@@ -159,9 +180,31 @@ DRESULT USER_ioctl (
 )
 {
   /* USER CODE BEGIN IOCTL */
-    DRESULT res = RES_ERROR;
+	DRESULT res = RES_ERROR;
+
+	if (Stat & STA_NOINIT) return RES_NOTRDY;
+
+	switch(cmd) {
+		case CTRL_SYNC:
+			res = RES_OK;
+			break;
+		case GET_SECTOR_SIZE:
+			*(DWORD*)buff = W25Q128FV_SECTOR_COUNT;			// 512
+			res = RES_OK;
+			break;
+		case GET_BLOCK_SIZE:
+			*(DWORD*)buff = 1024*1024*64;
+			//*(DWORD*)buff = W25Q128FV_SUBSECTOR_SIZE;		// 65536
+			res = RES_OK;
+			break;
+		case GET_SECTOR_COUNT:
+			*(DWORD*)buff = W25Q128FV_SUBSECTOR_SIZE;
+			//*(DWORD*)buff = 1024*1024*64;					// 4096
+			res = RES_OK;
+			break;
+	}
     return res;
   /* USER CODE END IOCTL */
 }
-#endif /* _USE_IOCTL == 1 */
+#endif /* FF_MAX_SS != FF_MIN_SS */
 

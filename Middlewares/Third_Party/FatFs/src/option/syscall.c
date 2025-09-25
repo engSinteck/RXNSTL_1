@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------*/
 /* Sample code of OS dependent controls for FatFs                         */
 /* (C)ChaN, 2014                                                          */
-/*   Portions COPYRIGHT 2017 STMicroelectronics                           */
+/*   Portions COPYRIGHT 2021 STMicroelectronics                           */
 /*   Portions Copyright (C) 2014, ChaN, all right reserved                */
 /*------------------------------------------------------------------------*/
 
@@ -9,7 +9,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2017 STMicroelectronics. All rights reserved.
+  * Copyright (c) 2021 STMicroelectronics. All rights reserved.
   *
   * This software component is licensed by ST under BSD 3-Clause license,
   * the "License"; You may not use this file except in compliance with the
@@ -24,9 +24,9 @@
 #include "../ff.h"
 
 
-#if _FS_REENTRANT
+#if FF_FS_REENTRANT
 /*------------------------------------------------------------------------*/
-/* Create a Synchronization Object                                        */
+/* Create a Synchronization Object */
 /*------------------------------------------------------------------------*/
 /* This function is called in f_mount() function to create a new
 /  synchronization object, such as semaphore and mutex. When a 0 is returned,
@@ -111,9 +111,9 @@ int ff_req_grant (	/* 1:Got a grant to access the volume, 0:Could not get a gran
 #else
 
 #if _USE_MUTEX
-   if(osMutexAcquire(sobj, _FS_TIMEOUT) == osOK)
+   if(osMutexAcquire(sobj, FF_FS_TIMEOUT) == osOK)
 #else
-   if(osSemaphoreAcquire(sobj, _FS_TIMEOUT) == osOK)
+   if(osSemaphoreAcquire(sobj, FF_FS_TIMEOUT) == osOK)
 #endif
 
 #endif
