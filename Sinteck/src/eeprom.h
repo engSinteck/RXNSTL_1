@@ -40,5 +40,6 @@ void ReadLicSeq(void);
 void EEPROM_Example(void);
 void reset_password(void);
 void Calculate_UPTime(void);
+void Telemetry_save(void);
 
 #endif /* SRC_EEPROM_H_ */

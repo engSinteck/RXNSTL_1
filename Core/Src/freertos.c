@@ -513,6 +513,9 @@ void StartTaskMain(void *argument)
 		  rds_report = HAL_GetTick();
 	  }
 
+	  // Save Telemetry Data
+	  Telemetry_save();
+
 	  // Protecao Watch-Dog
 	  HAL_IWDG_Refresh(&hiwdg1);
 
