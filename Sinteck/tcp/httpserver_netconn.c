@@ -1458,6 +1458,30 @@ static void http_server_serve(struct netconn *conn)
         	  PE43711(cfg.Atten);
 
           }
+          else if((strncmp(buf, "GET /MP3-PREV", 13) == 0) || (strncmp(buf, "GET /MP3-PLAY", 13) == 0) ||
+          		(strncmp(buf, "GET /MP3-NEXT", 13) == 0) || (strncmp(buf, "GET /MP3-STOP", 13) == 0) ) {
+          		//
+          		fs_open(&file, "/mp3.html");
+          		netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_COPY);
+          		fs_close(&file);
+
+          		if( (strncmp(buf, "GET /MP3-PREV", 13) == 0) ) {
+              		// Botao MP3-PREV
+              	}
+              	if( (strncmp(buf, "GET /MP3-PLAY", 13) == 0) ) {
+              		// Botao MP3-PLAY
+              	}
+              	if( (strncmp(buf, "GET /MP3-NEXT", 13) == 0) ) {
+              		// Botao MP3-NEXT
+              	}
+              	if( (strncmp(buf, "GET /MP3-STOP", 13) == 0) ) {
+              		// Botao MP3-STOP
+              	}
+          }
+          else if((strncmp(buf, "GET /readMP3", 12) == 0)) {
+        	  sprintf(buf_html, "%s MUS:%s;MP3:%d;FIM\n", http_200_OK, "", 0);
+        	  netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+          }
     	  //
     	  else
     	  {
