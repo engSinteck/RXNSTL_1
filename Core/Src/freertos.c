@@ -122,9 +122,17 @@ char line[100]; /* Line buffer */
 FRESULT fr;     /* FatFs return code */
 DWORD fre_clust;
 uint32_t totalSpace, freeSpace, SpaceUsed;
+
+// FLASH QSPI W25Q512
 extern uint8_t retUSER;    /* Return value for USER */
 extern FATFS USERFatFS;    /* File system object for USER  cal drive */
 extern FIL USERFile;       /* File object for USER */
+
+// USB HOST
+extern uint8_t retUSBH;    /* Return value for USBH */
+extern FATFS USBHFatFS;    /* File system object for USBH logical drive */
+extern FIL USBHFile;       /* File object for USBH */
+
 lv_mem_monitor_t mon;
 
 uint8_t qspi_ret;
@@ -529,8 +537,8 @@ void StartTaskGUI(void *argument)
 	// Init Flash QSPI
   qspi_ret = BSP_QSPI_Init();
   // Mount Flash FATFS
-  //MX_FATFS_Init();
-  //Mount_FATFS();
+  MX_FATFS_Init();
+  Mount_FATFS();
 
   lv_disp_buf_init(&disp_buf, buf_tft, NULL, LV_HOR_RES_MAX * 10);    // Initialize the display buffer
   lv_init(0);
@@ -715,34 +723,42 @@ void StartTaskNTP(void *argument)
 /* USER CODE BEGIN Application */
 void Mount_FATFS(void)
 {
-	  if(retUSER != 0) {
-		 // Erro FATFS
+	  if(retUSER != 0 || retUSBH != 0) {
+		  // Erro FATFS
+		  printf("Erro MX_FATFS_Init !!\n");
 	  }
 	  else {
+		  printf("MX_FATFS_Init OK !!\n");
 	  }
-	  // Mount FileSystem
-	  fr = f_mount(&USERFatFS, "", 1);
+
+	  // Mount FileSystem FLASH QSPI
+	  fr = f_mount(&USERFatFS, "", 0);
 	  if(fr != FR_OK) {
+		  printf("Erro f_mount !!\n");
 	  }
 	  else {
+		  printf("f_mount OK !!\n");
 	  }
 	  // Check freeSpace space
-	  fr = f_getfree("", &fre_clust, &pfs);
+	  fr = f_getfree("0:", &fre_clust, &pfs);
 	  if(fr != FR_OK){
+		  printf("Erro f_getfree !!\n");
 	  }
 	  else {
+		  printf("f_getfree OK !!\n");
+
 		  totalSpace = (uint32_t)((pfs->n_fatent - 2) * pfs->csize * 0.5);
 		  freeSpace = (uint32_t)(fre_clust * pfs->csize * 0.5);
 		  SpaceUsed = totalSpace - freeSpace;
 	  }
-
 	  // Test Open config.txt
 	  fr = f_open(&USERFile, "/Config.bin", FA_READ);
 	  if(fr != FR_OK) {
+		  printf("Erro f_open Config.bin !!\n");
 	  }
 	  else {
-		 fr = f_sync(&USERFile);
-	 	 size = f_size(&USERFile);
+		  fr = f_sync(&USERFile);
+		  size = f_size(&USERFile);
 	      fr = f_read(&USERFile, line , size, &ByteRead);
 	      if(fr == FR_OK) {
 	    	  for(uint8_t x = 0; x < size-1; x++) {
@@ -750,6 +766,7 @@ void Mount_FATFS(void)
 			  }
 	      }
 	      else {
+
 	      }
 	      f_close(&USERFile);
 	  }
@@ -757,19 +774,21 @@ void Mount_FATFS(void)
 	  duracao = HAL_GetTick();
 	  fr = f_open(&USERFile, "/Img_2025/LED_VD_2.bin", FA_READ);
 	  if(fr != FR_OK) {
+		  printf("Erro f_open LED_VD_2.bin !!\n");
 	  }
 	  else {
 		 duracao = HAL_GetTick() - duracao;
 	 	 size = f_size(&USERFile);
 	      fr = f_read(&USERFile, line , 100, &ByteRead);
 	      if(fr == FR_OK) {
+	    	  printf("Erro f_read !!\n");
 	      }
 	      else {
+	    	  printf("f_read OK !!\n");
 	      }
 	      f_close(&USERFile);
 	  }
 }
-
 
 void my_loglvgl(lv_log_level_t level, const char *file, uint32_t line, const char *dsc)
 {

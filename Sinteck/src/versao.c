@@ -7,7 +7,7 @@
  */
 
 #ifdef STM32H743xx
-	const char* versao = {"1.0.0 (25-Set-25)"};
+	const char* versao = {"1.0.0 (26-Set-25)"};
 #else
 	const char* versao = {"1.0.0 (14-Abr-25)"};
 #endif
