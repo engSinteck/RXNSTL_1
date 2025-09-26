@@ -10,9 +10,9 @@
 #include "main.h"
 #include "stdio.h"
 
-
 extern RTC_DateTypeDef gDate;
 extern RTC_TimeTypeDef gTime;
+extern Cfg_var cfg;
 
 void create_rx_vumeter(void);
 void create_rx_vumeter_lr(void);
@@ -26,6 +26,7 @@ void create_rx_buttons(void);
 void update_main_screen_rx(lv_task_t * param);
 void update_rx_vumeter_main_lr(uint32_t value);
 void update_rx_vumeter(uint32_t value);
+void print_freq_rx(uint32_t freq);
 
 LV_IMG_DECLARE(TELA_RX_NSTL);
 LV_IMG_DECLARE(LED_NSTL_VM);
@@ -76,6 +77,7 @@ uint32_t demo_rx_vumeter_lr = 0;
 uint32_t flag_rx_vumeter = 0;
 uint32_t demo_rx_vumeter = 0;
 
+extern char str_lcd_freq[];
 extern const char *MES[];
 
 const uint32_t pos_led_vumeter_x[48] = {
@@ -132,6 +134,10 @@ void update_main_screen_rx(lv_task_t * param)
 		lv_label_set_text(ui_text_ampm, "PM");
 	else
 		lv_label_set_text(ui_text_ampm, "AM");
+
+	// Print Frequencia
+	print_freq_rx(cfg.Frequencia);
+	lv_label_set_text_fmt(ui_text_frequency, "FREQUENCY:  %s", str_lcd_freq);
 
 	update_rx_vumeter_main_lr(demo_rx_vumeter_lr);
 	if(!flag_rx_vumeter_lr) {
@@ -319,6 +325,21 @@ void create_rx_vumeter_lr(void)
 	lv_img_set_src(ui_vumeter_m2[11], &LED_NSTL_VM);
 }
 
+void print_freq_rx(uint32_t freq)
+{
+	uint16_t q0, q1, q2, q3, q4;
+
+	memset(str_lcd_freq, 0, 32);
+	sprintf(str_lcd_freq, "%ld", cfg.Frequencia);
+	q0 = str_lcd_freq[0] - '0';
+	q1 = str_lcd_freq[1] - '0';
+	q2 = str_lcd_freq[2] - '0';
+	q3 = str_lcd_freq[3] - '0';
+	q4 = str_lcd_freq[4] - '0';
+	memset(str_lcd_freq, 0, 32);
+	sprintf(str_lcd_freq, "%d%d%d.%d%d%d MHz", q0, q1, q2, q3, q4, 0);
+}
+
 void create_rx_frequency(void)
 {
 	static lv_style_t style_txt_frequency;
@@ -333,7 +354,8 @@ void create_rx_frequency(void)
 	lv_label_set_long_mode(ui_text_frequency, LV_LABEL_LONG_EXPAND); 		// Quebra as linhas longas
 	lv_label_set_recolor(ui_text_frequency, true); 							// Ativa recolorizar por comandos no texto
 	lv_label_set_align(ui_text_frequency, LV_ALIGN_CENTER); 				// Centraliza linhas alinhadas
-	lv_label_set_text(ui_text_frequency, "FREQUENCY:    950.875MHz");
+	print_freq_rx(cfg.Frequencia);
+	lv_label_set_text_fmt(ui_text_frequency, "FREQUENCY:  %s", str_lcd_freq);
 	lv_obj_set_pos(ui_text_frequency, 10, 53);
 }
 
