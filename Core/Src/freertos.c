@@ -695,7 +695,7 @@ void StartTaskNTP(void *argument)
 			if(cfg.NTP) {
 				// Dia-Semana-Dia-Mes-Ano-HH:MM:SS
 				gDateAdj.WeekDay = info->tm_wday;
-				gDateAdj.Year = info->tm_year + 1900;
+				gDateAdj.Year = (uint8_t)((info->tm_year + 1900)-2000);
 				gDateAdj.Month = info->tm_mon + 1;
 				gDateAdj.Date = info->tm_mday;
 
