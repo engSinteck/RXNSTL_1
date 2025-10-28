@@ -149,6 +149,7 @@ void drv_ssd1963_SetBacklight(uint8_t intensity);
 void my_monitor_cb(lv_disp_drv_t * disp_drv, uint32_t time, uint32_t px);
 void drv_ssd1963_bmp(void);
 void drv_ssd1963_clear(void);
+void ssd1963_flush_dma(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_p);
 /**********************
  *      MACROS
  **********************/

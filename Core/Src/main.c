@@ -20,8 +20,10 @@
 #include "main.h"
 #include "cmsis_os.h"
 #include "adc.h"
+#include "bdma.h"
 #include "crc.h"
 #include "dma.h"
+#include "dma2d.h"
 #include "fatfs.h"
 #include "i2c.h"
 #include "i2s.h"
@@ -93,10 +95,11 @@ uint32_t filter_adc = 0;
 //ALIGN_32BYTES (static uint16_t   adcBuffer[8]);
 #define ADC_CONVERTED_DATA_BUFFER_SIZE   ((uint32_t)  8)   /* Size of array aADCxConvertedData[] */
 ALIGN_32BYTES (static uint16_t   adcBuffer[ADC_CONVERTED_DATA_BUFFER_SIZE]);
+ALIGN_32BYTES (static uint16_t   adc3Buffer[ADC_CONVERTED_DATA_BUFFER_SIZE]);
 uint16_t adcH7[] = {0};
 uint16_t adc_ext[11] = {0};
 
-// Vari�veis para valores convertidos
+// Variaveis para valores convertidos
 volatile uint16_t adc_values[8];
 volatile uint8_t adc_ready = 0;
 
@@ -160,6 +163,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+  MX_BDMA_Init();
   MX_FMC_Init();
   MX_I2C1_Init();
   MX_QUADSPI_Init();
@@ -170,7 +174,9 @@ int main(void)
   MX_CRC_Init();
   MX_RNG_Init();
   MX_ADC1_Init();
+  MX_ADC3_Init();
   MX_I2S2_Init();
+  MX_DMA2D_Init();
   /* Call PreOsInit function */
   //MX_MBEDTLS_Init();
   /* USER CODE BEGIN 2 */
@@ -204,11 +210,11 @@ int main(void)
   adc_ext[8] = 0;
   adc_ext[9] = 0;
 
-  // Start ADC Calibration
+  // Start ADC 1 Calibration
   HAL_ADC_Stop(&hadc1);
   if (HAL_ADCEx_Calibration_Start(&hadc1, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK)
   {
-      // A calibra��o falhou, trate o erro.
+      // A calibracao falhou, trate o erro.
       Error_Handler();
   }
 
@@ -217,6 +223,22 @@ int main(void)
   }
   // Start ADC in DMA
   if(HAL_ADC_Start_DMA(&hadc1, (uint32_t *)adcBuffer, 8) != HAL_OK) {
+	  Error_Handler();
+  }
+
+  // Start ADC 3 Calibration
+  HAL_ADC_Stop(&hadc3);
+  if (HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET, ADC_SINGLE_ENDED) != HAL_OK)
+  {
+      // A calibracao falhou, trate o erro.
+      Error_Handler();
+  }
+
+  if(HAL_ADCEx_Calibration_Start(&hadc3, ADC_CALIB_OFFSET_LINEARITY, ADC_SINGLE_ENDED) != HAL_OK) {
+	  Error_Handler();
+  }
+  // Start ADC in DMA
+  if(HAL_ADC_Start_DMA(&hadc3, (uint32_t *)adc3Buffer, 2) != HAL_OK) {
 	  Error_Handler();
   }
 
@@ -507,21 +529,33 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
   */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
-   /* Invalidate Data Cache to get the updated content of the SRAM on the second half of the ADC converted data buffer: 32 bytes */
-	  // Copia os valores do buffer para o array principal
-	  for (int i = 0; i < 8; i++) {
-	    adc_values[i] = adcBuffer[i];
-	  }
-	  adc_ready = 1;
-	filter_adc++;
+	if(hadc->Instance == ADC1) {
+		/* Invalidate Data Cache to get the updated content of the SRAM on the second half of the ADC converted data buffer: 32 bytes */
+		// Copia os valores do buffer para o array principal
+		for (int i = 0; i < 8; i++) {
+			adc_values[i] = adcBuffer[i];
+		}
+		adc_ready = 1;
+		filter_adc++;
+	}
+	if(hadc->Instance == ADC3) {
+
+	}
 }
 
 // Callback de erro
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 {
-  // Tratamento de erro - pode reiniciar a convers�o
-  HAL_ADC_Stop_DMA(&hadc1);
-  HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adcBuffer, 8);
+	if(hadc->Instance == ADC1) {
+		// Tratamento de erro - pode reiniciar a conversao
+		HAL_ADC_Stop_DMA(&hadc1);
+		HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adcBuffer, 8);
+	}
+	if(hadc->Instance == ADC3) {
+		// Tratamento de erro - pode reiniciar a conversao
+		HAL_ADC_Stop_DMA(&hadc3);
+		HAL_ADC_Start_DMA(&hadc3, (uint32_t*)adc3Buffer, 2);
+	}
 }
 /* USER CODE END 4 */
 
@@ -607,7 +641,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   /* USER CODE BEGIN Callback 0 */
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM6) {
+  if (htim->Instance == TIM6)
+  {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */

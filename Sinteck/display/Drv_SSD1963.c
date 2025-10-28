@@ -7,6 +7,7 @@
  *      INCLUDES
  *********************/
 #include "main.h"
+#include "dma.h"
 #include <display/Drv_SSD1963.h>
 #include "../Sinteck/display/Tela2.c"
 #include "../Sinteck/display/TelaI.c"
@@ -25,8 +26,8 @@
 /**********************
  *      TYPEDEFS
  **********************/
-#define TFT_CMD              ((uint32_t)0x60000000) /* RS = 0 */
-#define TFT_DATA             ((uint32_t)0x60080000) /* RS = 1 */
+#define TFT_CMD              ((volatile uint32_t)0x60000000) /* RS = 0 */
+#define TFT_DATA             ((volatile uint32_t)0x60080000) /* RS = 1 */
 /**********************
  *  STATIC PROTOTYPES
  **********************/
@@ -43,6 +44,16 @@ static void drv_ssd1963_reset(void);
 static bool cmd_mode = true;
 int32_t pos_bmp;
 uint16_t col_x, col_y;
+
+volatile uint8_t buf_ri[480*16*3] __attribute__((section(".RAM_D1"))) __attribute__((aligned(32)));
+int32_t ri_i = 0;
+int32_t ri_j = 0;
+uint32_t size_in_pixels = 0;
+uint32_t total_bytes_to_transfer = 0;
+uint32_t p_ri = 0;
+volatile uint8_t spi_transfer_complete = 1;
+
+static lv_disp_drv_t *g_disp_drv;
 
 /**********************
  *      MACROS
@@ -279,6 +290,8 @@ void drv_ssd1963_flush_3(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_co
 	int32_t act_y1 = area->y1 < 0 ? 0 : area->y1;
 	int32_t act_x2 = area->x2 > SSD1963_HOR_RES - 1 ? SSD1963_HOR_RES - 1 : area->x2;
 	int32_t act_y2 = area->y2 > SSD1963_VER_RES - 1 ? SSD1963_VER_RES - 1 : area->y2;
+
+	size_in_pixels = lv_area_get_size(area);
 
 	// Set the rectangular area
 	drv_ssd1963_cmd(0x002A);
@@ -559,4 +572,90 @@ void drv_ssd1963_bmp(void)
     	}
     }
 }
+
+/**
+ * @brief O Flush Callback do LVGL
+ */
+
+void ssd1963_flush_dma(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_p)
+{
+	g_disp_drv = drv; // Salva o driver globalmente
+
+    // Aguardar transferência anterior completar
+//    while(!spi_transfer_complete) {};
+
+	size_in_pixels = lv_area_get_size(area);
+	// 2. CALCULAR O NÚMERO TOTAL DE BYTES
+	// Para cada pixel, enviamos 3 bytes (R, G, B)
+	total_bytes_to_transfer = size_in_pixels * 3;
+
+    //Set the rectangular area
+    drv_ssd1963_cmd(0x002A);
+    drv_ssd1963_data(area->x1 >> 8);
+    drv_ssd1963_data(0x00FF & area->x1);
+    drv_ssd1963_data(area->x2 >> 8);
+    drv_ssd1963_data(0x00FF & area->x2);
+
+    drv_ssd1963_cmd(0x002B);
+    drv_ssd1963_data((area->y1 + OFFSET_Y) >> 8);
+    drv_ssd1963_data(0x00FF & (area->y1 + OFFSET_Y));
+    drv_ssd1963_data((area->y2 + OFFSET_Y) >> 8);
+    drv_ssd1963_data(0x00FF & (area->y2 + OFFSET_Y));
+
+    drv_ssd1963_cmd(0x2c);
+
+    // 3. Gerenciamento de Cache (CRÍTICO NO H7)
+    // Limpa o D-Cache para garantir que os dados em SRAM (renderizados pela CPU)
+    // sejam escritos na memória principal antes do DMA lê-los.
+    SCB_CleanInvalidateDCache();
+
+    p_ri = 0;
+	for(int32_t i = area->y1; i <= area->y2; i++) {
+		for(int32_t j = area->x1; j <= area->x2; j++) {
+			buf_ri[p_ri+0] = color_p->ch.red;
+			buf_ri[p_ri+1] = color_p->ch.green;
+			buf_ri[p_ri+2] = color_p->ch.blue;
+	        color_p++;
+	        p_ri += 3;
+		}
+	}
+
+//	p_ri = 0;
+//	for(uint32_t k = 0; k < total_bytes_to_transfer; k++) {
+//		*(__IO uint8_t *)(TFT_DATA) = buf_ri[p_ri+0];		// color red
+//		*(__IO uint8_t *)(TFT_DATA) = buf_ri[p_ri+1];		// color green
+//		*(__IO uint8_t *)(TFT_DATA) = buf_ri[p_ri+2];		// color blue
+//		p_ri += 3;
+//	}
+
+	// Iniciar transferência DMA
+    spi_transfer_complete = 0;
+
+    // 4. Iniciar o DMA (modo M2P)
+    // Assumindo hdma_memtomem_dma1_stream1 e que LCD_DATA_ADDR é 0x60080000
+    HAL_DMA_Start_IT(&hdma_memtomem_dma1_stream1,
+                     (uint32_t)buf_ri,           	// Endereço de Origem (SRAM)
+                     (uint32_t)TFT_DATA,     		// Endereço de Destino (FMC)
+					 total_bytes_to_transfer);      // Número de transferências (em Half-Words)
+
+//    lv_disp_flush_ready(g_disp_drv);				// Tell you are ready with the flushing
+}
+
+/**
+ * @brief Callback de interrupção do DMA (quando a transferência termina)
+ */
+void MyMemToMemCpltCallback(DMA_HandleTypeDef *hdma)
+{
+    // Verifique se é o DMA correto (se você usa DMA para outras coisas)
+	if (hdma->Instance == DMA1_Stream1)
+	{
+	    // Atualizar flags atômicas
+	    spi_transfer_complete = 1;
+
+        // 5. Informar ao LVGL que terminamos de enviar o buffer.
+        // Ele agora está livre para desenhar o próximo "pedaço"  da tela.
+        lv_disp_flush_ready(g_disp_drv);
+    }
+}
+
 #endif

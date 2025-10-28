@@ -113,8 +113,16 @@ void my_loglvgl(lv_log_level_t level, const char *file, uint32_t line, const cha
 
 volatile unsigned long ulHighFrequencyTimerTicks = 0;
 
-static lv_disp_buf_t disp_buf __attribute__((section(".tftram")));
-static lv_color_t buf_tft[LV_HOR_RES_MAX * 10] __attribute__((section(".tftram")));		// Declare a buffer for 10 lines
+lv_disp_buf_t disp_buf __attribute__((section(".tftram")));
+
+// Use atributos para forçar a alocação na RAM D1 (A MAIS RÁPIDA)
+// E alinhe o buffer para 32 bytes para otimização de Cache
+lv_color_t lvgl_buf_1[LV_HOR_RES_MAX * 16] __attribute__((section(".RAM_D1"))) __attribute__((aligned(32)));
+
+// (Opcional, mas recomendado: buffer duplo)
+//static lv_color_t lvgl_buf_2[LV_HOR_RES_MAX * 16] __attribute__((section(".RAM_D1"))) __attribute__((aligned(32)));
+
+
 lv_mem_monitor_t mon;
 
 FATFS *pfs;
@@ -543,7 +551,7 @@ void StartTaskGUI(void *argument)
   MX_FATFS_Init();
   Mount_FATFS();
 
-  lv_disp_buf_init(&disp_buf, buf_tft, NULL, LV_HOR_RES_MAX * 10);    // Initialize the display buffer
+  lv_disp_buf_init(&disp_buf, lvgl_buf_1, NULL, LV_HOR_RES_MAX * 16);    // Initialize the display buffer
   lv_init(0);
 
   // Lvgl File System
@@ -556,6 +564,8 @@ void StartTaskGUI(void *argument)
   disp_drv.hor_res = 480;               		// Set the horizontal resolution
   disp_drv.ver_res = 128;               		// Set the vertical resolution
   disp_drv.flush_cb = drv_ssd1963_flush_3;		// Set your driver function
+  //disp_drv.flush_cb = ssd1963_flush_dma;		// Set your driver function
+
   disp_drv.buffer = &disp_buf;          		// Assign the buffer to display
   lv_disp_drv_register(&disp_drv);      		// Finally register the driver
 
