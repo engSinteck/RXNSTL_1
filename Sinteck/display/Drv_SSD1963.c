@@ -45,11 +45,14 @@ static bool cmd_mode = true;
 int32_t pos_bmp;
 uint16_t col_x, col_y;
 
-volatile uint8_t buf_ri[480*16*3] __attribute__((section(".RAM_D1"))) __attribute__((aligned(32)));
+//volatile uint8_t buf_ri[480*16*3] __attribute__((section(".RAM_D1"))) __attribute__((aligned(32)));
+/* NOVO BUFFER: Para os dados convertidos de 3 bytes (RGB888) */
+uint8_t dma_tx_buf[480 * 16 * 3] __attribute__((aligned(32)));// __attribute__((section(".RAM_D1"))) __attribute__((aligned(32)));;
 int32_t ri_i = 0;
 int32_t ri_j = 0;
 uint32_t size_in_pixels = 0;
 uint32_t total_bytes_to_transfer = 0;
+uint32_t cache_clean_size = 0;
 uint32_t p_ri = 0;
 volatile uint8_t spi_transfer_complete = 1;
 
@@ -582,12 +585,30 @@ void ssd1963_flush_dma(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *co
 	g_disp_drv = drv; // Salva o driver globalmente
 
     // Aguardar transferência anterior completar
-//    while(!spi_transfer_complete) {};
+    //while(!spi_transfer_complete) {};
 
 	size_in_pixels = lv_area_get_size(area);
 	// 2. CALCULAR O NÚMERO TOTAL DE BYTES
 	// Para cada pixel, enviamos 3 bytes (R, G, B)
 	total_bytes_to_transfer = size_in_pixels * 3;
+
+	uint32_t i;
+	lv_color_t* src_buf = color_p;
+	uint8_t* dst_buf = dma_tx_buf;
+
+	for (i = 0; i < size_in_pixels; i++) {
+		// A struct lv_color_t na v6 tem sub-campos .ch.red, .ch.green, etc.
+	    // Se LV_COLOR_DEPTH_32 for BGR:
+	    // *dst_buf++ = src_buf[i].ch.red;
+	    // *dst_buf++ = src_buf[i].ch.green;
+	    // *dst_buf++ = src_buf[i].ch.blue;
+
+	    // Se a ordem de bytes da lv_color_t for ARGB (A=msb, B=lsb)
+	    // (A forma mais segura de aceder, independentemente da ordem)
+	    *dst_buf++ = src_buf[i].ch.red;
+	    *dst_buf++ = src_buf[i].ch.green;
+	    *dst_buf++ = src_buf[i].ch.blue;
+	}
 
     //Set the rectangular area
     drv_ssd1963_cmd(0x002A);
@@ -607,38 +628,40 @@ void ssd1963_flush_dma(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *co
     // 3. Gerenciamento de Cache (CRÍTICO NO H7)
     // Limpa o D-Cache para garantir que os dados em SRAM (renderizados pela CPU)
     // sejam escritos na memória principal antes do DMA lê-los.
-    SCB_CleanInvalidateDCache();
+    //SCB_CleanInvalidateDCache();
+    // Certifique-se que o buffer de origem da cache é sempre alinhado para 32 bytes
+    // e o tamanho também é arredondado.
+    #define CACHE_LINE_SIZE 32
+    #define ROUND_UP_32(x) (((x) + CACHE_LINE_SIZE - 1) & ~(CACHE_LINE_SIZE - 1))
 
-    p_ri = 0;
-	for(int32_t i = area->y1; i <= area->y2; i++) {
-		for(int32_t j = area->x1; j <= area->x2; j++) {
-			buf_ri[p_ri+0] = color_p->ch.red;
-			buf_ri[p_ri+1] = color_p->ch.green;
-			buf_ri[p_ri+2] = color_p->ch.blue;
-	        color_p++;
-	        p_ri += 3;
-		}
-	}
+    // A única mudança: arredonde o tamanho da limpeza para o próximo múltiplo de 32
+    cache_clean_size = ROUND_UP_32(total_bytes_to_transfer);
 
-//	p_ri = 0;
-//	for(uint32_t k = 0; k < total_bytes_to_transfer; k++) {
-//		*(__IO uint8_t *)(TFT_DATA) = buf_ri[p_ri+0];		// color red
-//		*(__IO uint8_t *)(TFT_DATA) = buf_ri[p_ri+1];		// color green
-//		*(__IO uint8_t *)(TFT_DATA) = buf_ri[p_ri+2];		// color blue
-//		p_ri += 3;
-//	}
+    SCB_CleanDCache_by_Addr((uint32_t*)dma_tx_buf, cache_clean_size);
 
 	// Iniciar transferência DMA
     spi_transfer_complete = 0;
 
     // 4. Iniciar o DMA (modo M2P)
     // Assumindo hdma_memtomem_dma1_stream1 e que LCD_DATA_ADDR é 0x60080000
-    HAL_DMA_Start_IT(&hdma_memtomem_dma1_stream1,
-                     (uint32_t)buf_ri,           	// Endereço de Origem (SRAM)
+    HAL_DMA_Start(&hdma_memtomem_dma1_stream1,
+                     (uint32_t)dma_tx_buf,           // Endereço de Origem (SRAM)
                      (uint32_t)TFT_DATA,     		// Endereço de Destino (FMC)
 					 total_bytes_to_transfer);      // Número de transferências (em Half-Words)
 
-//    lv_disp_flush_ready(g_disp_drv);				// Tell you are ready with the flushing
+    // 2. AGUARDAR ATÉ O FIM DA TRANSFERÊNCIA (Modo Síncrono/Polling)
+    // Isso garante que o buffer está livre e o DMA reconfigura-se.
+    HAL_StatusTypeDef status = HAL_DMA_PollForTransfer(&hdma_memtomem_dma1_stream1, HAL_DMA_FULL_TRANSFER, 100); // Timeout em ms
+
+    // 3. Desligar o DMA (CRÍTICO para M2M)
+    __HAL_DMA_DISABLE(&hdma_memtomem_dma1_stream1);
+
+    // 4. Se a transferência foi bem-sucedida
+    if (status == HAL_OK) {
+    	lv_disp_flush_ready(drv);
+    } else {
+        // Lidar com o erro
+    }
 }
 
 /**

@@ -569,8 +569,8 @@ void StartTaskGUI(void *argument)
   // SSD1963
   disp_drv.hor_res = 480;               		// Set the horizontal resolution
   disp_drv.ver_res = 128;               		// Set the vertical resolution
-  disp_drv.flush_cb = drv_ssd1963_flush_3;		// Set your driver function
-  //disp_drv.flush_cb = ssd1963_flush_dma;		// Set your driver function
+  //disp_drv.flush_cb = drv_ssd1963_flush_3;		// Set your driver function
+  disp_drv.flush_cb = ssd1963_flush_dma;		// Set your driver function
 
   disp_drv.buffer = &disp_buf;          		// Assign the buffer to display
   lv_disp_drv_register(&disp_drv);      		// Finally register the driver
