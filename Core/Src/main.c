@@ -49,6 +49,8 @@
 /* USER CODE BEGIN PTD */
 reset_cause_t reset_cause_get(void);
 void Read_Remote(void);
+void MCU_TemperatureCalculate(uint32_t ts_data);
+void MCU_Temperature(void);
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -90,12 +92,15 @@ reset_cause_t reset_cause;
 
 uint32_t TelaAtiva = 0;
 uint32_t filter_adc = 0;
+uint32_t filter_adc3 = 0;
+
+double STM32Temperature;
 
 /* Variable containing ADC conversions data */
 //ALIGN_32BYTES (static uint16_t   adcBuffer[8]);
 #define ADC_CONVERTED_DATA_BUFFER_SIZE   ((uint32_t)  8)   /* Size of array aADCxConvertedData[] */
 ALIGN_32BYTES (static uint16_t   adcBuffer[ADC_CONVERTED_DATA_BUFFER_SIZE]);
-ALIGN_32BYTES (static uint16_t   adc3Buffer[ADC_CONVERTED_DATA_BUFFER_SIZE]);
+ALIGN_32BYTES (static uint16_t   adc3Buffer[ADC_CONVERTED_DATA_BUFFER_SIZE]) __attribute__((section(".RAM_D3")));
 uint16_t adcH7[] = {0};
 uint16_t adc_ext[11] = {0};
 
@@ -238,7 +243,7 @@ int main(void)
 	  Error_Handler();
   }
   // Start ADC in DMA
-  if(HAL_ADC_Start_DMA(&hadc3, (uint32_t *)adc3Buffer, 2) != HAL_OK) {
+  if(HAL_ADC_Start_DMA(&hadc3, (uint32_t *)adc3Buffer, 3) != HAL_OK) {
 	  Error_Handler();
   }
 
@@ -539,7 +544,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		filter_adc++;
 	}
 	if(hadc->Instance == ADC3) {
-
+		filter_adc3++;
 	}
 }
 
@@ -554,8 +559,24 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
 	if(hadc->Instance == ADC3) {
 		// Tratamento de erro - pode reiniciar a conversao
 		HAL_ADC_Stop_DMA(&hadc3);
-		HAL_ADC_Start_DMA(&hadc3, (uint32_t*)adc3Buffer, 2);
+		HAL_ADC_Start_DMA(&hadc3, (uint32_t*)adc3Buffer, 3);
 	}
+}
+
+void MCU_TemperatureCalculate(uint32_t GetValue)
+{
+	uint32_t T1_30 = (uint32_t) *TEMPSENSOR_CAL1_ADDR;		// @30C
+	uint32_t T1_110 = (uint32_t) *TEMPSENSOR_CAL2_ADDR;		// @110C
+
+	//calculate the temperature in (in °C)
+	// Analog-to-digital converters (ADC)
+	// Temperature (in °C) = ((110 °C – 30 °C)/(TS_CAL2 – TS_CAL1))× (TS_DATA – TS_CAL1) + 30 °C
+	STM32Temperature = ( (((double)(110 - 30))/((double)(T1_110 - T1_30))) * ((double)(GetValue - T1_30)) ) + ((double)30);
+}
+
+void MCU_Temperature(void)
+{
+	MCU_TemperatureCalculate(adc3Buffer[0]);
 }
 /* USER CODE END 4 */
 

@@ -108,19 +108,22 @@ extern volatile uint8_t rx_uart[];
 void Read_Remote(void);
 extern void MX_LWIP_Init(void);
 extern void MX_USB_DEVICE_Init(void);
+extern void MCU_Temperature(void);
 void Mount_FATFS(void);
 void my_loglvgl(lv_log_level_t level, const char *file, uint32_t line, const char *dsc);
 
 volatile unsigned long ulHighFrequencyTimerTicks = 0;
 
-lv_disp_buf_t disp_buf __attribute__((section(".tftram")));
+double STM32_Temp = 0;
+
+lv_disp_buf_t disp_buf;
 
 // Use atributos para forçar a alocação na RAM D1 (A MAIS RÁPIDA)
 // E alinhe o buffer para 32 bytes para otimização de Cache
 lv_color_t lvgl_buf_1[LV_HOR_RES_MAX * 16] __attribute__((section(".RAM_D1"))) __attribute__((aligned(32)));
 
 // (Opcional, mas recomendado: buffer duplo)
-//static lv_color_t lvgl_buf_2[LV_HOR_RES_MAX * 16] __attribute__((section(".RAM_D1"))) __attribute__((aligned(32)));
+lv_color_t lvgl_buf_2[LV_HOR_RES_MAX * 16] __attribute__((section(".RAM_D1"))) __attribute__((aligned(32)));
 
 
 lv_mem_monitor_t mon;
@@ -511,6 +514,9 @@ void StartTaskMain(void *argument)
 		  Calculate_UPTime();
 	  }
 
+	  // STM32 Temperature
+	  MCU_Temperature();
+
 	  // Leitura GPIO BattInput
 	  Read_Remote();
 
@@ -551,7 +557,7 @@ void StartTaskGUI(void *argument)
   MX_FATFS_Init();
   Mount_FATFS();
 
-  lv_disp_buf_init(&disp_buf, lvgl_buf_1, NULL, LV_HOR_RES_MAX * 16);    // Initialize the display buffer
+  lv_disp_buf_init(&disp_buf, lvgl_buf_1, lvgl_buf_2, LV_HOR_RES_MAX * 16);    // Initialize the display buffer
   lv_init(0);
 
   // Lvgl File System
