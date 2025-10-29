@@ -207,8 +207,8 @@ void MX_ADC3_Init(void)
     Error_Handler();
   }
 
-  /** Configure Regular Channel */
-
+  /** Configure Regular Channel
+  */
   sConfig.Channel = ADC_CHANNEL_VBAT;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(&hadc3, &sConfig) != HAL_OK)

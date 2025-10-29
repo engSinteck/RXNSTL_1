@@ -76,6 +76,7 @@ extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_adc3;
 extern DMA_HandleTypeDef hdma_memtomem_dma1_stream1;
 extern DMA2D_HandleTypeDef hdma2d;
+extern MDMA_HandleTypeDef hmdma_mdma_channel0_dma1_stream1_tc_0;
 extern QSPI_HandleTypeDef hqspi;
 extern TIM_HandleTypeDef htim12;
 extern TIM_HandleTypeDef htim6;
@@ -292,6 +293,20 @@ void OTG_FS_IRQHandler(void)
   /* USER CODE BEGIN OTG_FS_IRQn 1 */
 
   /* USER CODE END OTG_FS_IRQn 1 */
+}
+
+/**
+  * @brief This function handles MDMA global interrupt.
+  */
+void MDMA_IRQHandler(void)
+{
+  /* USER CODE BEGIN MDMA_IRQn 0 */
+
+  /* USER CODE END MDMA_IRQn 0 */
+  HAL_MDMA_IRQHandler(&hmdma_mdma_channel0_dma1_stream1_tc_0);
+  /* USER CODE BEGIN MDMA_IRQn 1 */
+
+  /* USER CODE END MDMA_IRQn 1 */
 }
 
 /**

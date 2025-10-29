@@ -8,6 +8,7 @@
  *********************/
 #include "main.h"
 #include "dma.h"
+#include "mdma.h"
 #include <display/Drv_SSD1963.h>
 #include "../Sinteck/display/Tela2.c"
 #include "../Sinteck/display/TelaI.c"
@@ -645,9 +646,9 @@ void ssd1963_flush_dma(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *co
     // 4. Iniciar o DMA (modo M2P)
     // Assumindo hdma_memtomem_dma1_stream1 e que LCD_DATA_ADDR é 0x60080000
     HAL_DMA_Start(&hdma_memtomem_dma1_stream1,
-                     (uint32_t)dma_tx_buf,           // Endereço de Origem (SRAM)
-                     (uint32_t)TFT_DATA,     		// Endereço de Destino (FMC)
-					 total_bytes_to_transfer);      // Número de transferências (em Half-Words)
+                    (uint32_t)dma_tx_buf,           // Endereço de Origem (SRAM)
+                    (uint32_t)TFT_DATA,     		// Endereço de Destino (FMC)
+					total_bytes_to_transfer);      // Número de transferências (em Half-Words)
 
     // 2. AGUARDAR ATÉ O FIM DA TRANSFERÊNCIA (Modo Síncrono/Polling)
     // Isso garante que o buffer está livre e o DMA reconfigura-se.
@@ -672,6 +673,16 @@ void MyMemToMemCpltCallback(DMA_HandleTypeDef *hdma)
     // Verifique se é o DMA correto (se você usa DMA para outras coisas)
 	if (hdma->Instance == DMA1_Stream1)
 	{
+
+		// 1. Desabilitar o Stream (Impede a Falha de Reativação M2M)
+		__HAL_DMA_DISABLE(hdma);
+
+		// 2. Limpar todas as flags relevantes para o próximo uso
+		__HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_TC_FLAG_INDEX(hdma));
+		__HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_HT_FLAG_INDEX(hdma)); // Limpa Half Transfer (se aplicável)
+		__HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_TE_FLAG_INDEX(hdma));
+		__HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_DME_FLAG_INDEX(hdma));
+
 	    // Atualizar flags atômicas
 	    spi_transfer_complete = 1;
 
@@ -679,6 +690,24 @@ void MyMemToMemCpltCallback(DMA_HandleTypeDef *hdma)
         // Ele agora está livre para desenhar o próximo "pedaço"  da tela.
         lv_disp_flush_ready(g_disp_drv);
     }
+}
+
+// Esta função será chamada pelo HAL_MDMA_IRQHandler
+void HAL_MDMA_CpltCallback(MDMA_HandleTypeDef *hmdma)
+{
+    if (hmdma->Instance == MDMA_Channel0)
+    {
+        // O MDMA trata da limpeza das flags de forma mais robusta que o DMA.
+        lv_disp_flush_ready(g_disp_drv);
+    }
+}
+
+void HAL_MDMA_ErrorCallback(MDMA_HandleTypeDef *hmdma)
+{
+    // Se este for atingido, a transferência está a falhar.
+    // Coloque um breakpoint aqui para verificar se há erros de bus ou transferência.
+    // A falha pode ser no acesso ao FMC.
+    __NOP();
 }
 
 #endif

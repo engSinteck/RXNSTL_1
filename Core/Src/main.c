@@ -28,6 +28,7 @@
 #include "i2c.h"
 #include "i2s.h"
 #include "iwdg.h"
+#include "mdma.h"
 #include "quadspi.h"
 #include "rng.h"
 #include "rtc.h"
@@ -169,6 +170,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_BDMA_Init();
+  MX_MDMA_Init();
   MX_FMC_Init();
   MX_I2C1_Init();
   MX_QUADSPI_Init();
