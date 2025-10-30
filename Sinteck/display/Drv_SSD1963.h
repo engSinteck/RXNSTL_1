@@ -150,6 +150,8 @@ void my_monitor_cb(lv_disp_drv_t * disp_drv, uint32_t time, uint32_t px);
 void drv_ssd1963_bmp(void);
 void drv_ssd1963_clear(void);
 void ssd1963_flush_dma(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_p);
+void SSD1963_Flush_DMA2D(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
+void ssd1963_flush_dma_d(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_p);
 /**********************
  *      MACROS
  **********************/

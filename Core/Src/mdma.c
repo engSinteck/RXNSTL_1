@@ -47,19 +47,18 @@ void MX_MDMA_Init(void)
   /* Local variables */
 
   /* Configure MDMA channel MDMA_Channel0 */
-  hmdma_mdma_channel0_dma1_stream1_tc_0.Init.Request = MDMA_REQUEST_SW;
   /* Configure MDMA request hmdma_mdma_channel0_dma1_stream1_tc_0 on MDMA_Channel0 */
   hmdma_mdma_channel0_dma1_stream1_tc_0.Instance = MDMA_Channel0;
-  hmdma_mdma_channel0_dma1_stream1_tc_0.Init.Request = MDMA_REQUEST_DMA1_Stream1_TC;
-  hmdma_mdma_channel0_dma1_stream1_tc_0.Init.TransferTriggerMode = MDMA_FULL_TRANSFER;
-  hmdma_mdma_channel0_dma1_stream1_tc_0.Init.Priority = MDMA_PRIORITY_MEDIUM;
+  hmdma_mdma_channel0_dma1_stream1_tc_0.Init.Request = MDMA_REQUEST_SW;
+  hmdma_mdma_channel0_dma1_stream1_tc_0.Init.TransferTriggerMode = MDMA_BLOCK_TRANSFER;
+  hmdma_mdma_channel0_dma1_stream1_tc_0.Init.Priority = MDMA_PRIORITY_HIGH;
   hmdma_mdma_channel0_dma1_stream1_tc_0.Init.Endianness = MDMA_LITTLE_ENDIANNESS_PRESERVE;
   hmdma_mdma_channel0_dma1_stream1_tc_0.Init.SourceInc = MDMA_SRC_INC_BYTE;
   hmdma_mdma_channel0_dma1_stream1_tc_0.Init.DestinationInc = MDMA_DEST_INC_DISABLE;
   hmdma_mdma_channel0_dma1_stream1_tc_0.Init.SourceDataSize = MDMA_SRC_DATASIZE_BYTE;
   hmdma_mdma_channel0_dma1_stream1_tc_0.Init.DestDataSize = MDMA_DEST_DATASIZE_BYTE;
   hmdma_mdma_channel0_dma1_stream1_tc_0.Init.DataAlignment = MDMA_DATAALIGN_PACKENABLE;
-  hmdma_mdma_channel0_dma1_stream1_tc_0.Init.BufferTransferLength = 1;
+  hmdma_mdma_channel0_dma1_stream1_tc_0.Init.BufferTransferLength = 128;
   hmdma_mdma_channel0_dma1_stream1_tc_0.Init.SourceBurst = MDMA_SOURCE_BURST_SINGLE;
   hmdma_mdma_channel0_dma1_stream1_tc_0.Init.DestBurst = MDMA_DEST_BURST_SINGLE;
   hmdma_mdma_channel0_dma1_stream1_tc_0.Init.SourceBlockAddressOffset = 0;

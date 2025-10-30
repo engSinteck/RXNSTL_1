@@ -8,7 +8,9 @@
  *********************/
 #include "main.h"
 #include "dma.h"
+#include "dma2d.h"
 #include "mdma.h"
+#include "cmsis_os.h"
 #include <display/Drv_SSD1963.h>
 #include "../Sinteck/display/Tela2.c"
 #include "../Sinteck/display/TelaI.c"
@@ -29,6 +31,9 @@
  **********************/
 #define TFT_CMD              ((volatile uint32_t)0x60000000) /* RS = 0 */
 #define TFT_DATA             ((volatile uint32_t)0x60080000) /* RS = 1 */
+
+#define MAX_LINES_PER_CHUNK  16
+
 /**********************
  *  STATIC PROTOTYPES
  **********************/
@@ -55,9 +60,10 @@ uint32_t size_in_pixels = 0;
 uint32_t total_bytes_to_transfer = 0;
 uint32_t cache_clean_size = 0;
 uint32_t p_ri = 0;
-volatile uint8_t spi_transfer_complete = 1;
+volatile uint8_t dma_transfer_complete = 0;
+lv_disp_drv_t* g_disp_drv = NULL;
 
-static lv_disp_drv_t *g_disp_drv;
+volatile uint8_t spi_transfer_complete = 1;
 
 /**********************
  *      MACROS
@@ -637,13 +643,20 @@ void ssd1963_flush_dma(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *co
 
     // A única mudança: arredonde o tamanho da limpeza para o próximo múltiplo de 32
     cache_clean_size = ROUND_UP_32(total_bytes_to_transfer);
-
     SCB_CleanDCache_by_Addr((uint32_t*)dma_tx_buf, cache_clean_size);
 
 	// Iniciar transferência DMA
     spi_transfer_complete = 0;
 
     // 4. Iniciar o DMA (modo M2P)
+//    printf("DMA Debug:\n");
+//    printf(" - Source:      %p (dma_tx_buf)\n", dma_tx_buf);
+//    printf(" - Destination: %p (TFT_DATA)\n", TFT_DATA);
+//    printf(" - Size:        %lu bytes\n", total_bytes_to_transfer);
+//    printf(" - Config: PeripheralInc=%s, MemoryInc=%s\n",
+//               hdma_memtomem_dma1_stream1.Init.PeriphInc == DMA_PINC_ENABLE ? "ENABLE" : "DISABLE",
+//               hdma_memtomem_dma1_stream1.Init.MemInc == DMA_MINC_ENABLE ? "ENABLE" : "DISABLE");
+
     // Assumindo hdma_memtomem_dma1_stream1 e que LCD_DATA_ADDR é 0x60080000
     HAL_DMA_Start(&hdma_memtomem_dma1_stream1,
                     (uint32_t)dma_tx_buf,           // Endereço de Origem (SRAM)
@@ -653,9 +666,6 @@ void ssd1963_flush_dma(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *co
     // 2. AGUARDAR ATÉ O FIM DA TRANSFERÊNCIA (Modo Síncrono/Polling)
     // Isso garante que o buffer está livre e o DMA reconfigura-se.
     HAL_StatusTypeDef status = HAL_DMA_PollForTransfer(&hdma_memtomem_dma1_stream1, HAL_DMA_FULL_TRANSFER, 100); // Timeout em ms
-
-    // 3. Desligar o DMA (CRÍTICO para M2M)
-    __HAL_DMA_DISABLE(&hdma_memtomem_dma1_stream1);
 
     // 4. Se a transferência foi bem-sucedida
     if (status == HAL_OK) {
@@ -670,26 +680,12 @@ void ssd1963_flush_dma(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *co
  */
 void MyMemToMemCpltCallback(DMA_HandleTypeDef *hdma)
 {
-    // Verifique se é o DMA correto (se você usa DMA para outras coisas)
-	if (hdma->Instance == DMA1_Stream1)
-	{
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-		// 1. Desabilitar o Stream (Impede a Falha de Reativação M2M)
-		__HAL_DMA_DISABLE(hdma);
-
-		// 2. Limpar todas as flags relevantes para o próximo uso
-		__HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_TC_FLAG_INDEX(hdma));
-		__HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_HT_FLAG_INDEX(hdma)); // Limpa Half Transfer (se aplicável)
-		__HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_TE_FLAG_INDEX(hdma));
-		__HAL_DMA_CLEAR_FLAG(hdma, __HAL_DMA_GET_DME_FLAG_INDEX(hdma));
-
-	    // Atualizar flags atômicas
-	    spi_transfer_complete = 1;
-
-        // 5. Informar ao LVGL que terminamos de enviar o buffer.
-        // Ele agora está livre para desenhar o próximo "pedaço"  da tela.
-        lv_disp_flush_ready(g_disp_drv);
-    }
+	if (hdma == &hdma_memtomem_dma1_stream1) {
+		vTaskNotifyGiveFromISR(xTaskGetCurrentTaskHandle(), &xHigherPriorityTaskWoken);
+		portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+	}
 }
 
 // Esta função será chamada pelo HAL_MDMA_IRQHandler
@@ -710,4 +706,143 @@ void HAL_MDMA_ErrorCallback(MDMA_HandleTypeDef *hmdma)
     __NOP();
 }
 
+void SSD1963_Flush_DMA2D(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)
+{
+	uint32_t width  = area->x2 - area->x1 + 1;
+	    uint32_t height = area->y2 - area->y1 + 1;
+	    //uint32_t num_pixels = width * height;
+	    static uint8_t rgb888_buf[800*3]; // 1 linha máx (ajuste conforme necessário)
+
+	    for (uint32_t y = area->y1; y <= area->y2; y++) {
+	        // Converte 1 linha (ARGB8888 -> RGB888)
+	        DMA2D->CR = 0;
+	        DMA2D->FGMAR = (uint32_t)(color_p + (y - area->y1) * width);
+	        DMA2D->OMAR  = (uint32_t)rgb888_buf;
+	        DMA2D->NLR = (width << 16) | 1;
+	        DMA2D->FGPFCCR = DMA2D_INPUT_ARGB8888;
+	        DMA2D->OPFCCR  = DMA2D_OUTPUT_RGB888;
+	        DMA2D->CR = DMA2D_M2M | DMA2D_CR_START;
+	        while (!(DMA2D->ISR & DMA2D_FLAG_TC));
+	        DMA2D->IFCR = DMA2D_FLAG_TC;
+
+	        // Define janela e envia a linha
+	        if (y == area->y1) {
+	            //Set the rectangular area
+	            drv_ssd1963_cmd(0x002A);
+	            drv_ssd1963_data(area->x1 >> 8);
+	            drv_ssd1963_data(0x00FF & area->x1);
+	            drv_ssd1963_data(area->x2 >> 8);
+	            drv_ssd1963_data(0x00FF & area->x2);
+
+	            drv_ssd1963_cmd(0x002B);
+	            drv_ssd1963_data((area->y1 + OFFSET_Y) >> 8);
+	            drv_ssd1963_data(0x00FF & (area->y1 + OFFSET_Y));
+	            drv_ssd1963_data((area->y2 + OFFSET_Y) >> 8);
+	            drv_ssd1963_data(0x00FF & (area->y2 + OFFSET_Y));
+
+	            drv_ssd1963_cmd(0x2c);
+	        }
+
+	        HAL_DMA_Start(&hdma_memtomem_dma1_stream1,
+	                      (uint32_t)rgb888_buf,
+	                      (uint32_t)TFT_DATA,
+	                      width * 3);
+	        HAL_DMA_PollForTransfer(&hdma_memtomem_dma1_stream1, HAL_DMA_FULL_TRANSFER, HAL_MAX_DELAY);
+	    }
+
+	    lv_disp_flush_ready(disp_drv);
+}
+
+
+void DMA_TransferComplete(DMA_HandleTypeDef *hdma)
+{
+	for(volatile int i = 0; i < 100; i++);
+
+    dma_transfer_complete = 1;
+
+    // Notifica o LVGL que o flush está completo
+    if(g_disp_drv != NULL) {
+        lv_disp_flush_ready(g_disp_drv);
+    }
+}
+
+void DMA_TransferError(DMA_HandleTypeDef *hdma)
+{
+	for(volatile int i = 0; i < 100; i++);
+
+	// Tratamento de erro - você pode querer tentar novamente ou reportar
+    dma_transfer_complete = 1;
+    if(g_disp_drv != NULL) {
+        lv_disp_flush_ready(g_disp_drv);
+    }
+}
+
+void ssd1963_flush_dma_d(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_p)
+{
+    // Aguardar transferência anterior completar (timeout para evitar deadlock)
+//    uint32_t timeout = 1000; // 1 segundo timeout
+//    while(!dma_transfer_complete && timeout--) {
+//        vTaskDelay(1); // Se usando FreeRTOS
+//    }
+//
+//    if(!dma_transfer_complete) {
+//        // Timeout - forçar finalização e reportar erro
+//        HAL_DMA_Abort(&hdma_memtomem_dma1_stream1);
+//        lv_disp_flush_ready(drv);
+//        return;
+//    }
+
+    g_disp_drv = drv;
+    dma_transfer_complete = 0;
+
+    size_in_pixels = lv_area_get_size(area);
+    total_bytes_to_transfer = size_in_pixels * 3;
+
+    // Converter cores para formato RGB888
+    lv_color_t* src_buf = color_p;
+    uint8_t* dst_buf = dma_tx_buf;
+
+    for(uint32_t i = 0; i < size_in_pixels; i++) {
+        *dst_buf++ = src_buf[i].ch.red;
+        *dst_buf++ = src_buf[i].ch.green;
+        *dst_buf++ = src_buf[i].ch.blue;
+    }
+
+    // Configurar área de display
+    drv_ssd1963_cmd(0x002A);
+    drv_ssd1963_data(area->x1 >> 8);
+    drv_ssd1963_data(0x00FF & area->x1);
+    drv_ssd1963_data(area->x2 >> 8);
+    drv_ssd1963_data(0x00FF & area->x2);
+
+    drv_ssd1963_cmd(0x002B);
+    drv_ssd1963_data((area->y1 + OFFSET_Y) >> 8);
+    drv_ssd1963_data(0x00FF & (area->y1 + OFFSET_Y));
+    drv_ssd1963_data((area->y2 + OFFSET_Y) >> 8);
+    drv_ssd1963_data(0x00FF & (area->y2 + OFFSET_Y));
+
+    drv_ssd1963_cmd(0x2c); // Comando para iniciar escrita de dados
+
+    // Gerenciamento de cache (CRÍTICO)
+    SCB_CleanDCache_by_Addr((uint32_t*)dma_tx_buf,
+    ROUND_UP_32(total_bytes_to_transfer));
+
+    // Iniciar transferência DMA assíncrona
+    HAL_DMA_Start(&hdma_memtomem_dma1_stream1,
+                 (uint32_t)dma_tx_buf,
+                 (uint32_t)TFT_DATA,
+                 total_bytes_to_transfer);
+
+    // 2. AGUARDAR ATÉ O FIM DA TRANSFERÊNCIA (Modo Síncrono/Polling)
+    // Isso garante que o buffer está livre e o DMA reconfigura-se.
+    HAL_StatusTypeDef status = HAL_DMA_PollForTransfer(&hdma_memtomem_dma1_stream1, HAL_DMA_FULL_TRANSFER, 100); // Timeout em ms
+
+    if(status == HAL_OK) {
+        // Se falhar ao iniciar DMA, fallback para método síncrono
+        //dma_transfer_complete = 1;
+        lv_disp_flush_ready(drv);
+    }
+
+    // A CPU está livre agora - o callback será chamado quando a transferência completar
+}
 #endif

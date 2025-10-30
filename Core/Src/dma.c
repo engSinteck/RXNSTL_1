@@ -23,6 +23,8 @@
 
 /* USER CODE BEGIN 0 */
 extern void MyMemToMemCpltCallback(DMA_HandleTypeDef *hdma);
+void DMA_TransferComplete(DMA_HandleTypeDef *hdma);
+void DMA_TransferError(DMA_HandleTypeDef *hdma);
 /* USER CODE END 0 */
 
 /*----------------------------------------------------------------------------*/
@@ -54,13 +56,14 @@ void MX_DMA_Init(void)
   hdma_memtomem_dma1_stream1.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
   hdma_memtomem_dma1_stream1.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
   hdma_memtomem_dma1_stream1.Init.Mode = DMA_NORMAL;
-  hdma_memtomem_dma1_stream1.Init.Priority = DMA_PRIORITY_LOW;
-  hdma_memtomem_dma1_stream1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
+  hdma_memtomem_dma1_stream1.Init.Priority = DMA_PRIORITY_HIGH;
+  hdma_memtomem_dma1_stream1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
   hdma_memtomem_dma1_stream1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
   hdma_memtomem_dma1_stream1.Init.MemBurst = DMA_MBURST_SINGLE;
   hdma_memtomem_dma1_stream1.Init.PeriphBurst = DMA_PBURST_SINGLE;
   /**/
-  hdma_memtomem_dma1_stream1.XferCpltCallback = MyMemToMemCpltCallback;
+  hdma_memtomem_dma1_stream1.XferCpltCallback  = DMA_TransferComplete;
+  hdma_memtomem_dma1_stream1.XferErrorCallback = DMA_TransferError;
   /**/
 
   if (HAL_DMA_Init(&hdma_memtomem_dma1_stream1) != HAL_OK)

@@ -271,9 +271,9 @@ void Carrega_Prog_Default(void)
 	// NetWork
 	cfg.EnableSNMP = 0;
 	cfg.PortWEB = 80;
-	cfg.IP_ADDR[0] = 10;   cfg.IP_ADDR[1] = 55;   cfg.IP_ADDR[2] = 1;    cfg.IP_ADDR[3] = 99;
+	cfg.IP_ADDR[0] = 192;   cfg.IP_ADDR[1] = 168;   cfg.IP_ADDR[2] = 10;    cfg.IP_ADDR[3] = 17;
 	cfg.MASK_ADDR[0] = 255; cfg.MASK_ADDR[1] = 255; cfg.MASK_ADDR[2] = 255; cfg.MASK_ADDR[3] = 0;
-	cfg.GW_ADDR[0] = 10;   cfg.GW_ADDR[1] = 55;   cfg.GW_ADDR[2] = 1;    cfg.GW_ADDR[3] = 1;
+	cfg.GW_ADDR[0] = 192;   cfg.GW_ADDR[1] = 168;   cfg.GW_ADDR[2] = 10;    cfg.GW_ADDR[3] = 250;
 	cfg.DNS_ADDR[0] = 8;  cfg.DNS_ADDR[1] = 8;  cfg.DNS_ADDR[2] = 8;   cfg.DNS_ADDR[3] = 8;
 
 	// Timezone

@@ -170,7 +170,7 @@ int main(void)
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_BDMA_Init();
-  MX_MDMA_Init();
+  //MX_MDMA_Init();
   MX_FMC_Init();
   MX_I2C1_Init();
   MX_QUADSPI_Init();
@@ -646,6 +646,16 @@ void MPU_Config(void)
   MPU_InitStruct.BaseAddress = 0x60080000;
 
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
+  // RAM_D1
+  //MPU_InitStruct.Enable = MPU_REGION_ENABLE;
+  //MPU_InitStruct.BaseAddress = 0x24000000;
+  //MPU_InitStruct.Size = MPU_REGION_SIZE_512KB;
+  //MPU_InitStruct.AccessPermission = MPU_REGION_FULL_ACCESS;
+  //MPU_InitStruct.IsCacheable = MPU_ACCESS_NOT_CACHEABLE;
+  //MPU_InitStruct.IsBufferable = MPU_ACCESS_NOT_BUFFERABLE;
+  //HAL_MPU_ConfigRegion(&MPU_InitStruct);
+
   /* Enables the MPU */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
 

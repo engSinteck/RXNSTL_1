@@ -44,7 +44,7 @@
 /* Temporary workaround to avoid conflict on errno defined in STM32CubeIDE and lwip sys_arch.c errno */
 #undef LWIP_PROVIDE_ERRNO
 /*----- WITH_MBEDTLS enabled (Since MBEDTLS and FREERTOS are set) -----*/
-#define WITH_MBEDTLS 1
+#define WITH_MBEDTLS 0
 /*----- CHECKSUM_BY_HARDWARE enabled -----*/
 #define CHECKSUM_BY_HARDWARE 1
 /*-----------------------------------------------------------------------------*/
@@ -56,17 +56,21 @@
 /* Parameters set in STM32CubeMX LwIP Configuration GUI -*/
 
 #define LWIP_DEBUG	1
-#define SOCKETS_DEBUG           LWIP_DBG_ON
-#define HTTPD_DEBUG 			LWIP_DBG_ON
-#define TCP_DEBUG               LWIP_DBG_ON
+#define LWIP_STATS	1
+#define TCP_STATS	1
+
+#define SOCKETS_DEBUG           LWIP_DBG_OFF
+#define HTTPD_DEBUG 			LWIP_DBG_OFF
+#define TCP_DEBUG               LWIP_DBG_OFF
 #define MEM_DEBUG               LWIP_DBG_ON
 #define MEMP_DEBUG              LWIP_DBG_ON
+#define NETCONN_DEBUG 			LWIP_DBG_ON
 /*----- Default value in ETH configuration GUI in CubeMx: 1524 -----*/
 #define ETH_RX_BUFFER_SIZE 1536
 /*----- Value in opt.h for LWIP_DNS: 0 -----*/
 #define LWIP_DNS 1
 /*----- Default Value for MEMP_NUM_TCP_PCB: 5 ---*/
-#define MEMP_NUM_TCP_PCB 				32
+#define MEMP_NUM_TCP_PCB 				64
 #define MEMP_NUM_UDP_PCB 				32
 #define MEMP_NUM_TCPIP_MSG_INPKT        32
 #define PBUF_POOL_BUFSIZE 				1536
@@ -202,7 +206,12 @@
 #define CHECKSUM_CHECK_ICMP6 0
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
-
+ /* Timeouts mais agressivos */
+ #define TCP_MSL (5000) /* Reduced from 60s to 10s */
+ #define TCP_MAXRTX (6)
+ #define TCP_SYNMAXRTX (4)
+#define TCP_TMR_INTERVAL (250)          /* 250ms TCP timer */
+//#define TCP_FIN_WAIT_TIMEOUT (5000)     /* 5s FIN_WAIT timeout */
 /* USER CODE END 1 */
 
 #ifdef __cplusplus

@@ -24,6 +24,7 @@
 
 void http_server_netconn_init(void);
 const char * reset_cause_get_name(reset_cause_t reset_cause);
+void print_memp_stats(void);
 
 #endif /* __HTTPSERVER_NETCONN_H__ */
 
