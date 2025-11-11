@@ -27,7 +27,7 @@
 
 #include <string.h>
 #include "../Sinteck/src/log_cdc.h"
-//#include "../Sinteck/tcp/certificado.h"
+#include "../Sinteck/tcp/certificado.h"
 
 extern uint8_t mbedtls_memory_mqtt_buf[];
 

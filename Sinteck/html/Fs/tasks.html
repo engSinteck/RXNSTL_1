@@ -47,22 +47,25 @@
         
         function getLogin() {
             var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function() {
-                    if (this.readyState == 4 && this.status == 200) {
-                        document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                        document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
-                        if(document.getElementById("lock").innerHTML == '0') {
-                            document.getElementById("teste1").className = "fa fa-unlock";
-                            document.getElementById("lock2").className = "fa fa-unlock";
-                            document.getElementById("lock2").style = "font-size:24px";
-                        }       
-                        else {
-                            document.getElementById("teste1").className = "fa fa-lock";
-                            document.getElementById("lock2").className = "fa fa-lock";
-                            document.getElementById("lock2").style = "font-size:24px";
-                        }
-                    }
-                };
+            xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					// Data
+					document.getElementById("Login").innerHTML = data.User;
+					document.getElementById("lock").innerHTML = data.Config;
+					
+					if(document.getElementById("lock").innerHTML == '0') {
+						document.getElementById("teste1").className = "fa fa-unlock";
+						document.getElementById("lock2").className = "fa fa-unlock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+					else {
+						document.getElementById("teste1").className = "fa fa-lock";
+						document.getElementById("lock2").className = "fa fa-lock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+				}
+			};
             xhttp.open("GET", "readLogin", true);
             xhttp.send();
         }
@@ -71,9 +74,11 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("task").innerHTML = this.responseText.substring(this.responseText.indexOf("TASKS:")+6,this.responseText.indexOf("LVGL:")-1);
-                document.getElementById("lvgl").innerHTML = this.responseText.substring(this.responseText.indexOf("LVGL:")+5,this.responseText.indexOf("CNT:")-1);
-                document.getElementById("cnt").innerHTML = this.responseText.substring(this.responseText.indexOf("CNT:")+4,this.responseText.indexOf("FIM:")-1);
+				var data = JSON.parse(this.responseText);
+				// Data
+                document.getElementById("task").innerHTML = data.tasks; 
+                document.getElementById("lvgl").innerHTML = data.lvgl;
+                document.getElementById("cnt").innerHTML = data.cnt;
             }
         };
             xhttp.open("GET", "readTasks=", true);
@@ -90,7 +95,6 @@
         <li><a id="confaudio" href="audio.html">Audio</a></li>
 		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
-        <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
         <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
         <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
@@ -114,7 +118,7 @@
         <br><br>
         <p>Restart LVGL: <span id="cnt"></span></p>
         <br><br><br><br><br><br><br><br><br><br><br>
-        <br><br><br><br><br><br><br><br>
+        <br><br><br><br><br><br>
     </div>
 		
     <div id="footer">

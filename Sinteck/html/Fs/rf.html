@@ -8,7 +8,7 @@
 <link rel="stylesheet" type="text/css" href="css/style.css" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 </head>
-<body onload="getRF()"> 
+<body onload="getLogin()"> 
     <div id="header">
           <h1>RF Settings</h1>
     </div>
@@ -25,7 +25,6 @@
         <li><a id="confaudio" href="audio.html">Audio</a></li>
 		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
-        <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
         <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
         <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
@@ -58,6 +57,8 @@
 		</fieldset>
 		<br>
 		<h5 hidden>Value: <span id="tst1">0</span></h5>
+		<h5 hidden>Teste1: <span id="teste1"></span></h5>
+		<h5 hidden>Lock: <span id="lock">0</span></h5>
 		<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 		<br><br><br><br><br><br><br><br><br><br><br><br>
     </div>
@@ -98,8 +99,9 @@
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
+						var data = JSON.parse(this.responseText);
                         // BAND IF
-                        if( this.responseText.substring(this.responseText.indexOf("BW:")+3,this.responseText.indexOf("ATN:")-1) == '0' ) {
+                        if( data.band == false ) {
                             document.getElementById("BAND1").checked = true;
                             document.getElementById("BAND2").checked = false;
                         }
@@ -108,32 +110,36 @@
                             document.getElementById("BAND2").checked = true;
                         }
 						//
-						document.getElementById("tst1").innerHTML = this.responseText.substring(this.responseText.indexOf("ATN:")+4,this.responseText.indexOf("FIM")-1);
-						atn.value = document.getElementById("tst1").innerHTML;
+						document.getElementById("tst1").innerHTML = data.attenuation.toFixed(2);
+						atn.value = data.attenuation;
                     }
                 };
                 xhttp.open("GET", "readRF", true);
                 xhttp.send();
         }
-			
+		
 		function getLogin() {
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
-                if(document.getElementById("lock").innerHTML == '0') {
-                    document.getElementById("teste1").className = "fa fa-unlock";
-                    document.getElementById("lock2").className = "fa fa-unlock";
-                    document.getElementById("lock2").style = "font-size:24px";
-                }
-                else {
-                    document.getElementById("teste1").className = "fa fa-lock";
-                    document.getElementById("lock2").className = "fa fa-lock";
-                    document.getElementById("lock2").style = "font-size:24px";
-                }
-            }
-        };
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					// Data
+					document.getElementById("Login").innerHTML = data.User;
+					document.getElementById("lock").innerHTML = data.Config;
+					
+					if(document.getElementById("lock").innerHTML == '0') {
+						document.getElementById("teste1").className = "fa fa-unlock";
+						document.getElementById("lock2").className = "fa fa-unlock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+					else {
+						document.getElementById("teste1").className = "fa fa-lock";
+						document.getElementById("lock2").className = "fa fa-lock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+					getRF();
+				}
+			};
             xhttp.open("GET", "readLogin", true);
             xhttp.send();
         }

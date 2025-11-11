@@ -10,6 +10,8 @@
 #include "lwip/api.h"
 #include "lwip/sockets.h"
 
+#define MQTT_SOCKET_TIMEOUT_MS   5000   // 5 segundos (ajustável)
+
 volatile unsigned long MilliTimer = 0;
 
 //Timer functions
@@ -95,7 +97,8 @@ void net_disconnect(Network *n) {
 }
 
 #else // MQTT_LWIP_NETCONN
-void NewNetwork(Network *n) {
+void NewNetwork(Network *n)
+{
 	n->conn = NULL;
 	n->buf = NULL;
 	n->offset = 0;
@@ -105,25 +108,91 @@ void NewNetwork(Network *n) {
 	n->disconnect = net_disconnect;
 }
 
-int ConnectNetwork(Network *n, char *ip, int port) {
-	err_t err;
-	ip_addr_t server_ip;
+void DisconnectNetwork(Network *n)
+{
+    if (n == NULL) {
+        return;
+    }
 
-	ipaddr_aton(ip, &server_ip);
+    if (n->conn == NULL) {
+        //logI("DisconnectNetwork: Connection already NULL\n");
+        return;
+    }
 
-	n->conn = netconn_new(NETCONN_TCP);
-	if (n->conn != NULL) {
-		err = netconn_connect(n->conn, &server_ip, port);
+    //logI("DisconnectNetwork: Starting disconnect procedure\n");
 
-		if (err != ERR_OK) {
-			netconn_close(n->conn);
-			netconn_delete(n->conn); //free memory
-			return err;
-		}
-	}
+    // Para TCP, tente fazer graceful shutdown
+    if(n->conn->type == NETCONN_TCP) {
+        //logI("DisconnectNetwork: TCP shutdown\n");
+        netconn_shutdown(n->conn, 0, 1); // No RX, shutdown TX
+        vTaskDelay(pdMS_TO_TICKS(50)); // Pequena pausa
+    }
 
-	return ERR_OK;
+    //logI("DisconnectNetwork: Closing connection\n");
+    netconn_close(n->conn);
+
+    //logI("DisconnectNetwork: Deleting connection\n");
+    netconn_delete(n->conn);
+
+    n->conn = NULL;
+    //logI("DisconnectNetwork: Disconnect completed\n");
 }
+
+
+int ConnectNetwork(Network *n, char *ip, int port) {
+    err_t err = ERR_OK;
+    ip_addr_t server_ip;
+
+    if (n == NULL || ip == NULL) {
+        //logI("ConnectNetwork: Invalid parameters\n");
+        return ERR_ARG;
+    }
+
+    // Cleanup prévio
+    if (n->conn != NULL) {
+        //logI("ConnectNetwork: Cleaning up previous connection\n");
+        DisconnectNetwork(n);
+    }
+
+    n->conn = NULL;
+
+    if (!ipaddr_aton(ip, &server_ip)) {
+        //logI("ConnectNetwork: Invalid IP address: %s\n", ip);
+        err = ERR_ARG;
+        goto cleanup;
+    }
+
+    //logI("ConnectNetwork: Creating new NETCONN\n");
+    n->conn = netconn_new(NETCONN_TCP);
+    if (n->conn == NULL) {
+        //logI("ConnectNetwork: ERROR - netconn_new failed (memory exhausted)\n");
+        //CheckLwipMemory();
+        err = ERR_MEM;
+        goto cleanup;
+    }
+
+    //logI("ConnectNetwork: Attempting connection to %s:%d\n", ip, port);
+    err = netconn_connect(n->conn, &server_ip, port);
+    if (err != ERR_OK) {
+        //logI("ConnectNetwork: Connection failed with error: %d\n", err);
+        goto cleanup;
+    }
+
+    netconn_set_recvtimeout(n->conn, MQTT_SOCKET_TIMEOUT_MS);
+
+    //logI("ConnectNetwork: Connection successful\n");
+    return ERR_OK;
+
+cleanup:
+    if (n->conn != NULL) {
+        //logI("ConnectNetwork: Cleanup after error\n");
+        netconn_close(n->conn);
+        netconn_delete(n->conn);
+        n->conn = NULL;
+    }
+    return err;
+}
+
 
 int net_read(Network *n, unsigned char *buffer, int len, int timeout_ms) {
 	int rc;
@@ -172,8 +241,35 @@ int net_write(Network *n, unsigned char *buffer, int len, int timeout_ms) {
 }
 
 void net_disconnect(Network *n) {
-	netconn_close(n->conn); 		//close session
-	netconn_delete(n->conn); 		//free memory
-	n->conn = NULL;
+//	netconn_close(n->conn); 		//close session
+//	netconn_delete(n->conn); 		//free memory
+//	n->conn = NULL;
+	DisconnectNetwork(n);
 }
+
+int NetworkIsConnected(Network *n)
+{
+    if (n == NULL || n->conn == NULL)
+        return 0;
+
+    struct netbuf *buf;
+    err_t err = netconn_recv(n->conn, &buf);
+
+    if (err == ERR_OK) {
+        // recebeu algo: conexão viva
+        netbuf_delete(buf);
+        return 1;
+    }
+    else if (err == ERR_TIMEOUT) {
+        // nenhum dado, mas conexão ainda existe
+        return 1;
+    }
+    else {
+        // erro real: conexão perdida
+        return 0;
+    }
+}
+
+
+
 #endif

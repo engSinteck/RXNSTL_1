@@ -80,10 +80,9 @@
 /*----- Value in opt.h for MEM_ALIGNMENT: 1 -----*/
 #define MEM_ALIGNMENT 4
 /*----- Default Value for MEM_SIZE: 1600 ---*/
-#define MEM_SIZE 131048
+#define MEM_SIZE 65536
 /*----- Default Value for H7 devices: 0x30044000 -----*/
 #define LWIP_RAM_HEAP_POINTER 0x30020000
-//#define LWIP_RAM_HEAP_POINTER    (0x30004000)
 /*----- Default Value for MEMP_NUM_TCP_PCB_LISTEN: 8 ---*/
 #define MEMP_NUM_TCP_PCB_LISTEN 32
 /*----- Default Value for MEMP_NUM_TCP_SEG: 16 ---*/
@@ -151,7 +150,7 @@
 /*----- Default Value for LWIP_SO_RCVBUF: 0 ---*/
 #define LWIP_SO_RCVBUF 1
 /*----- Value in opt.h for RECV_BUFSIZE_DEFAULT: INT_MAX -----*/
-#define RECV_BUFSIZE_DEFAULT 2000000000
+#define RECV_BUFSIZE_DEFAULT 65536
 /*----- Value in opt.h for LWIP_USE_EXTERNAL_MBEDTLS: 0 -----*/
 #define LWIP_USE_EXTERNAL_MBEDTLS 1
 /*----- Default Value for LWIP_HTTPD: 0 ---*/
@@ -207,11 +206,17 @@
 /*-----------------------------------------------------------------------------*/
 /* USER CODE BEGIN 1 */
  /* Timeouts mais agressivos */
- #define TCP_MSL (5000) /* Reduced from 60s to 10s */
- #define TCP_MAXRTX (6)
- #define TCP_SYNMAXRTX (4)
-#define TCP_TMR_INTERVAL (250)          /* 250ms TCP timer */
-//#define TCP_FIN_WAIT_TIMEOUT (5000)     /* 5s FIN_WAIT timeout */
+#define TCP_MSL 				5000 	/* Reduced from 60s to 10s */
+#define TCP_MAXRTX 				6
+#define TCP_SYNMAXRTX 			4
+#define TCP_TMR_INTERVAL 		250      /* 250ms TCP timer */
+//#define TCP_FIN_WAIT_TIMEOUT 	5000     /* 5s FIN_WAIT timeout */
+
+/* Limitação de conexões simultâneas */
+#define LWIP_HTTPD_MAX_CONNECTIONS     	8		/* Máximo de conexões HTTP */
+#define LWIP_HTTPD_SUPPORT_11_KEEPALIVE 1     	/* Suporte a keep-alive */
+#define LWIP_HTTPD_SSI_INCLUDE_TAG     	1      	/* SSI tags */
+#define LWIP_HTTPD_TIMEOUT          	10        /* Timeout de 10 segundos para conexões HTTP */
 /* USER CODE END 1 */
 
 #ifdef __cplusplus

@@ -42,23 +42,26 @@
     <script>
         function getLogin() {
             var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function() {
-                    if (this.readyState == 4 && this.status == 200) {
-                        document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                        document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
-                        if(document.getElementById("lock").innerHTML == '0') {
-                            document.getElementById("teste1").className = "fa fa-unlock";
-                            document.getElementById("lock2").className = "fa fa-unlock";
-                            document.getElementById("lock2").style = "font-size:24px";
-                        }       
-                        else {
-                            document.getElementById("teste1").className = "fa fa-lock";
-                            document.getElementById("lock2").className = "fa fa-lock";
-                            document.getElementById("lock2").style = "font-size:24px";
-                        }
-                        getDebug();
-                    }
-                };
+            xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					// Data
+					document.getElementById("Login").innerHTML = data.User;
+					document.getElementById("lock").innerHTML = data.Config;
+					
+					if(document.getElementById("lock").innerHTML == '0') {
+						document.getElementById("teste1").className = "fa fa-unlock";
+						document.getElementById("lock2").className = "fa fa-unlock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+					else {
+						document.getElementById("teste1").className = "fa fa-lock";
+						document.getElementById("lock2").className = "fa fa-lock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+					getDebug();
+				}
+			};
             xhttp.open("GET", "readLogin", true);
             xhttp.send();
         }
@@ -67,20 +70,22 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("reset").innerHTML = this.responseText.substring(this.responseText.indexOf("RESET:")+6,this.responseText.indexOf("R0:")-1);
-                    document.getElementById("R0").innerHTML = this.responseText.substring(this.responseText.indexOf("R0:")+3,this.responseText.indexOf("R1:")-1);
-                    document.getElementById("R1").innerHTML = this.responseText.substring(this.responseText.indexOf("R1:")+3,this.responseText.indexOf("R2:")-1);
-                    document.getElementById("R2").innerHTML = this.responseText.substring(this.responseText.indexOf("R2:")+3,this.responseText.indexOf("R3:")-1);
-                    document.getElementById("R3").innerHTML = this.responseText.substring(this.responseText.indexOf("R3:")+3,this.responseText.indexOf("R12:")-1);
-                    document.getElementById("R12").innerHTML = this.responseText.substring(this.responseText.indexOf("R12:")+4,this.responseText.indexOf("LR:")-1);
-                    document.getElementById("LR").innerHTML = this.responseText.substring(this.responseText.indexOf("LR:")+3,this.responseText.indexOf("PC:")-1);
-                    document.getElementById("PC").innerHTML = this.responseText.substring(this.responseText.indexOf("PC:")+3,this.responseText.indexOf("PSR:")-1);
-                    document.getElementById("PSR").innerHTML = this.responseText.substring(this.responseText.indexOf("PSR:")+4,this.responseText.indexOf("BFAR:")-1);
-                    document.getElementById("BFAR").innerHTML = this.responseText.substring(this.responseText.indexOf("BFAR:")+5,this.responseText.indexOf("CFSR:")-1);
-                    document.getElementById("CFSR").innerHTML = this.responseText.substring(this.responseText.indexOf("CFSR:")+5,this.responseText.indexOf("HFSR:")-1);
-                    document.getElementById("HFSR").innerHTML = this.responseText.substring(this.responseText.indexOf("HFSR:")+5,this.responseText.indexOf("DFSR:")-1);
-                    document.getElementById("DFSR").innerHTML = this.responseText.substring(this.responseText.indexOf("DFSR:")+5,this.responseText.indexOf("AFSR:")-1);
-                    document.getElementById("AFSR").innerHTML = this.responseText.substring(this.responseText.indexOf("AFSR:")+5,this.responseText.indexOf("FIM:")-1);
+					var data = JSON.parse(this.responseText);
+					// Data
+                    document.getElementById("reset").innerHTML = data.reset;
+                    document.getElementById("R0").innerHTML = '0x' + data.r0.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("R1").innerHTML = '0x' + data.r1.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("R2").innerHTML = '0x' + data.r2.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("R3").innerHTML = '0x' + data.r3.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("R12").innerHTML = '0x' + data.r3.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("LR").innerHTML = '0x' + data.r12.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("PC").innerHTML = '0x' + data.pc.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("PSR").innerHTML = '0x' + data.psr.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("BFAR").innerHTML = '0x' + data.bfar.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("CFSR").innerHTML = '0x' + data.cfsr.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("HFSR").innerHTML = '0x' + data.hfsr.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("DFSR").innerHTML = '0x' + data.dfsr.toString(16).padStart(8, '0').toUpperCase();
+                    document.getElementById("AFSR").innerHTML = '0x' + data.afsr.toString(16).padStart(8, '0').toUpperCase();
                 }
             };
             xhttp.open("GET", "readDebug=", true);
@@ -97,7 +102,6 @@
         <li><a id="confaudio" href="audio.html">Audio</a></li>
 		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
-        <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
         <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
         <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>

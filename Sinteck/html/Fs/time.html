@@ -48,7 +48,6 @@
         <li><a id="confaudio" href="audio.html">Audio</a></li>
 		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
-        <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
         <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
         <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
@@ -67,11 +66,12 @@
                 var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
                     if (this.readyState == 4 && this.status == 200) {
-                        document.getElementById("diasemana").innerHTML = this.responseText.substring(this.responseText.indexOf("DAY:")+4,this.responseText.indexOf("DATE")-1);
-                        document.getElementById("data").innerHTML = this.responseText.substring(this.responseText.indexOf("DATE:")+5,this.responseText.indexOf("TIME:")-1);
-                        document.getElementById("hora").innerHTML = this.responseText.substring(this.responseText.indexOf("TIME:")+5,this.responseText.indexOf("NTP:")-1);
-                        document.getElementById("ntp1").innerHTML = this.responseText.substring(this.responseText.indexOf("NTP:")+4,this.responseText.indexOf("FUSO:")-1);
-                        document.getElementById("debug_fuso").innerHTML = this.responseText.substring(this.responseText.indexOf("FUSO:")+5,this.responseText.indexOf("FIM:")-1);
+						var data = JSON.parse(this.responseText);
+                        document.getElementById("diasemana").innerHTML = data.weeday;
+                        document.getElementById("data").innerHTML = data.date;
+                        document.getElementById("hora").innerHTML = data.time;
+                        document.getElementById("ntp1").innerHTML = data.ntp;
+                        document.getElementById("debug_fuso").innerHTML = data.timezone;
                         
                         document.getElementById('fuso').value = parseInt(document.getElementById("debug_fuso").innerHTML);
                         
@@ -139,8 +139,11 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+				var data = JSON.parse(this.responseText);
+				// Data
+				document.getElementById("Login").innerHTML = data.User;
+				document.getElementById("lock").innerHTML = data.Config;
+					
                 if(document.getElementById("lock").innerHTML == '0') {
                     document.getElementById("teste1").className = "fa fa-unlock";
                     document.getElementById("lock2").className = "fa fa-unlock";

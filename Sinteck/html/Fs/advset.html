@@ -70,13 +70,12 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                    //
-                    document.getElementById("gainrssi1").value = this.responseText.substring(this.responseText.indexOf("RSSI1:")+6,this.responseText.indexOf("RSSI2:")-1);
-                    document.getElementById("gainrssi2").value = this.responseText.substring(this.responseText.indexOf("RSSI2:")+6,this.responseText.indexOf("MPX:")-1);
-                    document.getElementById("gainmpx").value = this.responseText.substring(this.responseText.indexOf("MPX:")+4,this.responseText.indexOf("LEFT:")-1);
-                    document.getElementById("gainleft").value = this.responseText.substring(this.responseText.indexOf("LEFT:")+5,this.responseText.indexOf("RIGHT:")-1);
-                    document.getElementById("gainright").value = this.responseText.substring(this.responseText.indexOf("RIGHT:")+6,this.responseText.indexOf("FIM")-1);
-                    //
+					var data = JSON.parse(this.responseText);
+                    document.getElementById("gainrssi1").value = data.rssi1.toFixed(2);
+                    document.getElementById("gainrssi2").value = data.rssi2.toFixed(2);
+                    document.getElementById("gainmpx").value = data.mpx.toFixed(2);
+                    document.getElementById("gainleft").value = data.left.toFixed(2);
+                    document.getElementById("gainright").value = data.right.toFixed(2);
                 }
             };
             xhttp.open("GET", "readAdvSet", true);
@@ -119,9 +118,12 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
-                if(document.getElementById("lock").innerHTML == '0') {
+				var data = JSON.parse(this.responseText);
+				// Data
+				document.getElementById("Login").innerHTML = data.User;
+				document.getElementById("lock").innerHTML = data.Config;
+                
+				if(document.getElementById("lock").innerHTML == '0') {
                     document.getElementById("teste1").className = "fa fa-unlock";
                     document.getElementById("lock2").className = "fa fa-unlock";
                     document.getElementById("lock2").style = "font-size:24px";
@@ -131,7 +133,6 @@
                     document.getElementById("lock2").className = "fa fa-lock";
                     document.getElementById("lock2").style = "font-size:24px";
                 }
-                
                 getAdvSet();
             }
         };
@@ -153,7 +154,6 @@
         <li><a id="confaudio" href="audio.html">Audio</a></li>
 		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
-        <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
         <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
         <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>

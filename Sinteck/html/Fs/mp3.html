@@ -86,8 +86,11 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+				var data = JSON.parse(this.responseText);
+				// Data
+				document.getElementById("Login").innerHTML = data.User;
+				document.getElementById("lock").innerHTML = data.Config;
+				
                 if(document.getElementById("lock").innerHTML == '0') {
                     document.getElementById("teste1").className = "fa fa-unlock";
                     document.getElementById("lock2").className = "fa fa-unlock";
@@ -98,9 +101,7 @@
                     document.getElementById("lock2").className = "fa fa-lock";
                     document.getElementById("lock2").style = "font-size:24px";
                 }
-                
                 getMP3();
-
             }
         };
             xhttp.open("GET", "readLogin", true);

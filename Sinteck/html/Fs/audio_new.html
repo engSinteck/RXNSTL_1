@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <title>Configuração de Áudio</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="css/style_new.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Estilos específicos para formulários */
+        .config-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--color-text-primary);
+        }
+        .form-group input[type="text"], .form-group input[type="number"], .form-group select {
+            padding: 10px 15px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            color: var(--color-text-primary);
+            background-color: var(--color-bg);
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 1px var(--color-primary);
+        }
+        .form-group.checkbox-group {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--color-border);
+        }
+        .checkbox-group label {
+            margin-bottom: 0;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: var(--color-primary);
+        }
+        .button-submit {
+            padding: 12px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s, opacity 0.3s;
+            background-color: var(--color-primary);
+            color: white;
+            align-self: flex-start;
+            margin-top: 10px;
+        }
+        .button-submit:hover {
+            background-color: #3168d6;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .form-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            display: none;
+        }
+        .message-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .message-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body onload="getData()">
+    
+    <div class="dashboard-container">
+        
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-left"></div>
+            <div class="header-center">
+                <h2>Configuração de Áudio</h2>
+                <span>Model: <span id="MODEL">...</span></span>
+            </div>
+            <div class="header-right">
+                <span>Last update: <span id="last-update">...</span></span>
+                <span class="status-connected"><i class="fa-solid fa-circle"></i> Connected</span>
+            </div>
+        </header>
+
+        <!-- Navegação -->
+        <nav class="dashboard-nav">
+            <ul id="nav">
+                <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span> </a></li>
+                <li><a id="home" href="index.html"><i class="fa-solid fa-table-columns"></i> Overview</a></li>
+                <li class="active"><a id="confaudio" href="audio.html"><i class="fa-solid fa-wave-square"></i> Audio</a></li>
+                <li><a id="conftime" href="time.html"><i class="fa-solid fa-clock"></i> Time</a></li>
+                <li><a id="confrds" href="rds.html"><i class="fa-solid fa-compact-disc"></i> RDS</a></li>
+                <li><a id="conffreq" href="freq.html"><i class="fa-solid fa-signal"></i> Frequency</a></li>
+            </ul>
+        </nav>
+
+        <main class="dashboard-content">
+            
+            <section class="card">
+                <h3 class="card-header"><i class="fa-solid fa-gear" style="margin-right: 10px; color: var(--color-primary);"></i> Parâmetros de Áudio e Processamento</h3>
+
+                <form id="audio-form" class="config-form" onsubmit="return handleAudioSubmit(event)">
+                    
+                    <div class="config-grid">
+                        
+                        <!-- Coluna 1: Pré-ênfase e Níveis MPX -->
+                        <div>
+                            <h4 class="sub-header">Pré-ênfase e Processamento</h4>
+                            
+                            <div class="form-group">
+                                <label for="input-preemphasis">Pré-ênfase</label>
+                                <select id="input-preemphasis" name="preemphasis" required>
+                                    <option value="50">50 µs</option>
+                                    <option value="75">75 µs</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group checkbox-group">
+                                <label for="check-processor">Habilitar Processador Interno</label>
+                                <input type="checkbox" id="check-processor" name="processor-enabled">
+                            </div>
+                            
+                            <div class="form-group checkbox-group">
+                                <label for="check-aes192">Habilitar AES 192 (Opcional)</label>
+                                <input type="checkbox" id="check-aes192" name="aes192-enabled">
+                            </div>
+                        </div>
+
+                        <!-- Coluna 2: Níveis de Volume MPX -->
+                        <div>
+                            <h4 class="sub-header">Nível de Volume MPX (0 a 60)</h4>
+                            
+                            <div class="form-group">
+                                <label for="input-mpx1-level">Nível MPX1 (Atual: <span id="mpx1-val">30</span>)</label>
+                                <input type="range" id="input-mpx1-level" name="mpx1-level" min="0" max="60" step="1" value="30" 
+                                    oninput="document.getElementById('mpx1-val').textContent = this.value">
+                                <input type="number" id="input-mpx1-number" name="mpx1-level-num" min="0" max="60" value="30" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="input-mpx2-level">Nível MPX2 (Atual: <span id="mpx2-val">30</span>)</label>
+                                <input type="range" id="input-mpx2-level" name="mpx2-level" min="0" max="60" step="1" value="30"
+                                    oninput="document.getElementById('mpx2-val').textContent = this.value">
+                                <input type="number" id="input-mpx2-number" name="mpx2-level-num" min="0" max="60" value="30" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="button-submit">
+                        <i class="fa-solid fa-floppy-disk" style="margin-right: 8px;"></i> Salvar Configurações de Áudio
+                    </button>
+                    <div id="audio-message" class="form-message" role="alert"></div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <!-- Script de Simulação -->
+    <script>
+        // Função de simulação de envio (Baseado no seu padrão sendData)
+        function sendDataConfig(type, data) {
+            console.log(`Enviando dados de configuração (Type: ${type}):`, data);
+            return new Promise(resolve => {
+                // Simula um delay de rede/servidor
+                setTimeout(() => {
+                    if (Math.random() > 0.1) { // 90% de chance de sucesso
+                        resolve({ success: true, message: "Configuração salva com sucesso!" });
+                    } else {
+                        resolve({ success: false, message: "Erro ao salvar: Tempo esgotado." });
+                    }
+                }, 1000);
+            });
+        }
+
+        // Função para manter os inputs range e number sincronizados
+        document.addEventListener('DOMContentLoaded', () => {
+            const range1 = document.getElementById('input-mpx1-level');
+            const number1 = document.getElementById('input-mpx1-number');
+            const range2 = document.getElementById('input-mpx2-level');
+            const number2 = document.getElementById('input-mpx2-number');
+
+            range1.oninput = () => { number1.value = range1.value; document.getElementById('mpx1-val').textContent = range1.value; };
+            number1.oninput = () => { range1.value = number1.value; document.getElementById('mpx1-val').textContent = number1.value; };
+            range2.oninput = () => { number2.value = range2.value; document.getElementById('mpx2-val').textContent = range2.value; };
+            number2.oninput = () => { range2.value = number2.value; document.getElementById('mpx2-val').textContent = number2.value; };
+        });
+
+
+        // Função para manipular o envio do formulário de Áudio
+        async function handleAudioSubmit(event) {
+            event.preventDefault();
+            const form = document.getElementById('audio-form');
+            const messageBox = document.getElementById('audio-message');
+            messageBox.style.display = 'none';
+
+            if (!form.checkValidity()) {
+                messageBox.className = 'form-message message-error';
+                messageBox.innerHTML = 'Por favor, preencha todos os campos obrigatórios corretamente.';
+                messageBox.style.display = 'block';
+                return;
+            }
+
+            const data = {
+                preemphasis: document.getElementById('input-preemphasis').value,
+                processorEnabled: document.getElementById('check-processor').checked ? 1 : 0,
+                aes192Enabled: document.getElementById('check-aes192').checked ? 1 : 0,
+                mpx1Level: parseInt(document.getElementById('input-mpx1-level').value, 10),
+                mpx2Level: parseInt(document.getElementById('input-mpx2-level').value, 10),
+            };
+            
+            try {
+                // Simulação de envio para Type 4 (ex: Áudio)
+                const result = await sendDataConfig(4, data);
+
+                if (result.success) {
+                    messageBox.className = 'form-message message-success';
+                    messageBox.innerHTML = `Sucesso: Configurações de áudio salvas. ${result.message}`;
+                } else {
+                    messageBox.className = 'form-message message-error';
+                    messageBox.innerHTML = `Falha: ${result.message}`;
+                }
+            } catch (error) {
+                messageBox.className = 'form-message message-error';
+                messageBox.innerHTML = `Erro de rede: ${error.message}`;
+            }
+
+            messageBox.style.display = 'block';
+        }
+
+        // Função placeholder para getData() - mantendo o onload original
+        function getData() {
+            console.log("Iniciando getData() para Áudio.");
+            // Simulação de preenchimento dos dados atuais
+            document.getElementById('input-preemphasis').value = '75';
+            document.getElementById('check-processor').checked = true;
+            document.getElementById('input-mpx1-level').value = 45;
+            document.getElementById('input-mpx1-number').value = 45;
+            document.getElementById('mpx1-val').textContent = 45;
+        }
+    </script>
+    
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+</body>
+</html>

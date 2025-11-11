@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <title>STL RX Strider - Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="css/style_new.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body onload="getData()">
+    
+    <div id="header" style="display: none;">
+        <h1>STL RX Strider</h1>
+        <div id="img"><img src="STM32H7xx_files/logo.jpg" alt="" align="right" width=210 height=38></div>
+    </div>
+    
+    <div class="dashboard-container">
+        
+        <header class="dashboard-header">
+            <div class="header-left">
+            </div>
+            <div class="header-center">
+                <h2>RXNSTL Dashboard</h2>
+                <span>Model: <span id="MODEL">...</span></span>
+            </div>
+            <div class="header-right">
+                <span>Last update: <span id="last-update">...</span></span>
+                <span class="status-connected"><i class="fa-solid fa-circle"></i> Connected</span>
+            </div>
+        </header>
+
+        <nav class="dashboard-nav">
+            <ul id="nav">
+                <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span> </a></li>
+                <li class="active"><a id="home" href="index.html"><i class="fa-solid fa-table-columns"></i> Overview</a></li>
+                <li><a id="confaudio" href="audio.html"><i class="fa-solid fa-wave-square"></i> Audio</a></li>
+                <li><a id="conftime" href="time.html"><i class="fa-solid fa-clock"></i> Time</a></li>
+                <li><a id="confrds" href="rds.html"><i class="fa-solid fa-compact-disc"></i> RDS</a></li>
+                <li><a id="conffreq" href="freq.html"><i class="fa-solid fa-signal"></i> Frequency</a></li>
+            </ul>
+        </nav>
+
+        <main class="dashboard-content">
+            
+            <section class="grid-section grid-4-cols" id="power-metrics">
+                <div class="card">
+                    <span class="card-title">Forward Power</span>
+                    <div class="card-value-main">
+                        <span id="metric-fwd-power">0</span> W
+                    </div>
+                    <i class="fa-solid fa-arrow-up icon-green"></i>
+                </div>
+                <div class="card">
+                    <span class="card-title">Reflected Power</span>
+                    <div class="card-value-main">
+                        <span id="metric-ref-power">0</span> W
+                    </div>
+                    <i class="fa-solid fa-arrow-down icon-red"></i>
+                </div>
+                <div class="card">
+                    <span class="card-title">Efficiency</span>
+                    <div class="card-value-main">
+                        <span id="metric-efficiency">0.0</span> %
+                    </div>
+                    <i class="fa-solid fa-check icon-green"></i>
+                </div>
+                <div class="card">
+                    <span class="card-title">VSWR</span>
+                    <div class="card-value-main">
+                        <span id="metric-vswr">0.00</span> :1
+                    </div>
+                    <i class="fa-solid fa-chart-line icon-yellow"></i>
+                </div>
+            </section>
+
+            <section class="grid-section grid-2-cols">
+                
+                <div class="grid-col">
+                    <section class="card">
+                        <h3 class="card-header">Monitoring</h3>
+                        <div class="temp-main-grid">
+                            <div class="temp-card">
+                                <span class="card-title">Internal Temp</span>
+                                <div class="card-value-temp" id="temp-main">0.0 °C</div>
+                            </div>
+                            <div class="temp-card">
+                                <span class="card-title">External Temp</span>
+                                <div class="card-value-temp" id="c">0.0 °C</div>
+                            </div>
+                            <div class="temp-card">
+                                <span class="card-title">Status</span>
+                                <div class="card-value-temp" id="STATUS-display">...</div>
+                            </div>
+                        </div>
+                        
+                        <h4 class="sub-header" style="margin-top: 20px;">Audio Monitoring (MPX)</h4>
+                        <div class="mpx-meters-container">
+                            <label>MPX1: <strong id="B1-value">0</strong></label>
+                            <meter name="mpx1" min="0" max="48" low="24" high="31" optimum="25" value="1" id="BarMPX1"></meter>
+                            
+                            <label>MPX2: <strong id="B2-value">0</strong></label>
+                            <meter name="mpx2" min="0" max="48" low="38" high="44" optimum="40" value="1" id="BarMPX2"></meter>
+                            
+                            <label>MPX3: <strong id="B3-value">0</strong></label>
+                            <meter name="mpx3" min="0" max="48" low="38" high="44" optimum="40" value="1" id="BarMPX3"></meter>
+                        </div>
+                        
+                        <h4 class="sub-header" style="margin-top: 20px;">RF Control</h4>
+                        <div class="rf-control">
+                            <button type="button" class="myButtonON" onclick="sendData(1)">RF ON</button>
+                            <button type="button" class="myButtonOFF" onclick="sendData(2)">RF OFF</button>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="grid-col">
+                    <section class="card" style="height: 100%;">
+                        <h3 class="card-header">General Telemetry</h3>
+                        <div class="telemetry-grid">
+                            <div class="telemetry-item">
+                                <span class="card-title">VPA (Voltage)</span>
+                                <strong id="VPA-display">0.00 V</strong>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="card-title">IPA (Current)</span>
+                                <strong id="IPA-display">0.00 A</strong>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="card-title">Uptime</span>
+                                <strong id="UPTIME-display">0h 0m</strong>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="card-title">Frequency</span>
+                                <strong id="FREQ-display">0 MHz</strong>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="card-title">MPX Source</span>
+                                <strong id="AUDIO-display">...</strong>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="card-title">RDS Status</span>
+                                <strong id="RDS-display">...</strong>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="card-title">Fail Status</span>
+                                <strong id="FALHA-display">OK</strong>
+                            </div>
+                            <div class="telemetry-item">
+                                <span class="card-title">Serial Number</span>
+                                <strong id="TOKEN-display">...</strong>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    </div>
+            </section>
+        </main>
+    </div>
+
+    <div hidden>
+        <span id="Station">0</span>
+        <span id="City">0</span>
+        <span id="State">0</span>
+        <span id="Country">0</span>
+        <span id="exttemp">0</span>
+        <span id="station_debug">0</span>
+        <span id="city_debug">0</span>
+        <span id="state_debug">0</span>
+        <span id="country_debug">0</span>
+        <span id="stationtemp_debug">0</span>
+        <span id="B1">0</span>
+        <span id="B2">0</span>
+        <span id="B3">0</span>
+        <span id="RFState"></span>
+        <span id="lock">0</span>
+        <span id="teste1"></span>
+        <span id="tipo">0</span>
+        <span id="FWD">0</span>
+        <span id="REF">0</span>
+        <span id="TEMP">0</span>
+        <span id="VPA">0</span>
+        <span id="IPA">0</span>
+        <span id="UPTIME">0</span>
+        <span id="efficiency">0</span>
+        <span id="MODEL">0</span>
+        <span id="RDS">0</span>
+        <span id="FREQ">0</span>
+        <span id="AUDIO">0</span>
+        <span id="VERSIONMCU">0</span>
+        <span id="VERSIONMEM">0</span>
+        <span id="STATUS">0</span>
+        <span id="FALHA">0</span>
+        <span id="BATTERY">0</span>
+        <span id="CLOCK">0</span>
+    </div>
+    
+    <script src="js/dashboard.js"></script>
+    
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+</body>
+</html>

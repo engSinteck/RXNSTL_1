@@ -1,0 +1,193 @@
+
+<html lang="pt-br">
+<head>
+    <title>Configuração de Frequência</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="css/style_new.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Estilos específicos para formulários */
+        .config-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--color-text-primary);
+        }
+        .form-group input, .form-group select {
+            padding: 10px 15px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            color: var(--color-text-primary);
+            background-color: var(--color-bg);
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 1px var(--color-primary);
+        }
+        .button-submit {
+            padding: 12px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.3s, opacity 0.3s;
+            background-color: var(--color-primary);
+            color: white;
+            align-self: flex-start; /* Alinha o botão à esquerda */
+        }
+        .button-submit:hover {
+            background-color: #3168d6;
+        }
+
+        /* Layout responsivo para cards de configuração */
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .form-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            display: none; /* Inicialmente oculto */
+        }
+        .message-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .message-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body onload="getData()">
+    
+    <div class="dashboard-container">
+        
+        <!-- Header - Mantenha a estrutura do index_new.html -->
+        <header class="dashboard-header">
+            <div class="header-left"></div>
+            <div class="header-center">
+                <h2>Configuração de Frequência</h2>
+                <span>Model: <span id="MODEL">...</span></span>
+            </div>
+            <div class="header-right">
+                <span>Last update: <span id="last-update">...</span></span>
+                <span class="status-connected"><i class="fa-solid fa-circle"></i> Connected</span>
+            </div>
+        </header>
+
+        <!-- Navegação - Define a aba atual como ativa -->
+        <nav class="dashboard-nav">
+            <ul id="nav">
+                <li><a class="group">Login: <span id="Login">user</span> <span id="lock2"></span> </a></li>
+                <li><a id="home" href="index.html"><i class="fa-solid fa-table-columns"></i> Overview</a></li>
+                <li><a id="confaudio" href="audio.html"><i class="fa-solid fa-wave-square"></i> Audio</a></li>
+                <li><a id="conftime" href="time.html"><i class="fa-solid fa-clock"></i> Time</a></li>
+                <li><a id="confrds" href="rds.html"><i class="fa-solid fa-compact-disc"></i> RDS</a></li>
+                <li class="active"><a id="conffreq" href="freq.html"><i class="fa-solid fa-signal"></i> Frequency</a></li>
+            </ul>
+        </nav>
+
+        <main class="dashboard-content">
+            
+            <section class="card">
+                <h3 class="card-header"><i class="fa-solid fa-signal" style="margin-right: 10px; color: var(--color-primary);"></i> Ajuste da Frequência de Transmissão</h3>
+                <p class="simulation-note">A frequência deve ser definida em KHz (ex: 93.75 MHz = 937500 KHz).</p>
+
+                <form id="frequency-form" class="config-form" onsubmit="return handleFrequencySubmit(event)">
+                    <div class="form-group grid-2-cols">
+                        <label for="input-frequency">Frequência (KHz)</label>
+                        <input type="number" id="input-frequency" name="frequency" placeholder="937500 a 960000" 
+                               min="937500" max="960000" step="100" required>
+                    </div>
+
+                    <button type="submit" class="button-submit">
+                        <i class="fa-solid fa-floppy-disk" style="margin-right: 8px;"></i> Salvar Frequência
+                    </button>
+                    <div id="freq-message" class="form-message" role="alert"></div>
+                </form>
+            </section>
+        </main>
+    </div>
+
+    <!-- Script de Simulação (Deve ser substituído pela lógica real do servidor) -->
+    <script>
+        // Função de simulação de envio (Baseado no seu padrão sendData)
+        function sendDataConfig(type, data) {
+            console.log(`Enviando dados de configuração (Type: ${type}):`, data);
+            return new Promise(resolve => {
+                // Simula um delay de rede/servidor
+                setTimeout(() => {
+                    if (Math.random() > 0.1) { // 90% de chance de sucesso
+                        resolve({ success: true, message: "Configuração salva com sucesso!" });
+                    } else {
+                        resolve({ success: false, message: "Erro ao salvar: Falha de comunicação." });
+                    }
+                }, 1000);
+            });
+        }
+
+        // Função para manipular o envio do formulário de Frequência
+        async function handleFrequencySubmit(event) {
+            event.preventDefault();
+            const form = document.getElementById('frequency-form');
+            const input = document.getElementById('input-frequency');
+            const messageBox = document.getElementById('freq-message');
+            messageBox.style.display = 'none';
+
+            if (!form.checkValidity()) {
+                messageBox.className = 'form-message message-error';
+                messageBox.innerHTML = 'Por favor, insira uma frequência válida entre 937500 e 960000 KHz.';
+                messageBox.style.display = 'block';
+                return;
+            }
+
+            const frequency = parseInt(input.value, 10);
+            
+            try {
+                // Simulação de envio para Type 3 (ex: Frequência)
+                const result = await sendDataConfig(3, { frequency });
+
+                if (result.success) {
+                    messageBox.className = 'form-message message-success';
+                    messageBox.innerHTML = `Sucesso: Frequência definida para ${frequency} KHz. ${result.message}`;
+                } else {
+                    messageBox.className = 'form-message message-error';
+                    messageBox.innerHTML = `Falha: ${result.message}`;
+                }
+            } catch (error) {
+                messageBox.className = 'form-message message-error';
+                messageBox.innerHTML = `Erro de rede: ${error.message}`;
+            }
+
+            messageBox.style.display = 'block';
+        }
+
+        // Função placeholder para getData() - mantendo o onload original
+        function getData() {
+            // Lógica para buscar dados atuais e preencher o form
+            console.log("Iniciando getData() para Frequência.");
+            // Simulação de preenchimento da frequência atual
+            document.getElementById('input-frequency').value = 939000;
+        }
+    </script>
+    
+    <div id="footer">
+      <h5>Sinteck Next 2025 (&copy;) - <a href="http://www.sinteck.com.br" style="color:#FFFFFF;">www.sinteck.com.br</a><br></h5>
+    </div>
+</body>
+</html>

@@ -213,6 +213,20 @@ static void example_publish(mqtt_client_t *client, void *arg)
 	  }
 }
 
+//static void example_publish_teste(mqtt_client_t *client, void *arg)
+//{
+//	  err_t err;
+//	  u8_t qos = 0; /* 0 1 or 2, see MQTT specification */
+//	  u8_t retain = 0; /* No don't retain the payload... */
+//
+//	  err = mqtt_publish(client, "reading", buff, strlen(buff), qos, retain, mqtt_pub_request_cb, arg);
+//
+//	  if(err != ERR_OK) {
+//	    logI("Publish err: %d\n", err);
+//	    example_disconnect(client);
+//	  }
+//}
+
 /**
  * Publish Config
  */

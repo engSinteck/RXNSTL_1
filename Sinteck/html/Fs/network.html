@@ -70,13 +70,15 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("ip1").innerHTML = this.responseText.substring(this.responseText.indexOf("IP:")+3,this.responseText.indexOf("MASK:")-1);
-                    document.getElementById("mask1").innerHTML = this.responseText.substring(this.responseText.indexOf("MASK:")+5,this.responseText.indexOf("GW:")-1);
-                    document.getElementById("gw1").innerHTML = this.responseText.substring(this.responseText.indexOf("GW:")+3,this.responseText.indexOf("DNS:")-1);
-                    document.getElementById("dns1").innerHTML = this.responseText.substring(this.responseText.indexOf("DNS:")+4,this.responseText.indexOf("PORT:")-1);
-                    document.getElementById("port1").innerHTML = this.responseText.substring(this.responseText.indexOf("PORT:")+5,this.responseText.indexOf("BROKER:")-1);
-                    document.getElementById("broker").innerHTML = this.responseText.substring(this.responseText.indexOf("BROKER:")+7,this.responseText.indexOf("SNMP:")-1);
-                    document.getElementById("snmp1").innerHTML = this.responseText.substring(this.responseText.indexOf("SNMP:")+5,this.responseText.indexOf("FIM:")-1);
+					var data = JSON.parse(this.responseText);
+					// Data
+                    document.getElementById("ip1").innerHTML = data.ip;
+                    document.getElementById("mask1").innerHTML = data.mask
+                    document.getElementById("gw1").innerHTML = data.gw;
+                    document.getElementById("dns1").innerHTML = data.dns;
+                    document.getElementById("port1").innerHTML = data.port;
+                    document.getElementById("broker").innerHTML = data.mqtt;
+                    document.getElementById("snmp1").innerHTML = data.snmp;
                     
                     if(document.getElementById("snmp1").innerHTML == '1')
                         document.getElementById("snmp").checked = true;
@@ -256,8 +258,11 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+				var data = JSON.parse(this.responseText);
+				// Data
+				document.getElementById("Login").innerHTML = data.User;
+				document.getElementById("lock").innerHTML = data.Config;
+				
                 if(document.getElementById("lock").innerHTML == '0') {
                     document.getElementById("teste1").className = "fa fa-unlock";
                     document.getElementById("lock2").className = "fa fa-unlock";

@@ -44,10 +44,11 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("station_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("STATION:")+8,this.responseText.indexOf("CITY:")-1);
-                    document.getElementById("city_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("CITY:")+5,this.responseText.indexOf("STATE:")-1);
-                    document.getElementById("state_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("STATE:")+6,this.responseText.indexOf("COUNTRY:")-1);
-                    document.getElementById("country_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("COUNTRY:")+8,this.responseText.indexOf("TEMP:")-1);
+					var data = JSON.parse(this.responseText);
+                    document.getElementById("station_debug").innerHTML = data.station;
+                    document.getElementById("city_debug").innerHTML = data.city;
+                    document.getElementById("state_debug").innerHTML = data.state;
+                    document.getElementById("country_debug").innerHTML = data.country;
                     //
                     document.getElementById("stationname").value = document.getElementById("station_debug").innerHTML;
                     document.getElementById("cityname").value = document.getElementById("city_debug").innerHTML;
@@ -88,8 +89,11 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+				var data = JSON.parse(this.responseText);
+				// Data
+				document.getElementById("Login").innerHTML = data.User;
+				document.getElementById("lock").innerHTML = data.Config;
+				
                 if(document.getElementById("lock").innerHTML == '0') {
                     document.getElementById("teste1").className = "fa fa-unlock";
                     document.getElementById("lock2").className = "fa fa-unlock";
@@ -100,7 +104,6 @@
                     document.getElementById("lock2").className = "fa fa-lock";
                     document.getElementById("lock2").style = "font-size:24px";
                 }
-                
                 getProfile();
             }
         };

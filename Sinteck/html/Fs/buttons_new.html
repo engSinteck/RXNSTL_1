@@ -1,0 +1,243 @@
+<div class="interface-container">
+
+	<style>
+	     /* --- Estilos Gerais de Estrutura --- */
+          .interface-container {
+          font-family: Arial, sans-serif;
+          background-color: #ffffff;
+          padding: 15px;
+          border: 1px solid #ddd;
+         }
+
+        .section {
+          margin-bottom: 20px;
+        }
+
+        .section-title {
+          font-size: 16px;
+          font-weight: bold;
+          color: #444;
+          padding: 10px 0;
+          margin-bottom: 5px;
+        }
+
+.control-line {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee; /* Linhas divisórias leves */
+}
+
+.control-line-horizontal {
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+    padding: 10px 0;
+}
+
+.control-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.control-label {
+    font-size: 14px;
+    color: #555;
+    min-width: 120px; /* Alinha os controles */
+}
+
+.control-label-mini {
+     font-size: 12px;
+     color: #555;
+     margin-bottom: 5px;
+}
+
+/* --- Estilos para Control Tabs (Botões Agrupados) --- */
+.control-tabs {
+    display: flex;
+}
+
+.control-tabs input[type="radio"] {
+    display: none;
+}
+
+.control-tabs label {
+    padding: 8px 15px;
+    border: 1px solid #ccc;
+    cursor: pointer;
+    background-color: #f0f0f0;
+    font-size: 14px;
+    color: #333;
+    display: inline-block;
+    margin-left: -1px; 
+    transition: all 0.2s ease;
+}
+
+.control-tabs label:first-of-type {
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
+    margin-left: 0;
+}
+
+.control-tabs label:last-of-type {
+    border-top-right-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+/* Estilo AZUL de SELEÇÃO */
+.control-tabs input[type="radio"]:checked + label {
+    background-color: #2196F3; 
+    color: white;
+    border-color: #2196F3;
+    z-index: 1; 
+    position: relative;
+    box-shadow: 0 0 5px rgba(33, 150, 243, 0.5); /* Sutil brilho de ativo */
+}
+
+/* --- Estilos para Spinner (Incremento/Decremento) --- */
+.spinner-control {
+    display: flex;
+    align-items: center;
+    width: 120px; 
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.spinner-control .spinner-btn {
+    background-color: #f0f0f0;
+    border: none;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    height: 100%;
+    transition: background-color 0.1s;
+}
+
+.spinner-control .spinner-btn.active {
+    /* Exemplo do botão "+" ativo na imagem (simulação visual) */
+    background-color: #2196F3;
+    color: white;
+}
+
+.spinner-control .spinner-btn:not(.active):hover {
+    background-color: #e0e0e0;
+}
+
+.spinner-control .value-display {
+    border: none;
+    text-align: center;
+    width: 100%;
+    padding: 8px 0;
+    font-size: 14px;
+    background-color: white;
+    font-weight: bold;
+    color: #000;
+}
+	</style>
+	
+    <div class="section">
+        <h2 class="section-title">Exciter</h2>
+
+        <div class="control-line">
+            <span class="control-label">MPX Source</span>
+            <div class="control-tabs">
+                <input type="radio" id="mpx-internal" name="mpx-source" checked>
+                <label for="mpx-internal">Internal</label>
+
+                <input type="radio" id="mpx-analogue" name="mpx-source">
+                <label for="mpx-analogue">Analogue</label>
+
+                <input type="radio" id="mpx-digital" name="mpx-source">
+                <label for="mpx-digital">Digital</label>
+            </div>
+        </div>
+
+        <div class="control-line">
+            <span class="control-label">RDS Source</span>
+            <div class="control-tabs">
+                <input type="radio" id="rds-internal" name="rds-source" checked>
+                <label for="rds-internal">Internal</label>
+
+                <input type="radio" id="rds-external" name="rds-source">
+                <label for="rds-external">External</label>
+
+                <input type="radio" id="rds-no" name="rds-source">
+                <label for="rds-no">No RDS</label>
+            </div>
+        </div>
+        
+        <div class="control-line-horizontal">
+            
+            <div class="control-item">
+                <span class="control-label-mini">RDS Signal Phase</span>
+                 <div class="control-tabs rds-phase-control">
+                    <input type="radio" id="rds-phase-i" name="rds-phase" checked>
+                    <label for="rds-phase-i">I</label>
+    
+                    <input type="radio" id="rds-phase-q" name="rds-phase">
+                    <label for="rds-phase-q">Q</label>
+                </div>
+            </div>
+
+            <div class="control-item">
+                <span class="control-label-mini">RDS level [%]</span>
+                <div class="spinner-control" data-for="rds-level">
+                    <button class="spinner-btn minus-btn">-</button>
+                    <input type="text" value="3.0" data-value="3.0" class="value-display" readonly>
+                    <button class="spinner-btn plus-btn">+</button>
+                </div>
+            </div>
+
+            <div class="control-item">
+                <span class="control-label-mini">Maximum Frequency Deviation [kHz]</span>
+                <div class="spinner-control" data-for="max-deviation">
+                    <button class="spinner-btn minus-btn">-</button>
+                    <input type="text" value="75" data-value="75" class="value-display" readonly>
+                    <button class="spinner-btn plus-btn">+</button>
+                    <button class="spinner-btn plus-btn active">+</button> </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Seleciona todos os controles de spinner
+    const spinnerControls = document.querySelectorAll('.spinner-control');
+
+    spinnerControls.forEach(control => {
+        const minusBtn = control.querySelector('.minus-btn');
+        const plusBtn = control.querySelector('.plus-btn');
+        const display = control.querySelector('.value-display');
+        
+        // Define o passo (step) e valor inicial
+        // Usamos um passo de 0.1 para 'RDS level' e 1 para 'Maximum Frequency'
+        const isFloat = display.getAttribute('data-value').includes('.');
+        const step = isFloat ? 0.1 : 1;
+
+        minusBtn.addEventListener('click', () => {
+            let currentValue = parseFloat(display.getAttribute('data-value'));
+            currentValue = currentValue - step;
+            // Corrige problemas de precisão do ponto flutuante no JS
+            const newValue = Math.round(currentValue * (1 / step)) / (1 / step);
+            
+            display.value = isFloat ? newValue.toFixed(1) : newValue; // Formata para 1 casa decimal se for float
+            display.setAttribute('data-value', newValue);
+        });
+
+        plusBtn.addEventListener('click', () => {
+            let currentValue = parseFloat(display.getAttribute('data-value'));
+            currentValue = currentValue + step;
+            const newValue = Math.round(currentValue * (1 / step)) / (1 / step);
+
+            display.value = isFloat ? newValue.toFixed(1) : newValue;
+            display.setAttribute('data-value', newValue);
+        });
+    });
+});

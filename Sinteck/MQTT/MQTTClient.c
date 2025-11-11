@@ -17,9 +17,10 @@
  *******************************************************************************/
 #include <stdio.h>
 #include <string.h>
-#include <../Sinteck/MQTT/MQTTClient.h>
 #include "cmsis_os.h"
 #include "semphr.h"
+
+#include <../Sinteck/MQTT/MQTTClient.h>
 
 static void NewMessageData(MessageData* md, MQTTString* aTopicName, MQTTMessage* aMessage) {
     md->topicName = aTopicName;
@@ -408,9 +409,6 @@ int waitfor(MQTTClient* c, int packet_type, Timer* timer)
 
     return rc;
 }
-
-
-
 
 int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTConnackData* data)
 {

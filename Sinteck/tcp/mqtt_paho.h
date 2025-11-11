@@ -26,5 +26,6 @@ int  MqttConnectBroker(void);
 void MqttMessageArrived(MessageData* msg);
 void mqtt_init(void);
 void Process_MQTT_InTopic(char *token, char *cmd, uint8_t * msg, int size);
+void MqttClientDisconnect(void);
 
 #endif /* TCP_MQTT_PAHO_H_ */

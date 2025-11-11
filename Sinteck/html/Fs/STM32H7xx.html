@@ -24,7 +24,6 @@
         <li><a id="confaudio" href="audio.html">Audio</a></li>
 		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
-        <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
         <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
         <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
@@ -39,33 +38,36 @@
 
     <div id="section">
     <script>
-            function sendData(status) {
-                var xhttp = new XMLHttpRequest();
+		function sendData(status) {
+			var xhttp = new XMLHttpRequest();
                 xhttp.onreadystatechange = function() {
-                    if (this.readyState == 4 && this.status == 200) {
+					if (this.readyState == 4 && this.status == 200) {
                         document.getElementById("RFState").innerHTML =
                         this.responseText;
-                        }
+                    }
                 };
-                xhttp.open("GET", "RFState="+status, true);
-                xhttp.send();
-            }
+            xhttp.open("GET", "RFState="+status, true);
+            xhttp.send();
+        }
  
-            setInterval(function() {
-                // Call a function repetatively with 1000m Second interval
-				getTELEMETRY();
-            }, 500);           //500mSeconds update rate
+        setInterval(function() {
+			// Call a function repetatively with 1000m Second interval
+			getTELEMETRY();
+		}, 500);           //500mSeconds update rate
  
-            function getData() {
-                getLogin();
-            }
-            
+        function getData() {
+			getLogin();
+		}
+
         function getLogin() {
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+				var data = JSON.parse(this.responseText);
+                // Data
+				document.getElementById("Login").innerHTML = data.User;
+                document.getElementById("lock").innerHTML = data.Config;
+					
                 if(document.getElementById("lock").innerHTML == '0') {
                     document.getElementById("teste1").className = "fa fa-unlock";
                     document.getElementById("lock2").className = "fa fa-unlock";
@@ -76,71 +78,60 @@
                     document.getElementById("lock2").className = "fa fa-lock";
                     document.getElementById("lock2").style = "font-size:24px";
                 }
-                
-                getProfile();
+				
+				getTELEMETRY();
             }
         };
             xhttp.open("GET", "readLogin", true);
             xhttp.send();
         }
             
-            function getProfile() {
-                var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("station_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("STATION:")+8,this.responseText.indexOf("CITY:")-1);
-                    document.getElementById("city_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("CITY:")+5,this.responseText.indexOf("STATE:")-1);
-                    document.getElementById("state_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("STATE:")+6,this.responseText.indexOf("COUNTRY:")-1);
-                    document.getElementById("country_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("COUNTRY:")+8,this.responseText.indexOf("TEMP:")-1);
-                    document.getElementById("stationtemp_debug").innerHTML = this.responseText.substring(this.responseText.indexOf("TEMP:")+5,this.responseText.indexOf("FIM:")-1);
-                    document.getElementById("Station").innerHTML = document.getElementById("station_debug").innerHTML;
-                    document.getElementById("City").innerHTML = document.getElementById("city_debug").innerHTML;
-                    document.getElementById("State").innerHTML = document.getElementById("state_debug").innerHTML;
-                    document.getElementById("Country").innerHTML = document.getElementById("country_debug").innerHTML;
-                    document.getElementById("exttemp").innerHTML = document.getElementById("stationtemp_debug").innerHTML;
-                    
-                    getTELEMETRY();
-                }
-            };
-            xhttp.open("GET", "readProfile", true);
-            xhttp.send();
-            }
-            
-			function getTELEMETRY() {
-                var xhttp = new XMLHttpRequest();
-                xhttp.onreadystatechange = function() {
-                    if (this.readyState == 4 && this.status == 200) {
-						document.getElementById("RSSIS").innerHTML = this.responseText.substring(this.responseText.indexOf("RSSIS:")+6,this.responseText.indexOf("RSSIL:")-1);
-						document.getElementById("RSSIL").innerHTML = this.responseText.substring(this.responseText.indexOf("RSSIL:")+6,this.responseText.indexOf("19KHZ:")-1);
-						document.getElementById("19KHZ").innerHTML = this.responseText.substring(this.responseText.indexOf("19KHZ:")+6,this.responseText.indexOf("57KHZ:")-1);
-						document.getElementById("57KHZ").innerHTML = this.responseText.substring(this.responseText.indexOf("57KHZ:")+6,this.responseText.indexOf("MPX:")-1);
-						document.getElementById("MPX").innerHTML = this.responseText.substring(this.responseText.indexOf("MPX:")+4,this.responseText.indexOf("MONO:")-1);
-						document.getElementById("MONO").innerHTML = this.responseText.substring(this.responseText.indexOf("MONO:")+5,this.responseText.indexOf("LEFT:")-1)
-						document.getElementById("LEFT").innerHTML = this.responseText.substring(this.responseText.indexOf("LEFT:")+5,this.responseText.indexOf("RIGHT:")-1)
-						document.getElementById("RIGHT").innerHTML = this.responseText.substring(this.responseText.indexOf("RIGHT:")+6,this.responseText.indexOf("UPTIME:")-1)
-						document.getElementById("UPTIME").innerHTML = this.responseText.substring(this.responseText.indexOf("UPTIME:")+7,this.responseText.indexOf("TIPO:")-1);
-						document.getElementById("tipo").innerHTML = this.responseText.substring(this.responseText.indexOf("TIPO:")+5,this.responseText.indexOf("EXTTEMP:")-1);
-						document.getElementById("exttemp").innerHTML = this.responseText.substring(this.responseText.indexOf("EXTTEMP:")+8,this.responseText.indexOf("MODEL:")-1);
-						document.getElementById("MODEL").innerHTML = this.responseText.substring(this.responseText.indexOf("MODEL:")+6,this.responseText.indexOf("RDS:")-1);
-						document.getElementById("RDS").innerHTML = this.responseText.substring(this.responseText.indexOf("RDS:")+4,this.responseText.indexOf("FREQ:")-1);
-						document.getElementById("FREQ").innerHTML = this.responseText.substring(this.responseText.indexOf("FREQ:")+5,this.responseText.indexOf("SOURCE:")-1);
-						document.getElementById("AUDIO").innerHTML = this.responseText.substring(this.responseText.indexOf("SOURCE:")+7,this.responseText.indexOf("VERMCU:")-1);
-						document.getElementById("VERSIONMCU").innerHTML = this.responseText.substring(this.responseText.indexOf("VERMCU:")+7,this.responseText.indexOf("VERMEM:")-1);
-						document.getElementById("VERSIONMEM").innerHTML = this.responseText.substring(this.responseText.indexOf("VERMEM:")+7,this.responseText.indexOf("STS:")-1);
-						document.getElementById("STATUS").innerHTML = this.responseText.substring(this.responseText.indexOf("STS:")+4,this.responseText.indexOf("FAIL:")-1);
-						document.getElementById("FALHA").innerHTML = this.responseText.substring(this.responseText.indexOf("FAIL:")+5,this.responseText.indexOf("BAT:")-1);
-						document.getElementById("BATTERY").innerHTML = this.responseText.substring(this.responseText.indexOf("BAT:")+4,this.responseText.indexOf("CLOCK:")-1);
-						document.getElementById("CLOCK").innerHTML = this.responseText.substring(this.responseText.indexOf("CLOCK:")+6,this.responseText.indexOf("B1:")-1);
-						document.getElementById("B1").innerHTML = this.responseText.substring(this.responseText.indexOf("B1:")+3,this.responseText.indexOf("B2:")-1);
-						document.getElementById("B2").innerHTML = this.responseText.substring(this.responseText.indexOf("B2:")+3,this.responseText.indexOf("B3:")-1);
-						document.getElementById("B3").innerHTML = this.responseText.substring(this.responseText.indexOf("B3:")+3,this.responseText.indexOf("DEM:")-1);
-						document.getElementById("DEM").innerHTML = this.responseText.substring(this.responseText.indexOf("DEM:")+4,this.responseText.indexOf("STEREO:")-1);
-						document.getElementById("STEREO").innerHTML = this.responseText.substring(this.responseText.indexOf("STEREO:")+7,this.responseText.indexOf("FIM")-1);
-                    }
-                };
-                xhttp.open("GET", "readTELEMETRY", true);
-                xhttp.send();
-            }
+		function getTELEMETRY() {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					// Data
+					document.getElementById("MODEL").innerHTML = data.model;
+					document.getElementById("VERSIONMCU").innerHTML = 'MCU: ' + data.versionmcu;
+					document.getElementById("VERSIONMEM").innerHTML = 'MEM: ' + data.versionmem;
+					document.getElementById("FREQ").innerHTML = (data.frequency / 1000).toFixed(3) + ' MHz';
+					document.getElementById("RDS").innerHTML = data.rds;
+					document.getElementById("AUDIO").innerHTML = data.audiosource;
+					document.getElementById("STATUS").innerHTML = data.status;
+					document.getElementById("FALHA").innerHTML = data.fail;
+					document.getElementById("BATTERY").innerHTML = data.battery;
+					document.getElementById("CLOCK").innerHTML = data.clock;
+					document.getElementById("UPTIME").innerHTML = data.uptime;
+					//
+					document.getElementById("Station").innerHTML = data.station;
+					document.getElementById("City").innerHTML = data.city;
+					document.getElementById("State").innerHTML = data.state;
+					document.getElementById("Country").innerHTML = data.country;
+					document.getElementById("exttemp").innerHTML = data.exttemp;
+					//
+					document.getElementById("RSSIS").innerHTML = data.rssisignal + '  [ 0x' + data.rssisignal.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.rssisignal).toFixed(2) +' mV';
+					document.getElementById("RSSIL").innerHTML = data.rssilimit + '  [ 0x' + data.rssilimit.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.rssilimit).toFixed(2) +' mV';
+					document.getElementById("19KHZ").innerHTML = data.mpxpilot + '  [ 0x' + data.mpxpilot.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.mpxpilot).toFixed(2) +' mV';
+					document.getElementById("57KHZ").innerHTML = data.mpx57k + '  [ 0x' + data.mpx57k.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.mpx57k).toFixed(2) +' mV';
+					document.getElementById("MPX").innerHTML = data.mpx + '  [ 0x' + data.mpx.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.mpx).toFixed(2) +' mV';
+					document.getElementById("MONO").innerHTML = data.mono + '  [ 0x' + data.mono.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.mono).toFixed(2) +' mV';
+					document.getElementById("LEFT").innerHTML = data.left + '  [ 0x' + data.left.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.left).toFixed(2) +' mV';
+					document.getElementById("RIGHT").innerHTML = data.right + '  [ 0x' + data.right.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.right).toFixed(2) +' mV';
+					if(data.dem == true)
+						document.getElementById("DEM").innerHTML = '1';
+					else 
+						document.getElementById("DEM").innerHTML = '0';
+					if(data.stereo == true)
+						document.getElementById("STEREO").innerHTML = '1';
+					else
+						document.getElementById("STEREO").innerHTML = '0';					
+				}
+			};
+			xhttp.open("GET", "readTELEMETRY", true);
+			xhttp.send();
+		}
+
     </script>
         <p>
 			<style>

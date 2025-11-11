@@ -22,8 +22,9 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("freq1").innerHTML = this.responseText.substring(this.responseText.indexOf("FREQ:")+5,this.responseText.indexOf("FIM:")-1);
-                    document.getElementById("freq").value =  this.responseText.substring(this.responseText.indexOf("FREQ:")+5,this.responseText.indexOf("FIM:")-1);
+					var data = JSON.parse(this.responseText);
+                    document.getElementById("freq1").innerHTML = data.freq;
+                    document.getElementById("freq").value =  data.freq;
                 }
             };
             xhttp.open("GET", "readFreq", true);
@@ -63,23 +64,25 @@
         function getLogin() {
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
-                if(document.getElementById("lock").innerHTML == '0') {
-                    document.getElementById("teste1").className = "fa fa-unlock";
-                    document.getElementById("lock2").className = "fa fa-unlock";
-                    document.getElementById("lock2").style = "font-size:24px";
-                }
-                else {
-                    document.getElementById("teste1").className = "fa fa-lock";
-                    document.getElementById("lock2").className = "fa fa-lock";
-                    document.getElementById("lock2").style = "font-size:24px";
-                }
-                
-                getFreq();
-            }
-        };
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					// Data
+					document.getElementById("Login").innerHTML = data.User;
+					document.getElementById("lock").innerHTML = data.Config;
+				
+					if(document.getElementById("lock").innerHTML == '0') {
+						document.getElementById("teste1").className = "fa fa-unlock";
+						document.getElementById("lock2").className = "fa fa-unlock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+					else {
+						document.getElementById("teste1").className = "fa fa-lock";
+						document.getElementById("lock2").className = "fa fa-lock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+					getFreq();
+				}
+			};
             xhttp.open("GET", "readLogin", true);
             xhttp.send();
         }
@@ -98,7 +101,6 @@
         <li><a id="confaudio" href="audio.html">Audio</a></li>
 		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
-        <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
         <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
         <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
@@ -113,7 +115,7 @@
 	
     <div id="section">		
         <label>Frequency: </label>
-        <input type="number" id="freq" name="freq" min="937500" max="960000" step="25" oninput="checkLength(this)"/><label>  MHz</label>
+        <input type="number" id="freq" name="freq" min="937500" max="960000" step="25" oninput="checkLength(this)"/><label>  KHz</label>
         <br><br>
         <h5 hidden>Frequency: <span id="freq1">0</span></h5>
         <h5 hidden>Lock: <span id="lock">0</span></h5>

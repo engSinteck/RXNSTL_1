@@ -30,11 +30,7 @@ extern ip4_addr_t gw;
 extern ip4_addr_t dnsaddr;
 extern uint8_t flag_telemetry;
 // Profile
-extern char station_profile[];
-extern char station_city[];
-extern char station_state[];
-extern char station_country[];
-extern char station_temp[];
+extern Profile_var Profile;
 
 extern osMessageQueueId_t QueueMqttHandle;
 extern uint8_t uuid_model[];
@@ -71,27 +67,86 @@ uint8_t msgBuffer[MQTT_BUFSIZE]; //mqtt message buffer
 
 extern Cfg_var cfg;
 
+void MqttClientDisconnect(void)
+{
+	mqttClient.isconnected = 0;
+	Telemetry_State = 0;
+	MQTTCloseSession(&mqttClient);
+	net_disconnect(&net);
+	MQTTDisconnect(&mqttClient);
+}
+
 //mqtt subscribe task
 static void MqttClientSubTask(void *arg)
 {
-	//int rc = MQTT_SUCCESS;
+	int rc = 0;
+
+	uint32_t reconnect_delay_ms = 1000;
+	const uint32_t MAX_RECONNECT_DELAY_MS = 60000;
+
 	TimerInit(&timer_mqtt);
 	mqttClient.isconnected = 0;
 	Telemetry_State = 0;
 
 	while(1)
 	{
+		// Not Connected MQTT Broker
 		if(!mqttClient.isconnected) {
+			//logI("MQTT disconnected. Attempting reconnect in %u ms...\n", reconnect_delay_ms);
+			// Aguarda xx segundos
+			osDelay(reconnect_delay_ms);
 			MQTTCloseSession(&mqttClient);
 			net_disconnect(&net);
 			MQTTDisconnect(&mqttClient);
-			MqttConnectBroker();
-			osDelay(1000);
+			if(MqttConnectBroker() == MQTT_SUCCESS) { 	// Supondo que 0 é sucesso
+				//logI("MQTT reconnect SUCCESS!\n");
+				reconnect_delay_ms = 1000; 				// Resetar o delay em caso de suce
+			}
+			else {
+				//logI("MQTT reconnect FAILED.\n");
+				// 5. Aumentar o Backoff
+				reconnect_delay_ms *= 2;
+				if(reconnect_delay_ms > MAX_RECONNECT_DELAY_MS) {
+					reconnect_delay_ms = MAX_RECONNECT_DELAY_MS;
+				}
+			}
+		}
+
+		if(mqttClient.isconnected) {
+			// Yield para processar mensagens (não-bloqueante)
+			rc = MQTTYield(&mqttClient, 200); 		//handle timer
+
+			if(rc == MQTT_CONNECTION_LOST ||
+			   rc == MQTT_SOCKET_ERROR    ||
+			   rc == FAILURE ) {
+                //logI("MQTT yield error: %d\n", rc);
+                mqttClient.isconnected = 0;
+                Telemetry_State = 0;
+                continue;
+			}
+
+			// Verifica timeout do PING
+//			if (TimerIsExpired(&mqttClient.ping_timer)) {
+//				logI("PING timeout - no PINGRESP");
+//				mqttClient.isconnected = 0;
+//				continue;
+//			}
 		}
 		else {
-			MQTTYield(&mqttClient, 1000); 		//handle timer
-			osDelay(100);
+			osDelay(reconnect_delay_ms);
+			MQTTCloseSession(&mqttClient);
+
+			if (MqttConnectBroker() == MQTT_SUCCESS) {
+				reconnect_delay_ms = 1000;
+				//logI("MQTT reconnect SUCCESS\n");
+			} else {
+				//logI("MQTT reconnect FAILED\n");
+				reconnect_delay_ms = reconnect_delay_ms * 2;
+				if(reconnect_delay_ms > MAX_RECONNECT_DELAY_MS)
+					reconnect_delay_ms = MAX_RECONNECT_DELAY_MS;
+			}
 		}
+		osDelay(200);
 	}
 }
 
@@ -116,14 +171,13 @@ static void MqttClientPubTask(void *arg)
 					json_config( buff );
 					send_mqtt.payload = (void*)buff;
 					send_mqtt.payloadlen = strlen(buff);
-					send_mqtt.qos = QOS2;
+					send_mqtt.qos = QOS1;
 					send_mqtt.retained = 1;
 					send_mqtt.dup = 0;
 
 					rc = MQTTPublish(&mqttClient, topico, &send_mqtt);
 					if( rc != MQTT_SUCCESS) {
-						MQTTCloseSession(&mqttClient);
-				        net_disconnect(&net);
+				        Telemetry_State = 0;
 					}
 					mqtt_is_prime1++;
 				}
@@ -141,13 +195,12 @@ static void MqttClientPubTask(void *arg)
 
 					send_mqtt.payload = (void*)buff;
 					send_mqtt.payloadlen = strlen(buff);
-					send_mqtt.qos = QOS2;
+					send_mqtt.qos = QOS1;
 					send_mqtt.retained = 1;
 					send_mqtt.dup = 0;
 					rc = MQTTPublish(&mqttClient, topico, &send_mqtt);
 					if( rc != MQTT_SUCCESS) {
-				        MQTTCloseSession(&mqttClient);
-				        net_disconnect(&net);
+				        //logI("MQTT Publish Error!... [%d]\n", rc);
 					}
 					// Se Tiver Alarme Envia
 					if (xQueueReceive(QueueMqttHandle, &alarm_mqtt_rx, 0) == pdPASS) {
@@ -163,18 +216,15 @@ static void MqttClientPubTask(void *arg)
 						send_mqtt.dup = 0;
 						rc = MQTTPublish(&mqttClient, topico, &send_mqtt);
 						if( rc != MQTT_SUCCESS) {
-					        MQTTCloseSession(&mqttClient);
-					        net_disconnect(&net);
+					        //logI("MQTT Publish Error!... [%d]\n", rc);
+					        Telemetry_State = 0;
 						}
 					}
 				}
 			}
 		}
 		else {
-			MQTTCloseSession(&mqttClient);
-			net_disconnect(&net);
-			MQTTDisconnect(&mqttClient);
-			MqttConnectBroker();
+
 		}
 		osDelay(500);
 	}
@@ -183,7 +233,8 @@ static void MqttClientPubTask(void *arg)
 int MqttConnectBroker(void)
 {
 	int ret;
-	char rasc[50] = { 0 };
+	char rasc[64] = { 0 };
+	char* topic_sub = malloc(32);
 
 	// Token
 	if(cfg.SerialNumber[0] == 0xFF || cfg.SerialNumber[1] == 0xFF || cfg.SerialNumber[2] == 0xFF || cfg.SerialNumber[3] == 0xFF ||
@@ -214,10 +265,16 @@ int MqttConnectBroker(void)
 	}
 
 	if(cfg.Token[0] == 0 || cfg.Token[1] == 0 || cfg.Token[2] == 0 || cfg.Token[3] == 0) {
+		//logI("MQTT No Token!\n");
+		mqttClient.isconnected = 0;
+		Telemetry_State = 0;
 		return -1;
 	}
 
 	if(cfg.Token[0] == ' ' || cfg.Token[1] == ' ' || cfg.Token[2] == ' ' || cfg.Token[3] == ' ') {
+		//logI("MQTT No Token!\n");
+		mqttClient.isconnected = 0;
+		Telemetry_State = 0;
 		return -1;
 	}
 
@@ -225,13 +282,15 @@ int MqttConnectBroker(void)
 	ret = ConnectNetwork(&net, BROKER_IP, MQTT_PORT);
 	if(ret != MQTT_SUCCESS)
 	{
+		//logI("ConnectMQTTBroker failed.[%d]\n", ret);
+		mqttClient.isconnected = 0;
+		Telemetry_State = 0;
 		return -1;
 	}
 
-	MQTTClientInit(&mqttClient, &net, 1000, sndBuffer, sizeof(sndBuffer), rcvBuffer, sizeof(rcvBuffer));
+	MQTTClientInit(&mqttClient, &net, 5000, sndBuffer, sizeof(sndBuffer), rcvBuffer, sizeof(rcvBuffer));
 
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
-
 	//
 	uint32_t idPart1 = HAL_GetUIDw0();
 	uint32_t idPart2 = HAL_GetUIDw1();
@@ -254,17 +313,27 @@ int MqttConnectBroker(void)
 	data.clientID.cstring = rasc;
 	data.username.cstring = "XTTransmitter";
 	data.password.cstring = "Bolivianos578@";
-	data.keepAliveInterval = 60;
+	data.keepAliveInterval = 20;
 	data.cleansession = 1;
 
 	ret = MQTTConnect(&mqttClient, &data);
 	if(ret != MQTT_SUCCESS)
 	{
 		Telemetry_State = 0;
+		//logI("MQTTConnect failed.[%d]\n", ret);
+		DisconnectNetwork(&net);
 		return ret;
 	}
 	else {
 		Telemetry_State = 1;
+		//logI("MQTT_ConnectBroker O.K.\n");
+
+		sprintf(topic_sub,"RXNSTL/cmd/%c%c%c%c-%c%c%c%c/#", cfg.Token[0], cfg.Token[1], cfg.Token[2], cfg.Token[3],
+														    cfg.Token[4], cfg.Token[5], cfg.Token[6], cfg.Token[7]  );
+
+		//logI("Subscribing to Topic %s\n", topic_sub);
+		ret = MQTTSubscribe(&mqttClient, topic_sub, QOS1, MqttMessageArrived);
+		//logI("Subscribed %d\n", ret);
 		return MQTT_SUCCESS;
 	}
 }
@@ -282,21 +351,25 @@ void MqttMessageArrived(MessageData* msg)
 	memset(msgBuffer, 0, sizeof(msgBuffer));
 	memcpy(msgBuffer, message->payload, message->payloadlen);
 
-	if (strncmp((char const *)&topic,"cmd/", 4) == 0) {
-		token_mqtt[0] = topic[4];
-		token_mqtt[1] = topic[5];
-		token_mqtt[2] = topic[6];
-		token_mqtt[3] = topic[7];
-		token_mqtt[4] = topic[8];
-		token_mqtt[5] = topic[9];
-		token_mqtt[6] = topic[10];
-		token_mqtt[7] = topic[11];
-		token_mqtt[8] = topic[12];
+	//logI("DBG MqttMessageArrived:[%d] %s\n\r", message->payloadlen, msgBuffer);
+
+	if (strncmp((char const *)&topic,"XT/cmd/", 7) == 0) {
+		token_mqtt[0] = topic[7];
+		token_mqtt[1] = topic[8];
+		token_mqtt[2] = topic[9];
+		token_mqtt[3] = topic[10];
+		token_mqtt[4] = topic[11];
+		token_mqtt[5] = topic[12];
+		token_mqtt[6] = topic[13];
+		token_mqtt[7] = topic[14];
+		token_mqtt[8] = topic[15];
 		token_mqtt[9] = '\0';
 		//
-		size_t len_cmd = (strlen(topic) - 14 - (int)message->payloadlen);
+		//logI("DBG LenCMD payload:[%d]  Topic:[%d]\n\r", strlen(topic), message->payloadlen);
+		size_t len_cmd = (((strlen(topic) - 16) - (int)message->payloadlen)) - 1;
+
 		for(x = 0; x < len_cmd; x++) {
-			cmd_mqtt[x] = topic[14+x];
+			cmd_mqtt[x] = topic[17+x];
 		}
 	    cmd_mqtt[x] = '\0';
 	}
@@ -697,31 +770,31 @@ void Process_MQTT_InTopic(char *token, char *cmd, uint8_t * msg, int size)
 			/* Find custom key in JSON */
 			if ((t = lwjson_find(&lwjson, "Name")) != NULL) {
 	        	size_t len_str = lwjson_get_val_string_length(t);
-				memset(station_profile, 0 , 50);
+				memset(Profile.Station, 0 , 50);
 				if(len_str < 25) {
-					memcpy(station_profile, lwjson_get_val_string(t, &len_str), len_str);
+					memcpy(Profile.Station, lwjson_get_val_string(t, &len_str), len_str);
 				}
 				if ((t = lwjson_find(&lwjson, "City")) != NULL) {
 					size_t len_str = lwjson_get_val_string_length(t);
-					memset(station_city, 0 , 50);
+					memset(Profile.City, 0 , 50);
 					if(len_str < 25) {
-						memcpy(station_city, lwjson_get_val_string(t, &len_str), len_str);
+						memcpy(Profile.City, lwjson_get_val_string(t, &len_str), len_str);
 					}
 					if ((t = lwjson_find(&lwjson, "State")) != NULL) {
 						size_t len_str = lwjson_get_val_string_length(t);
-						memset(station_state, 0 , 50);
+						memset(Profile.State, 0 , 50);
 						if(len_str < 25) {
-							memcpy(station_state, lwjson_get_val_string(t, &len_str), len_str);
+							memcpy(Profile.State, lwjson_get_val_string(t, &len_str), len_str);
 						}
 						if ((t = lwjson_find(&lwjson, "Country")) != NULL) {
 							size_t len_str = lwjson_get_val_string_length(t);
-							memset(station_country, 0 , 50);
+							memset(Profile.Country, 0 , 50);
 							if(len_str < 25) {
-								memcpy(station_country, lwjson_get_val_string(t, &len_str), len_str);
+								memcpy(Profile.Country, lwjson_get_val_string(t, &len_str), len_str);
 							}
 							if ((t = lwjson_find(&lwjson, "ExtTemperature")) != NULL) {
 								float value = lwjson_get_val_real(t);
-								sprintf(station_temp, "%0.1f°C", value);
+								sprintf(Profile.Temp, "%0.1f°C", value);
 					        	// Marca para Salvar em EEPROM
 					        	flag_telemetry = 27;
 							}

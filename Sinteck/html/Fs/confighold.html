@@ -41,31 +41,18 @@
     
     <div id="section">
     <script>
-        function getRefVSWR() {
-            var xhttp = new XMLHttpRequest();
-            xhttp.onreadystatechange = function() {
-                if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("reflected").innerHTML = this.responseText.substring(this.responseText.indexOf("REF:")+4,this.responseText.indexOf("VALUE:")-1);
-                    document.getElementById("value").innerHTML =  this.responseText.substring(this.responseText.indexOf("VALUE:")+6,this.responseText.indexOf("FWDNULL:")-1);
-                    document.getElementById("teste2").innerHTML =  this.responseText.substring(this.responseText.indexOf("FWDNULL:")+8,this.responseText.indexOf("FIM:")-1);
-                }
-            };
-            xhttp.open("GET", "readVSWR", true);
-            xhttp.send();
-        }
-        
         function getData() {
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("cfg").innerHTML = this.responseText.substring(this.responseText.indexOf("HOLD:")+5,this.responseText.indexOf("VSWR:")-1);
-                    document.getElementById("vswr").innerHTML =  this.responseText.substring(this.responseText.indexOf("VSWR:")+5,this.responseText.indexOf("CLOCK:")-1);
-                    document.getElementById("reflected").innerHTML = this.responseText.substring(this.responseText.indexOf("REF:")+4,this.responseText.indexOf("VALUE:")-1);
-                    document.getElementById("value").innerHTML = this.responseText.substring(this.responseText.indexOf("VALUE:")+6,this.responseText.indexOf("FWDNULL1:")-1);
-                    document.getElementById("teste2").innerHTML = this.responseText.substring(this.responseText.indexOf("FWDNULL1:")+9,this.responseText.indexOf("REM1:")-1);
-					//
+					var data = JSON.parse(this.responseText);
+					// ConfigHold
+					if(data.confighold == 0)
+						document.getElementById("cfg1").checked = false;
+					else
+						document.getElementById("cfg1").checked = true;
 					// Remote 1
-                    if( this.responseText.substring(this.responseText.indexOf("REM1:")+5,this.responseText.indexOf("REM2:")-1) == '0' ) {
+                    if( data.relay1 == 0 ) {
 						document.getElementById("REMOTE11").checked = true;
                         document.getElementById("REMOTE12").checked = false;
                     }
@@ -74,7 +61,7 @@
                         document.getElementById("REMOTE12").checked = true;
                     }
 					// Remote 2
-                    if( this.responseText.substring(this.responseText.indexOf("REM2:")+5,this.responseText.indexOf("FIM:")-1) == '0' ) {
+                    if( data.relay2 == 0 ) {
 						document.getElementById("REMOTE21").checked = true;
                         document.getElementById("REMOTE22").checked = false;
                     }
@@ -82,23 +69,6 @@
 						document.getElementById("REMOTE21").checked = false;
                         document.getElementById("REMOTE22").checked = true;
                     }
-                    
-                    if(document.getElementById("cfg").innerHTML == '1') {
-                        document.getElementById("cfg1").checked = true;
-                    }
-                    else {
-                        document.getElementById("cfg1").checked = false;
-                    }
-                    if(document.getElementById("vswr").innerHTML == '1') {
-                        document.getElementById("cfg3").checked = true;
-                    }
-                    else {
-                        document.getElementById("cfg3").checked = false;
-                    }
-                    //document.getElementById("cfg2").value = document.getElementById("clock").innerHTML - '0';
-                    document.getElementById("tst").innerHTML = document.getElementById("value").innerHTML;
-                    document.getElementById("cfg4").value = document.getElementById("value").innerHTML
-                    document.getElementById("cfg5").value = document.getElementById("teste2").innerHTML;
                 }
             };
             xhttp.open("GET", "readConfigHold", true);
@@ -122,13 +92,6 @@
             else {
                 id1 = "0";
             }
-            var id2 = "";
-            if(document.getElementById("cfg3").checked == true) {
-                id2 = "1";
-            }
-            else {
-                id2 = "0";
-            }
 			// Remote 1
 			var rem1 = "0";
             if(document.getElementById("REMOTE11").checked) {
@@ -146,7 +109,7 @@
 				rem2 = "1";
             }
             
-            var resp = resp1.concat("", id1, ";", id2, ";", id2, ";", "VSWR:", document.getElementById("cfg4").value, ";NFWD:", document.getElementById("cfg5").value, ";REM1:", rem1, ";REM2:", rem2, ";FIM:");
+            var resp = resp1.concat("", id1, ";REM1:", rem1, ";REM2:", rem2, ";FIM:");
             //alert(resp)
             if (confirm("Confirm !")) {
                 xhttp.open("GET", resp, true);
@@ -193,7 +156,7 @@
         
         setInterval(function() {
             // Call a function repetatively with 1000m Second interval
-            getRefVSWR();
+            getData();
         }, 1000);           //1000mSeconds update rate
         
         function checkLength(elem) {
@@ -204,12 +167,15 @@
             }
         }
         
-       function getLogin() {
+        function getLogin() {
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
             if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
+				var data = JSON.parse(this.responseText);
+				// Data
+				document.getElementById("Login").innerHTML = data.User;
+				document.getElementById("lock").innerHTML = data.Config;
+				
                 if(document.getElementById("lock").innerHTML == '0') {
                     document.getElementById("teste1").className = "fa fa-unlock";
                     document.getElementById("lock2").className = "fa fa-unlock";
@@ -220,7 +186,6 @@
                     document.getElementById("lock2").className = "fa fa-lock";
                     document.getElementById("lock2").style = "font-size:24px";
                 }
-                
                 getData();
             }
         };
@@ -238,28 +203,6 @@
             <input type="checkbox" id="cfg1" name="cfg1">
         </fieldset>
         <br>
-        <fieldset>
-            <label for="cfg3">VSWR NULL:</label>
-            <input type="checkbox" id="cfg3" name="cfg3"> Reflected: <span id="reflected">0 W</span> ( <span id="value">0 W</span> )
-        </fieldset>
-        <br>
-        <fieldset>
-            <label for="cfg4">VSWR NULL Value:</label>
-            <input type="number" id="cfg4" name="cfg4" min="0" max="100" step="1" /><label>  W</label>
-        </fieldset>
-        <br>
-        <fieldset>
-            <label for="cfg5"> FWD  NULL Value :</label>
-            <input type="number" id="cfg5" name="cfg5" min="0" max="100" step="1" /><label>  W</label>
-        </fieldset>
-        <br>
-        <h5 hidden>Config In Hold: <span id="cfg">0</span></h5>
-        <h5 hidden>VSWR Null: <span id="vswr">0</span> Reflected: <span id="reflected">0</span></h5>
-        <h5 hidden>Max: <span id="max">0</span></h5>
-        <h5 hidden>Teste: <span id="tst">0</span></h5>
-        <h5 hidden>Teste: <span id="teste1"></span></h5>
-        <h5 hidden>FWD NULL: <span id="teste2"></span></h5>
-        <h5 hidden>Lock: <span id="lock">0</span></h5>
 		<fieldset>
         <div>
             <h4><label>REMOTE 1:<br></label></h4>
@@ -271,26 +214,32 @@
             name="remote1" value="on">
             <label for="REMOTE12">ON</label>
 		</div>
-		
-		 <div>
+		<br>
+		<div>
             <h4><label>REMOTE 2:<br></label></h4>
             <input type="radio" id="REMOTE21"
             name="remote2" value="off">
             <label for="REMOTE21">OFF</label>
-
             <input type="radio" id="REMOTE22"
             name="remote2" value="on">
             <label for="REMOTE22">ON</label>
 		</div>
 		<fieldset>
-		 <br><br>
-		 <button type="button" class="myButton" onclick="sendData()">Submit</button>
-		 <br><br>
-		 <p style="background-color:LightGray;"></p>
-		 <br><br>
+		<br><br>
+		<h5 hidden>VSWR Null: <span id="vswr">0</span> Reflected: <span id="reflected">0</span></h5>
+        <h5 hidden>Max: <span id="max">0</span></h5>
+        <h5 hidden>Teste: <span id="tst">0</span></h5>
+        <h5 hidden>Teste: <span id="teste1"></span></h5>
+        <h5 hidden>FWD NULL: <span id="teste2"></span></h5>
+        <h5 hidden>Lock: <span id="lock">0</span></h5>
+		<br>
+		<button type="button" class="myButton" onclick="sendData()">Submit</button>
+		<br><br>
+		<p style="background-color:LightGray;"></p>
+		<br><br>
             <button type="button" class="myButton" onclick="sendRestoreFactory()">Restore Factory Settings </button> &nbsp &nbsp &nbsp &nbsp
             <button type="button" class="myButton" onclick="sendReboot()">Reboot</button> 
-            <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><h1></h1>
+            <br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><h1></h1>
     </div>
 		
     <div id="footer">

@@ -53,7 +53,6 @@
         <li><a id="confaudio" href="audio.html">Audio</a></li>
 		<li><a id="confrf" href="rf.html">RF</a></li>
         <li><a id="conftime" href="time.html">Time</a></li>
-        <li><a id="confrds" href="rds.html">RDS</a></li>
         <li><a id="conffreq" href="freq.html">Frequency</a></li>
         <li><a id="confadvset" href="advset.html">Advanced Setups</a></li>
         <li><a id="confnetwork" href="network.html">Connectivity Options</a></li>
@@ -114,25 +113,27 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                    document.getElementById("strsn").innerHTML = this.responseText.substring(this.responseText.indexOf("SN:")+3,this.responseText.indexOf("PWM:")-1);
-                    document.getElementById("pwmdsp").innerHTML = this.responseText.substring(this.responseText.indexOf("PWM:")+4,this.responseText.indexOf("BAT:")-1);
-					document.getElementById("batt").innerHTML = this.responseText.substring(this.responseText.indexOf("BAT:")+4,this.responseText.indexOf("FM:")-1);
-					document.getElementById("fmdem").innerHTML = this.responseText.substring(this.responseText.indexOf("FM:")+3,this.responseText.indexOf("STMO:")-1);
-					document.getElementById("stmo").innerHTML = this.responseText.substring(this.responseText.indexOf("STMO:")+5,this.responseText.indexOf("BW:")-1);
-					document.getElementById("bw").innerHTML = this.responseText.substring(this.responseText.indexOf("BW:")+3,this.responseText.indexOf("ATN:")-1);
-					document.getElementById("atn").innerHTML = this.responseText.substring(this.responseText.indexOf("ATN:")+4,this.responseText.indexOf("DSPSEL:")-1);
-					document.getElementById("dspsel").innerHTML = this.responseText.substring(this.responseText.indexOf("DSPSEL:")+7,this.responseText.indexOf("DSP1:")-1);
-					document.getElementById("dsp1").innerHTML = this.responseText.substring(this.responseText.indexOf("DSP1:")+5,this.responseText.indexOf("DSP2:")-1);
-					document.getElementById("dsp2").innerHTML = this.responseText.substring(this.responseText.indexOf("DSP2:")+5,this.responseText.indexOf("RST:")-1);
-					document.getElementById("resetcause").innerHTML = this.responseText.substring(this.responseText.indexOf("RST:")+4,this.responseText.indexOf("ADC0:")-1);
-					document.getElementById("adc0").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC0:")+5,this.responseText.indexOf("ADC1:")-1);
-					document.getElementById("adc1").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC1:")+5,this.responseText.indexOf("ADC2:")-1);
-					document.getElementById("adc2").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC2:")+5,this.responseText.indexOf("ADC3:")-1);
-					document.getElementById("adc3").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC3:")+5,this.responseText.indexOf("ADC4:")-1);
-					document.getElementById("adc4").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC4:")+5,this.responseText.indexOf("ADC5:")-1);
-					document.getElementById("adc5").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC5:")+5,this.responseText.indexOf("ADC6:")-1);
-					document.getElementById("adc6").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC6:")+5,this.responseText.indexOf("ADC7:")-1);
-					document.getElementById("adc7").innerHTML = this.responseText.substring(this.responseText.indexOf("ADC7:")+5,this.responseText.indexOf("FIM")-1);
+					var data = JSON.parse(this.responseText);
+					// Data
+                    document.getElementById("strsn").innerHTML = data.serialnumber;
+                    document.getElementById("pwmdsp").innerHTML = data.pwm;
+					document.getElementById("batt").innerHTML = data.battery;
+					document.getElementById("fmdem").innerHTML = data.demulador;
+					document.getElementById("stmo").innerHTML = data.stereo;
+					document.getElementById("bw").innerHTML = data.band;
+					document.getElementById("atn").innerHTML = data.atennuador;
+					document.getElementById("dspsel").innerHTML = data.dsp_cfg;
+					document.getElementById("dsp1").innerHTML = data.dspbit1;
+					document.getElementById("dsp2").innerHTML = data.dspbit2;
+					document.getElementById("resetcause").innerHTML = data.reset;
+					document.getElementById("adc0").innerHTML = data.adc0 + '  [ 0x' + data.adc0.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.adc0).toFixed(2) +' mV';
+					document.getElementById("adc1").innerHTML = data.adc1 + '  [ 0x' + data.adc1.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.adc1).toFixed(2) +' mV';
+					document.getElementById("adc2").innerHTML = data.adc2 + '  [ 0x' + data.adc2.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.adc2).toFixed(2) +' mV';
+					document.getElementById("adc3").innerHTML = data.adc3 + '  [ 0x' + data.adc3.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.adc3).toFixed(2) +' mV';
+					document.getElementById("adc4").innerHTML = data.adc4 + '  [ 0x' + data.adc4.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.adc4).toFixed(2) +' mV';
+					document.getElementById("adc5").innerHTML = data.adc5 + '  [ 0x' + data.adc5.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.adc5).toFixed(2) +' mV';
+					document.getElementById("adc6").innerHTML = data.adc6 + '  [ 0x' + data.adc6.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.adc6).toFixed(2) +' mV';
+					document.getElementById("adc7").innerHTML = data.adc7 + '  [ 0x' + data.adc7.toString(16).toUpperCase() + ' ]  ' + ((3000.0/65535)*data.adc7).toFixed(2) +' mV';
                 }
             };
             xhttp.open("GET", "readService", true);
@@ -143,7 +144,9 @@
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-					document.getElementById("strsn1").innerHTML = this.responseText.substring(this.responseText.indexOf("SN:")+3,this.responseText.indexOf("FIM")-1);
+					var data = JSON.parse(this.responseText);
+					// Data
+					document.getElementById("strsn1").innerHTML = data.serialnumber;
 					document.getElementById("sn").value = document.getElementById("strsn1").innerHTML.substring(0, 8);
                 }
             };
@@ -208,22 +211,24 @@
         function getLogin() {
             var xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("Login").innerHTML = this.responseText.substring(this.responseText.indexOf("User:")+5,this.responseText.indexOf("Config:")-1);
-                document.getElementById("lock").innerHTML = this.responseText.substring(this.responseText.indexOf("Config:")+7,this.responseText.indexOf("FIM:")-1);
-                document.getElementById("user").innerHTML = document.getElementById("Login").innerHTML;
-                if(document.getElementById("lock").innerHTML == '0') {
-                    document.getElementById("teste1").className = "fa fa-unlock";
-                    document.getElementById("lock2").className = "fa fa-unlock";
-                    document.getElementById("lock2").style = "font-size:24px";
-                }
-                else {
-                    document.getElementById("teste1").className = "fa fa-lock";
-                    document.getElementById("lock2").className = "fa fa-lock";
-                    document.getElementById("lock2").style = "font-size:24px";
-                }
-            }
-        };
+				if (this.readyState == 4 && this.status == 200) {
+					var data = JSON.parse(this.responseText);
+					// Data
+					document.getElementById("Login").innerHTML = data.User;
+					document.getElementById("lock").innerHTML = data.Config;
+					
+					if(document.getElementById("lock").innerHTML == '0') {
+						document.getElementById("teste1").className = "fa fa-unlock";
+						document.getElementById("lock2").className = "fa fa-unlock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+					else {
+						document.getElementById("teste1").className = "fa fa-lock";
+						document.getElementById("lock2").className = "fa fa-lock";
+						document.getElementById("lock2").style = "font-size:24px";
+					}
+				}
+			};
             xhttp.open("GET", "readLogin", true);
             xhttp.send();
         }

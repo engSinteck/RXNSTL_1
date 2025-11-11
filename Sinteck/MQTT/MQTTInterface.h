@@ -45,5 +45,5 @@ int  net_write(Network*, unsigned char*, int, int);
 void net_disconnect(Network*);
 void NewNetwork(Network*);
 int  ConnectNetwork(Network*, char*, int);
-
+void DisconnectNetwork(Network *n);
 #endif

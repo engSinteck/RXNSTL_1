@@ -48,11 +48,25 @@
 #include "../Sinteck/tcp/ssl_client.h"
 #include "../Sinteck/tcp/tcp_client.h"
 #include "../Sinteck/tcp/json_util.h"
-#include "../cJSON/tiny-json.h"
+#include "../Sinteck/tcp/mqtt_paho.h"
+#include "../cJSON/cJSON.h"
 
-#define WEBSERVER_THREAD_PRIO    ( osPriorityLow5 )
+#define WEBSERVER_THREAD_PRIO    			( osPriorityLow5 )
+#define LWIP_HTTPD_POST_MAX_PAYLOAD_LEN    	2048
+#define HTTP_SOCKET_TIMEOUT_MS   			5000   // 5 segundos (ajustável)
+
+// Estrutura para dados POST
+typedef struct {
+    char data[LWIP_HTTPD_POST_MAX_PAYLOAD_LEN];
+    int data_received;
+    int content_length;
+} post_data_t;
+
+// Variáveis globais
+static post_data_t post_data;
 
 extern osMutexId_t MutexHTTPDHandle;
+extern MQTTClient mqttClient;
 
 osThreadId ThreadHTTPDPHandle;
 extern license_var lic;
@@ -77,10 +91,6 @@ volatile uint8_t httpd_error = 0;
 uint8_t http_access = 2;
 uint8_t flag_telemetry = 0;
 
-//struct netbuf *inbuf = NULL;
-//static char* buf;
-//static err_t recv_err;
-//static uint16_t buflen;
 struct fs_file file;
 
 extern uint8_t flag_telemetry;
@@ -90,7 +100,7 @@ extern char version_flash[];
 extern uint8_t Status_Battery, Status_Stereo, Status_FMDem;
 
 const static char http_200_OK[] = "HTTP/1.1 200 OK\r\nContent-type: text/html\r\n\r\n";
-//const static char http_200_OK_JSON[] = "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n";
+const static char http_200_OK_JSON[] = "HTTP/1.1 200 OK\r\nContent-type: application/json\r\n\r\n";
 const static char http_400_BadRequest[] = "HTTP/1.1 400 BadRequest\r\nContent-type: text/html\r\n\r\n";
 const static char http_401_Unauthorized[] = "HTTP/1.1 401 Unauthorized\r\nContent-type: text/html\r\n\r\n";
 
@@ -151,6 +161,139 @@ extern ip4_addr_t dnsaddr;
 
 extern volatile uint16_t adc_values[];
 extern uint16_t adc_ext[];
+
+void json_telemetry(struct netconn *conn)
+{
+	char response[1024] = {0};
+	char str_uptime[32] = {0};
+	char str_time[16] = {0};
+
+	sprintf(str_uptime, "%ldd - %02ld:%02ld:%02ld", uptime.dia, (uptime.total/3600)%24, (uptime.total/60)%60, uptime.total%60);
+
+	// Dia-Semana-Dia-Mes-Ano-HH:MM:SS
+	sprintf(str_time, "%02d:%02d:%02d", gTime.Hours, gTime.Minutes, gTime.Seconds);
+
+	cJSON *root = cJSON_CreateObject();
+	cJSON_AddNumberToObject(root, "FWD", 125.00);
+	cJSON_AddNumberToObject(root, "REF", 8.00);
+	cJSON_AddNumberToObject(root, "EFIC", 98.60);
+	cJSON_AddNumberToObject(root, "TEMP", 33.20);
+	cJSON_AddNumberToObject(root, "VPA", 55.00);
+	cJSON_AddNumberToObject(root, "IPA", 7.00);
+	cJSON_AddNumberToObject(root, "B1", 10);
+	cJSON_AddNumberToObject(root, "B2", 12);
+	cJSON_AddNumberToObject(root, "B3", 20);
+	cJSON_AddStringToObject(root, "UPTIME", str_uptime);
+	cJSON_AddNumberToObject(root, "FREQ", 937500);
+	cJSON_AddStringToObject(root, "AUDIO", "MPX1");
+	cJSON_AddStringToObject(root, "RDS", "ENABLE");
+	cJSON_AddStringToObject(root, "STS", "OK");
+	cJSON_AddStringToObject(root, "FAIL", "NONE");
+	cJSON_AddStringToObject(root, "CLOCK", str_time);
+	cJSON_AddStringToObject(root, "MODEL", "RXNSTL");
+	cJSON_AddStringToObject(root, "SERIAL","0000-0000");
+
+	char *json_string = cJSON_Print(root);
+	printf("Generated JSON:\n%s\n", json_string);
+
+	// Monta resposta HTTP completa
+    snprintf(response, sizeof(response),
+             "HTTP/1.1 200 OK\r\n"
+             "Content-Type: application/json\r\n"
+             "Access-Control-Allow-Origin: *\r\n"
+             "Access-Control-Allow-Methods: POST, GET, OPTIONS\r\n"
+             "Access-Control-Allow-Headers: Content-Type\r\n"
+             "Content-Length: %d\r\n"
+             "Connection: close\r\n"
+             "\r\n"
+             "%s",
+             strlen(json_string), json_string);
+
+    // Envia resposta
+    netconn_write(conn, response, strlen(response), NETCONN_COPY);
+
+    cJSON_Delete(root); // Free the memory allocated for the JSON object
+    free(json_string); // Free the memory allocated for the JSON string
+
+}
+
+// Função para enviar resposta JSON
+void send_json_response(struct netconn *conn, const char *status, const char *message)
+{
+    char response[512];
+    char json_body[256];
+
+    // Cria o corpo JSON
+    snprintf(json_body, sizeof(json_body),
+             "{\"status\":\"%s\",\"message\":\"%s\",\"received_bytes\":%d,\"VPA\":56.6,\"IPA\":13.4,\"FWD\":125,\"REF\":12,\"EFIC\":98.6,\"TEMP\":35.2,\"B1\":10,\"B2\":12,\"B3\":20,\"FREQ\":940.0,\"AUDIO\":0,\"UPTIME\":0, \"RDS\":1, \"MODEL\":4, \"FAIL\":0, \"CLOCK\":10}",
+             status, message, post_data.data_received);
+
+    // Monta resposta HTTP completa
+    snprintf(response, sizeof(response),
+             "HTTP/1.1 200 OK\r\n"
+             "Content-Type: application/json\r\n"
+             "Access-Control-Allow-Origin: *\r\n"
+             "Access-Control-Allow-Methods: POST, GET, OPTIONS\r\n"
+             "Access-Control-Allow-Headers: Content-Type\r\n"
+             "Content-Length: %d\r\n"
+             "Connection: close\r\n"
+             "\r\n"
+             "%s",
+             strlen(json_body), json_body);
+
+    // Envia resposta
+    netconn_write(conn, response, strlen(response), NETCONN_COPY);
+}
+
+int process_json_post(char *json_data, int len)
+{
+	cJSON *root = cJSON_Parse(json_data);
+    if (root == NULL) {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL) {
+            //logI("JSON Parse error: %s\n", error_ptr);
+        }
+        return -1;
+    }
+    //logI("=== JSON Recebido ===\n");
+    // Extrai campos do JSON DPS
+    cJSON *Text_DPS = cJSON_GetObjectItem(root, "DPS");
+    if (cJSON_IsString(Text_DPS)) {
+    	//logI("DPS: %s\n", Text_DPS->valuestring);
+    }
+    // Extrai campos do JSON RT
+    cJSON *Text_RT = cJSON_GetObjectItem(root, "RT");
+    if (cJSON_IsString(Text_RT)) {
+    	//logI("RT: %s\n", Text_RT->valuestring);
+    }
+
+    cJSON_Delete(root);
+    //logI("=== Fim do JSON ===\n");
+
+    // Atualiza RDS Data
+    if(strlen(Text_RT->valuestring) < 64) {
+    	memcpy(rds.rt1, Text_RT->valuestring, strlen(Text_RT->valuestring));
+    }
+
+    if(strlen(Text_DPS->valuestring) < 64) {
+    	memcpy(rds.dps1, Text_DPS->valuestring, strlen(Text_DPS->valuestring));
+    }
+
+    return 0;
+}
+
+// Função para extrair Content-Length do header
+int extract_content_length(const char *header)
+{
+    char *cl_ptr = strstr(header, "Content-Length:");
+    if (cl_ptr != NULL) {
+        int length;
+        if (sscanf(cl_ptr, "Content-Length: %d", &length) == 1) {
+            return length;
+        }
+    }
+    return -1;
+}
 
 const char * reset_cause_get_name(reset_cause_t reset_cause)
 {
@@ -372,6 +515,18 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
     		netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_COPY);
     		fs_close(&file);
 		}
+		else if (strncmp((char const *)buf,"GET /css/style_new.css", 22) == 0) {
+			// Check if request to get CSS Style
+			fs_open(&file, "/css/style_new.css");
+		    netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_COPY);
+		    fs_close(&file);
+		}
+		else if (strncmp((char const *)buf,"GET /js/dashboard.js", 20) == 0) {
+			// Check if request to get Javacript
+			fs_open(&file, "/js/dashboard.js");
+			netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_COPY);
+			fs_close(&file);
+		}
 		else if (strncmp((char const *)buf,"GET /js/utils.js", 16) == 0) {
 			// Check if request to get Javacript
 			fs_open(&file, "/js/utils.js");
@@ -396,6 +551,12 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 
 			// Load STM32H7xx page
 			fs_open(&file, "/STM32H7xx.html");
+			netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_COPY);
+			fs_close(&file);
+		}
+		else if( (strncmp(buf, "GET /index_new.html", 19) == 0) && (http_access != 0) ) {
+			// Load index_new page
+			fs_open(&file, "/index_new.html");
 			netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_COPY);
 			fs_close(&file);
 		}
@@ -607,12 +768,53 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 			}
 		}
 		else if((strncmp(buf, "GET /readTime", 13) == 0)) {
-			// Dia-Semana-Dia-Mes-Ano-HH:MM:SS
-    		sprintf(buf_html, "%s DAY:%d;DATE:%02d/%02d/%04d;TIME:%02d:%02d:%02d;NTP:%d;FUSO:%d;FIM:\n",
-							http_200_OK, gDate.WeekDay, gDate.Date, gDate.Month, 2000+gDate.Year, gTime.Hours, gTime.Minutes, gTime.Seconds,
-    	  					cfg.NTP, cfg.Timezone);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
 
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados CLOCK ===
+		    char str_date[32] = {0};
+			sprintf(str_date, "%02d/%02d/%04d", gDate.Date, gDate.Month, (2000+gDate.Year));
+			cJSON_AddStringToObject(root, "date", str_date);
+
+			char str_time[32] = {0};
+			sprintf(str_time, "%02d:%02d:%02d", gTime.Hours, gTime.Minutes, gTime.Seconds);
+			cJSON_AddStringToObject(root, "time", str_time);
+			cJSON_AddNumberToObject(root, "weeday", gDate.WeekDay);
+			cJSON_AddNumberToObject(root, "timezone", cfg.Timezone);
+			cJSON_AddBoolToObject(root,   "ntp", cfg.NTP);
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /setTime=", 13) == 0)) {
 			resp_http_200(conn);
@@ -642,8 +844,44 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
     		flag_telemetry = 4;
 		}
     	else if((strncmp(buf, "GET /readFreq", 13) == 0)) {
-			sprintf(buf_html, "%s FREQ:%ld;FIM:", http_200_OK, cfg.Frequencia);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Frequencia ===
+			cJSON_AddNumberToObject(root, "freq", cfg.Frequencia);
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /setFreq=", 13) == 0)) {
 			resp_http_200(conn);
@@ -671,14 +909,65 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 			flag_telemetry = 253;
 		}
 		else if((strncmp(buf, "GET /readNetwork", 16) == 0)) {
-			sprintf(buf_html,"%s IP:%3d.%3d.%3d.%3d;MASK:%3d.%3d.%3d.%3d;GW:%3d.%3d.%3d.%3d;DNS:%3d.%3d.%3d.%3d;PORT:%d;BROKER:%s;SNMP:%d;FIM:",
-						http_200_OK,
-						cfg.IP_ADDR[0],   cfg.IP_ADDR[1],   cfg.IP_ADDR[2],   cfg.IP_ADDR[3],
-						cfg.MASK_ADDR[0], cfg.MASK_ADDR[1], cfg.MASK_ADDR[2], cfg.MASK_ADDR[3],
-						cfg.GW_ADDR[0],   cfg.GW_ADDR[1],   cfg.GW_ADDR[2],   cfg.GW_ADDR[3],
-						cfg.DNS_ADDR[0],  cfg.DNS_ADDR[1],  cfg.DNS_ADDR[2],  cfg.DNS_ADDR[3], cfg.PortWEB,
-						"1.1.1.1", cfg.EnableSNMP );
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Network ===
+		    char str_ip[32] = {0};
+			sprintf(str_ip, "%3d.%3d.%3d.%3d", cfg.IP_ADDR[0], cfg.IP_ADDR[1], cfg.IP_ADDR[2], cfg.IP_ADDR[3] );
+			cJSON_AddStringToObject(root, "ip", str_ip);
+
+		    char str_mask[32] = {0};
+			sprintf(str_mask, "%3d.%3d.%3d.%3d", cfg.MASK_ADDR[0], cfg.MASK_ADDR[1], cfg.MASK_ADDR[2], cfg.MASK_ADDR[3] );
+			cJSON_AddStringToObject(root, "mask", str_mask);
+
+			char str_gw[32] = {0};
+			sprintf(str_gw, "%3d.%3d.%3d.%3d", cfg.GW_ADDR[0], cfg.GW_ADDR[1], cfg.GW_ADDR[2], cfg.GW_ADDR[3] );
+			cJSON_AddStringToObject(root, "gw", str_gw);
+
+			char str_dns[32] = {0};
+			sprintf(str_dns, "%3d.%3d.%3d.%3d", cfg.DNS_ADDR[0], cfg.DNS_ADDR[1], cfg.DNS_ADDR[2], cfg.DNS_ADDR[3] );
+			cJSON_AddStringToObject(root, "dns", str_dns);
+
+			cJSON_AddNumberToObject(root, "port", cfg.PortWEB);
+			cJSON_AddNumberToObject(root, "snmp", cfg.EnableSNMP);
+
+			char str_mqtt[32] = {0};
+			sprintf(str_mqtt, "%3d.%3d.%3d.%3d", 3, 23, 178, 219 );
+			cJSON_AddStringToObject(root, "mqtt", str_mqtt);
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /setNetwork=", 16) == 0)) {
 			resp_http_200(conn);
@@ -754,10 +1043,50 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 			Get_Token();
 		}
 		else if((strncmp(buf, "GET /readPassword", 17) == 0)) {
-			sprintf(buf_html,"%s PASS:%d%d%d%d;USER:%d%d%d%d;FIM:", http_200_OK,
-							cfg.PassAdmin[0], cfg.PassAdmin[1], cfg.PassAdmin[2], cfg.PassAdmin[3],
-							cfg.PassUser[0],  cfg.PassUser[1],  cfg.PassUser[2],  cfg.PassUser[3]);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Password ===
+		    char str_admin[32] = {0};
+			sprintf(str_admin, "%d%d%d%d", cfg.PassAdmin[0], cfg.PassAdmin[1], cfg.PassAdmin[2], cfg.PassAdmin[3]);
+			cJSON_AddStringToObject(root, "admin", str_admin);
+
+		    char str_user[32] = {0};
+			sprintf(str_user, "%d%d%d%d", cfg.PassUser[0], cfg.PassUser[1], cfg.PassUser[2], cfg.PassUser[3] );
+			cJSON_AddStringToObject(root, "user", str_user);
+
+			// Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /Password=", 17) == 0)) {
 			resp_http_200(conn);
@@ -795,9 +1124,48 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 		}
 		//
 		else if((strncmp(buf, "GET /readProfile", 16) == 0) ) {
-			sprintf(buf_html, "%s STATION:%s;CITY:%s;STATE:%s;COUNTRY:%s;TEMP:%s;FIM:\n", http_200_OK,
-								Profile.Station, Profile.City, Profile.State, Profile.Country, Profile.Temp  );
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Password ===
+			cJSON_AddStringToObject(root, "station", Profile.Station);
+			cJSON_AddStringToObject(root, "city", Profile.City);
+			cJSON_AddStringToObject(root, "state", Profile.State);
+			cJSON_AddStringToObject(root, "country", Profile.Country);
+			cJSON_AddStringToObject(root, "exttemp", Profile.Temp);
+
+			// Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /setStationProfile=", 23) == 0) ) {
 			sprintf(buf_html, "%s OK", http_200_OK);
@@ -854,10 +1222,49 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 			flag_telemetry = 27;
 		}
     	else if((strncmp(buf, "GET /readConfigHold", 19) == 0)) {
-			sprintf(buf_html, "%s HOLD:%d;VSWR:%d;CLOCK:%d;REF:%0.0f;VALUE:%0.0f;FWDNULL1:%0.0f;REM1:%d;REM2:%d;FIM:", http_200_OK,
-								cfg.ConfigHold, 0, 0, Realtime.Reflected, 0.0, 0.0, Realtime.Relay1, Realtime.Relay2);
-    	    netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
-    	}
+    	    cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados ConfigHold ===
+			cJSON_AddNumberToObject(root, "confighold", cfg.ConfigHold);
+			cJSON_AddNumberToObject(root, "vswr", 0.0);
+			cJSON_AddNumberToObject(root, "reflected", Realtime.Reflected);
+			cJSON_AddNumberToObject(root, "relay1", Realtime.Relay1);
+			cJSON_AddNumberToObject(root, "relay2", Realtime.Relay2);
+
+			// Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
+		}
 		else if((strncmp(buf, "GET /setConfigHold=", 19) == 0)) {
 			resp_http_200(conn);
 			cfg.ConfigHold = buf[19] - '0';
@@ -872,11 +1279,6 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 
 			flag_telemetry = 10;
 		}
-		else if((strncmp(buf, "GET /readVSWR", 13) == 0)) {
-			sprintf(buf_html, "%s REF:%0.1fW;VALUE:%0.1fW;FWDNULL:%0.1fW;FIM:", http_200_OK,
-    				             Realtime.Reflected, 0.0, 0.0);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
-		}
 		else if((strncmp(buf, "GET /SetRestoreFactory", 22) == 0)) {
 			resp_http_200(conn);
 			Carrega_Prog_Default();
@@ -887,19 +1289,117 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
     				  	  	  	  	mon.used_pct,
 									mon.frag_pct,
 									(int)mon.free_biggest_size);
-			sprintf(buf_html, "%s TASKS:%s;LVGL:%s;CNT:%ld;FIM:", http_200_OK, PAGE_BODY, buf_lvglmon, cnt_reset_lvgl);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+//			sprintf(buf_html, "%s TASKS:%s;LVGL:%s;CNT:%ld;FIM:", http_200_OK, PAGE_BODY, buf_lvglmon, cnt_reset_lvgl);
+//			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Tasks ===
+			cJSON_AddStringToObject(root, "tasks", PAGE_BODY);
+			cJSON_AddStringToObject(root, "lvgl", buf_lvglmon);
+			cJSON_AddNumberToObject(root, "cnt", cnt_reset_lvgl);
+
+			// Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /readToken=", 15) == 0)) {
 			prepare_license();
-    	    sprintf(buf_html, "%s UUID:%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X;TOKEN:%c%c%c%c-%c%c%c%c;LIC:%c%c%c%c%c%c%c%c;SEQ:%ld;LICTMR:%ld;FLAGLIC:%d;FIM:",
-						http_200_OK,
-						cfg.uuid[0], cfg.uuid[1], cfg.uuid[2], cfg.uuid[3], cfg.uuid[4], cfg.uuid[5], cfg.uuid[6], cfg.uuid[7],
-						cfg.uuid[8], cfg.uuid[9], cfg.uuid[10], cfg.uuid[11], cfg.uuid[12], cfg.uuid[13], cfg.uuid[14], cfg.uuid[15],
-						cfg.Token[0], cfg.Token[1], cfg.Token[2], cfg.Token[3], cfg.Token[4], cfg.Token[5], cfg.Token[6], cfg.Token[7],
-						licsend[0], licsend[1], licsend[2], licsend[3], licsend[4], licsend[5], licsend[6], licsend[7],
-    	  				lic.LicSeq, lic.licenseTimer, 0);
-    	    netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+//    	    sprintf(buf_html, "%s UUID:%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X;TOKEN:%c%c%c%c-%c%c%c%c;LIC:%c%c%c%c%c%c%c%c;SEQ:%ld;LICTMR:%ld;FLAGLIC:%d;FIM:",
+//						http_200_OK,
+//						cfg.uuid[0], cfg.uuid[1], cfg.uuid[2], cfg.uuid[3], cfg.uuid[4], cfg.uuid[5], cfg.uuid[6], cfg.uuid[7],
+//						cfg.uuid[8], cfg.uuid[9], cfg.uuid[10], cfg.uuid[11], cfg.uuid[12], cfg.uuid[13], cfg.uuid[14], cfg.uuid[15],
+//						cfg.Token[0], cfg.Token[1], cfg.Token[2], cfg.Token[3], cfg.Token[4], cfg.Token[5], cfg.Token[6], cfg.Token[7],
+//						licsend[0], licsend[1], licsend[2], licsend[3], licsend[4], licsend[5], licsend[6], licsend[7],
+//    	  				lic.LicSeq, lic.licenseTimer, 0);
+//    	    netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+//		}
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+				// Erro ao criar JSON - fallback para resposta simples
+				sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+				netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+				return;
+			}
+
+			// === Dados Token ===
+			char str_uuid[128] = {0};
+			sprintf(str_uuid, "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+					cfg.uuid[0], cfg.uuid[1], cfg.uuid[2], cfg.uuid[3], cfg.uuid[4], cfg.uuid[5], cfg.uuid[6], cfg.uuid[7],
+					cfg.uuid[8], cfg.uuid[9], cfg.uuid[10], cfg.uuid[11], cfg.uuid[12], cfg.uuid[13], cfg.uuid[14], cfg.uuid[15]);
+
+			cJSON_AddStringToObject(root, "uuid", str_uuid);
+
+			char str_token[32] = {0};
+			sprintf(str_token, "%c%c%c%c-%c%c%c%c", cfg.Token[0], cfg.Token[1], cfg.Token[2], cfg.Token[3],
+					                                cfg.Token[4], cfg.Token[5], cfg.Token[6], cfg.Token[7]  );
+
+			cJSON_AddStringToObject(root, "token", str_token);
+
+			char str_lic[32] = {0};
+			sprintf(str_lic,"%c%c%c%c%c%c%c%c", licsend[0], licsend[1], licsend[2], licsend[3],
+					                            licsend[4], licsend[5], licsend[6], licsend[7] );
+			cJSON_AddStringToObject(root, "lic", str_lic);
+			cJSON_AddNumberToObject(root, "seq", lic.LicSeq);
+			cJSON_AddNumberToObject(root, "timer", lic.licenseTimer);
+			cJSON_AddNumberToObject(root, "flag", 0);
+
+			// Converter JSON para string
+			json_string = cJSON_PrintUnformatted(root);
+
+			if(json_string != NULL) {
+				// Montar resposta HTTP
+				int json_len = strlen(json_string);
+				int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+				char *response = (char*)malloc(response_len);
+
+				if(response != NULL) {
+					snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+					netconn_write(conn, response, strlen(response), NETCONN_COPY);
+					free(response);
+				} else {
+					// Fallback se malloc falhar
+					sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+					netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+				}
+				free(json_string);
+			} else {
+				// Fallback se cJSON_Print falhar
+				sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+				netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			}
+			cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /readDebug=", 15) == 0)) {
 #ifdef STM32H743xx
@@ -935,69 +1435,213 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 			stacked_dfsr = *(unsigned long *) (0x40024000 + (11*4));
 			stacked_afsr = *(unsigned long *) (0x40024000 + (12*4));
 #endif
-			sprintf(buf_html, "%s RESET:%s;R0:0x%08lX;R1:0x%08lX;R2:0x%08lX;R3:0x%08lX;R12:0x%08lX;LR:0x%08lX;PC:0x%08lX;PSR:0x%08lX;BFAR:0x%08lX;CFSR:0x%08lX;HFSR:0x%08lX;DFSR:0x%08lX;AFSR:0x%08lX;FIM:",
-						http_200_OK, reset_cause_get_name(reset_cause), stacked_r0, stacked_r1, stacked_r2, stacked_r3, stacked_r12,
-						stacked_lr, stacked_pc, stacked_psr, stacked_bfar, stacked_cfsr, stacked_hfsr, stacked_dfsr, stacked_afsr);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
-      	}
+//			sprintf(buf_html, "%s RESET:%s;R0:0x%08lX;R1:0x%08lX;R2:0x%08lX;R3:0x%08lX;R12:0x%08lX;LR:0x%08lX;PC:0x%08lX;PSR:0x%08lX;BFAR:0x%08lX;CFSR:0x%08lX;HFSR:0x%08lX;DFSR:0x%08lX;AFSR:0x%08lX;FIM:",
+//						http_200_OK, reset_cause_get_name(reset_cause), stacked_r0, stacked_r1, stacked_r2, stacked_r3, stacked_r12,
+//						stacked_lr, stacked_pc, stacked_psr, stacked_bfar, stacked_cfsr, stacked_hfsr, stacked_dfsr, stacked_afsr);
+//			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+    	    cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Debug ===
+			cJSON_AddStringToObject(root, "reset", reset_cause_get_name(reset_cause));
+			cJSON_AddNumberToObject(root, "r0", stacked_r0);
+			cJSON_AddNumberToObject(root, "r1", stacked_r1);
+			cJSON_AddNumberToObject(root, "r2", stacked_r2);
+			cJSON_AddNumberToObject(root, "r3", stacked_r3);
+			cJSON_AddNumberToObject(root, "r12", stacked_r12);
+			cJSON_AddNumberToObject(root, "lr", stacked_lr);
+			cJSON_AddNumberToObject(root, "pc", stacked_pc);
+			cJSON_AddNumberToObject(root, "psr", stacked_psr);
+			cJSON_AddNumberToObject(root, "bfar", stacked_bfar);
+			cJSON_AddNumberToObject(root, "cfsr", stacked_cfsr);
+			cJSON_AddNumberToObject(root, "hfsr", stacked_hfsr);
+			cJSON_AddNumberToObject(root, "dfsr", stacked_dfsr);
+			cJSON_AddNumberToObject(root, "afsr", stacked_afsr);
+
+			// Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
+		}
     	// Comandos
 		else if((strncmp(buf, "GET /readLogin", 14) == 0) ) {
-			if(http_access == 0) {
-				sprintf(buf_html, "%s User:%s;Config:%d;FIM:\n", http_200_OK, "", cfg.ConfigHold);
-			}
-          	else if(http_access == 1) {
-          		sprintf(buf_html, "%s User:%s;Config:%d;FIM:\n", http_200_OK, "User", cfg.ConfigHold);
-          	}
-          	else {
-          		sprintf(buf_html, "%s User:%s;Config:%d;FIM:\n", http_200_OK, "Admin", cfg.ConfigHold);
-          	}
-          	netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Básicos do Login ===
+		    const char* login_user = "UNKNOWN";
+		    if(http_access == 0) login_user = "";
+		    else if(http_access == 1) login_user = "User";
+		    else if(http_access == 2) login_user = "Admin";
+		    cJSON_AddStringToObject(root, "User", login_user);
+		    if(cfg.ConfigHold == 0)
+		    	cJSON_AddNumberToObject(root, "Config", 0);
+		    else
+		    	cJSON_AddNumberToObject(root, "Config", 1);
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
-		else if((strncmp(buf, "GET /readProfile", 16) == 0) ) {
-			sprintf(buf_html, "%s STATION:%s;CITY:%s;STATE:%s;COUNTRY:%s;TEMP:%s;FIM:\n", http_200_OK,
-								Profile.Station, Profile.City, Profile.State, Profile.Country, Profile.Temp  );
-          	netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		else if( strncmp(buf, "GET /readTELEMETRYJSON", 22) == 0 && (http_access != 0) ) {
+			//send_json_response(conn, "success", "JSON processed successfully");
+			json_telemetry(conn);
 		}
-		else if( strncmp(buf, "GET /readTELEMETRY", 12) == 0 && (http_access != 0) ) {
-			sprintf(str_ver, "PLL: %s", versao);
-			sprintf(str_ver3, "MEM: %s", version_flash);
+		else if( strncmp(buf, "GET /readTELEMETRY", 18) == 0 && (http_access != 0) ) {
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Básicos do Sistema ===
+		    cJSON_AddStringToObject(root, "model", "RXNSTL 900MHz");
+		    cJSON_AddStringToObject(root, "versionmcu", versao);
+		    cJSON_AddStringToObject(root, "versionmem", version_flash);
+
+		    // === RDS ===
+		    const char* rds_mode = "UNKNOWN";
+		    rds_mode = (rds.enable == 0) ? "DISABLE" : "ENABLE";
+		    cJSON_AddStringToObject(root, "rds", rds_mode);
+
+		    // === Frequência ===
+		    cJSON_AddNumberToObject(root, "frequency", cfg.Frequencia);
+
+		    // === Status ===
+		    cJSON_AddStringToObject(root, "status", "OK");
+		    cJSON_AddStringToObject(root, "fail",   "OK");
+
+		    // === Audio Source ===
+		    const char* audio_mode = "UNKNOWN";
+		    if(cfg.AudioSource == 0) audio_mode = "MPX1";
+		    else if(cfg.AudioSource == 1) audio_mode = "MPX2";
+		    else if(cfg.AudioSource == 2) audio_mode = "MPX3";
+		    cJSON_AddStringToObject(root, "audiosource", audio_mode);
+
+		    // === Battery ===
+		    const char* bat_mode = "UNKNOWN";
+		    if(Status_Battery) bat_mode = "ON";
+		    else bat_mode = "OFF";
+		    cJSON_AddStringToObject(root, "battery", bat_mode);
+
+		    // === Uptime ===
+		    char str_uptime[32] = {0};
 			sprintf(str_uptime, "%ldd - %02ld:%02ld:%02ld", uptime.dia, (uptime.total/3600)%24, (uptime.total/60)%60, uptime.total%60);
-			memset(str_rds, 0, 20);
-			if(rds.enable) {
-				sprintf(str_rds, "ON");
-			}
-			else {
-				sprintf(str_rds, "OFF");
-			}
-			//
-			memset(str_freq, 0, 100);
-			sprintf(str_freq, "%ld", cfg.Frequencia);
-			sprintf(str_freq, "%d%d%d.%d%d%d MHz", str_freq[0]-'0', str_freq[1]-'0', str_freq[2]-'0', str_freq[3]-'0', str_freq[4]-'0', 0);
+			cJSON_AddStringToObject(root, "uptime", str_uptime);
 
-			memset(str_source, 0, 16);
-			sprintf(str_source, "MPX%d", cfg.AudioSource);
+		    // === Data/Hora ===
+			char str_clock[32] = {0};
+		    sprintf(str_clock, "%02d/%02d/%04d %02d:%02d:%02d", gDate.Date, gDate.Month, (2000+gDate.Year),
+		    		                                 gTime.Hours, gTime.Minutes, gTime.Seconds);
+		    cJSON_AddStringToObject(root, "clock", str_clock);
 
-			memset(str_bat, 0, 16);
-			if(Status_Battery == 1) {
-				sprintf(str_bat, "OFF");
-			}
-			else {
-				sprintf(str_bat, "ON");
-			}
+		    // === Profile ===
+		    cJSON_AddStringToObject(root, "station", Profile.Station);
+		    cJSON_AddStringToObject(root, "city", Profile.City);
+		    cJSON_AddStringToObject(root, "state", Profile.State);
+		    cJSON_AddStringToObject(root, "country", Profile.Country);
+		    cJSON_AddStringToObject(root, "exttemp", Profile.Temp);
 
-			memset(buf_html, 0, 2500);
-			sprintf(buf_html, "%s RSSIS:0x%X &#9 [ %d ] &#9 mV:%0.2f;RSSIL:0x%X [ %d ]  mV:%0.2f;19KHZ:0x%X [ %d ]  mV:%0.2f;57KHZ:0x%X [ %d ]  mV:%0.2f;MPX:0x%X [ %d ]  mV:%0.2f;MONO:0x%X [ %d ]  mV:%0.2f;LEFT:0x%X [ %d ]  mV:%0.2f;RIGHT:0x%X [ %d ]  mV:%0.2f;UPTIME:%s;TIPO:%d;EXTTEMP:%s;MODEL:%s;RDS:%s;FREQ:%s;SOURCE:%s;VERMCU:%s;VERMEM:%s;STS:%s;FAIL:%s;BAT:%s;CLOCK:%02d/%02d/%04d %02d:%02d:%02d;B1:%d;B2:%d;B3:%d;DEM:%d;STEREO:%d;FIM\n",
-						http_200_OK, adc_values[0], adc_values[0], (float)((3000.0/65535)*adc_values[0]),
-					               adc_values[1], adc_values[1], (float)((3000.0/65535)*adc_values[1]),
-								   adc_values[2], adc_values[2], (float)((3000.0/65535)*adc_values[2]),
-								   adc_values[3], adc_values[3], (float)((3000.0/65535)*adc_values[3]),
-								   adc_values[4], adc_values[4], (float)((3000.0/65535)*adc_values[4]),
-								   adc_values[5], adc_values[5], (float)((3000.0/65535)*adc_values[5]),
-								   adc_values[6], adc_values[6], (float)((3000.0/65535)*adc_values[6]),
-								   adc_values[7], adc_values[7], (float)((3000.0/65535)*adc_values[7]),
-								   str_uptime, 0, "25.0°C", "RXNSTL 900MHz", str_rds, str_freq, str_source, str_ver, str_ver3, "OK", "OK", str_bat, gDate.Date, gDate.Month, 2000+gDate.Year, gTime.Hours, gTime.Minutes, gTime.Seconds, 5, 10, 18,
-								   Status_FMDem, Status_Stereo);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    // === Telemetry ===
+		    cJSON_AddNumberToObject(root, "rssisignal", adc_values[0]);
+		    cJSON_AddNumberToObject(root, "rssilimit",  adc_values[1]);
+		    cJSON_AddNumberToObject(root, "mpxpilot",   adc_values[2]);
+		    cJSON_AddNumberToObject(root, "mpx57k",     adc_values[3]);
+		    cJSON_AddNumberToObject(root, "mpx",      	adc_values[4]);
+		    cJSON_AddNumberToObject(root, "mono",      	adc_values[5]);
+		    cJSON_AddNumberToObject(root, "left",      	adc_values[6]);
+		    cJSON_AddNumberToObject(root, "right",      adc_values[7]);
+		    cJSON_AddBoolToObject(root,   "dem",        Status_FMDem);
+		    cJSON_AddBoolToObject(root,   "stereo",     Status_Stereo);
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /RFState=1", 14) == 0) && (http_access == 2) ) {
 			// Power-ON
@@ -1029,65 +1673,72 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 		else if((strncmp(buf, "GET /GetGraph=", 14) == 0)) {
 			uint8_t id_graph = buf[14] - '0';
 			if(id_graph == 1) {
-//        		sprintf(buf_html, "%s H0:%0.0f;H1:%0.0f;H2:%0.0f;H3:%0.0f;H4:%0.0f;H5:%0.0f;H6:%0.0f;H7:%0.0f;H8:%0.0f;H9:%0.0f;H10:%0.0f;H11:%0.0f;H12:%0.0f;H13:%0.0f;H14:%0.0f;H15:%0.0f;H16:%0.0f;H17:%0.0f;H18:%0.0f;H19:%0.0f;H20:%0.0f;H21:%0.0f;H22:%0.0f;H23:%0.0f;FIM:",
-//      				    	http_200_OK,
-//  					    	gf_fwd.hora[0], gf_fwd.hora[1], gf_fwd.hora[2], gf_fwd.hora[3], gf_fwd.hora[4], gf_fwd.hora[5], gf_fwd.hora[6],
-//  					    	gf_fwd.hora[7], gf_fwd.hora[8], gf_fwd.hora[9], gf_fwd.hora[10],gf_fwd.hora[11], gf_fwd.hora[12], gf_fwd.hora[13],
-//  					    	gf_fwd.hora[14], gf_fwd.hora[15], gf_fwd.hora[16], gf_fwd.hora[17], gf_fwd.hora[18], gf_fwd.hora[19], gf_fwd.hora[20],
-//  					    	gf_fwd.hora[21],gf_fwd.hora[22],gf_fwd.hora[23] );
-
 				sprintf(buf_html, "%s", http_200_OK);
 				netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
 			}
 			else if(id_graph == 2) {
-//        		sprintf(buf_html, "%s H0:%0.0f;H1:%0.0f;H2:%0.0f;H3:%0.0f;H4:%0.0f;H5:%0.0f;H6:%0.0f;H7:%0.0f;H8:%0.0f;H9:%0.0f;H10:%0.0f;H11:%0.0f;H12:%0.0f;H13:%0.0f;H14:%0.0f;H15:%0.0f;H16:%0.0f;H17:%0.0f;H18:%0.0f;H19:%0.0f;H20:%0.0f;H21:%0.0f;H22:%0.0f;H23:%0.0f;"
-//      					             "M0:%0.0f;M1:%0.0f;M2:%0.0f;M3:%0.0f;M4:%0.0f;M5:%0.0f;M6:%0.0f;M7:%0.0f;M8:%0.0f;M9:%0.0f;M10:%0.0f;M11:%0.0f;M12:%0.0f;M13:%0.0f;M14:%0.0f;M15:%0.0f;M16:%0.0f;M17:%0.0f;M18:%0.0f;M19:%0.0f;M20:%0.0f;M21:%0.0f;M22:%0.0f;M23:%0.0f;FIM:",
-//      				    	http_200_OK,
-//  					    	gf_ref.hora[0], gf_ref.hora[1], gf_ref.hora[2], gf_ref.hora[3], gf_ref.hora[4], gf_ref.hora[5], gf_ref.hora[6],
-//  					    	gf_ref.hora[7], gf_ref.hora[8], gf_ref.hora[9], gf_ref.hora[10],gf_ref.hora[11], gf_ref.hora[12], gf_ref.hora[13],
-//  					    	gf_ref.hora[14], gf_ref.hora[15], gf_ref.hora[16], gf_ref.hora[17], gf_ref.hora[18], gf_ref.hora[19], gf_ref.hora[20],
-//  					    	gf_ref.hora[21],gf_ref.hora[22],gf_ref.hora[23],
-//  							//
-//  							max_ref.hora[0], max_ref.hora[1], max_ref.hora[2], max_ref.hora[3], max_ref.hora[4], max_ref.hora[5], max_ref.hora[6],
-//  							max_ref.hora[7], max_ref.hora[8], max_ref.hora[9], max_ref.hora[10],max_ref.hora[11], max_ref.hora[12], max_ref.hora[13],
-//  							max_ref.hora[14], max_ref.hora[15], max_ref.hora[16], max_ref.hora[17], max_ref.hora[18], max_ref.hora[19], max_ref.hora[20],
-//  							max_ref.hora[21],max_ref.hora[22],max_ref.hora[23] );
-
 				sprintf(buf_html, "%s", http_200_OK);
 				netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
 			}
 			else if(id_graph == 3) {
-//        		sprintf(buf_html, "%s H0:%0.0f;H1:%0.0f;H2:%0.0f;H3:%0.0f;H4:%0.0f;H5:%0.0f;H6:%0.0f;H7:%0.0f;H8:%0.0f;H9:%0.0f;H10:%0.0f;H11:%0.0f;H12:%0.0f;H13:%0.0f;H14:%0.0f;H15:%0.0f;H16:%0.0f;H17:%0.0f;H18:%0.0f;H19:%0.0f;H20:%0.0f;H21:%0.0f;H22:%0.0f;H23:%0.0f;"
-//      					             "M0:%0.0f;M1:%0.0f;M2:%0.0f;M3:%0.0f;M4:%0.0f;M5:%0.0f;M6:%0.0f;M7:%0.0f;M8:%0.0f;M9:%0.0f;M10:%0.0f;M11:%0.0f;M12:%0.0f;M13:%0.0f;M14:%0.0f;M15:%0.0f;M16:%0.0f;M17:%0.0f;M18:%0.0f;M19:%0.0f;M20:%0.0f;M21:%0.0f;M22:%0.0f;M23:%0.0f; FIM:",
-//      				    	http_200_OK,
-//  					    	gf_temp.hora[0], gf_temp.hora[1], gf_temp.hora[2], gf_temp.hora[3], gf_temp.hora[4], gf_temp.hora[5], gf_temp.hora[6],
-//  					   		gf_temp.hora[7], gf_temp.hora[8], gf_temp.hora[9], gf_temp.hora[10],gf_temp.hora[11], gf_temp.hora[12], gf_temp.hora[13],
-//  					    	gf_temp.hora[14], gf_temp.hora[15], gf_temp.hora[16], gf_temp.hora[17], gf_temp.hora[18], gf_temp.hora[19], gf_temp.hora[20],
-//  					    	gf_temp.hora[21],gf_temp.hora[22],gf_temp.hora[23],
-//  							//
-//  							max_temp.hora[0], max_temp.hora[1], max_temp.hora[2], max_temp.hora[3], max_temp.hora[4], max_temp.hora[5], max_temp.hora[6],
-//  							max_temp.hora[7], max_temp.hora[8], max_temp.hora[9], max_temp.hora[10], max_temp.hora[11], max_temp.hora[12], max_temp.hora[13],
-//  							max_temp.hora[14], max_temp.hora[15], max_temp.hora[16], max_temp.hora[17], max_temp.hora[18], max_temp.hora[19], max_temp.hora[20],
-//  							max_temp.hora[21], max_temp.hora[22], max_temp.hora[23] );
-
 				sprintf(buf_html, "%s", http_200_OK);
 				netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
 			}
 		}
 		else if((strncmp(buf, "GET /readAUDIO", 14) == 0)) {
-			sprintf(buf_html, "%s EMP:%d;PROC:%d;AES:%d;DSPM:%d;DSP1:%d;DSP2:%d;DSPP:%d;FIM\n",
-                  			     http_200_OK, cfg.Emphase, cfg.Processor, cfg.AES192,
-								 Realtime.DSP_Cfg, Realtime.DSP_Bit_1, Realtime.DSP_Bit_2, Realtime.DSP_PWM);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
-		}
-		else if((strncmp(buf, "GET /readAudioVol", 17) == 0)) {
-			sprintf(buf_html, "%s MPX1:%d;MPX2:%d;FIM\n", http_200_OK,
-						cfg.Vol_MPX1, cfg.Vol_MPX2);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
-		}
-		else if((strncmp(buf, "GET /readAlarmMPX", 17) == 0)) {
-			sprintf(buf_html, "%s MPXVALUE:%d;MPXTIMER:%ld;MPXVALUEOFF:%d;MPXTIMEROFF:%ld;FIM\n", http_200_OK, cfg.level_audio_on, cfg.timer_audio_on/(1000*60), cfg.level_audio_off, cfg.timer_audio_off/(1000*60));
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Básicos do Sistema ===
+			cJSON_AddBoolToObject(root, "emphasis", cfg.Emphase);
+			cJSON_AddBoolToObject(root, "processor", cfg.Processor);
+			cJSON_AddBoolToObject(root, "aes192", cfg.AES192);
+			cJSON_AddBoolToObject(root, "dspcfg", Realtime.DSP_Cfg);
+			cJSON_AddBoolToObject(root, "dsp1", Realtime.DSP_Bit_1);
+			cJSON_AddBoolToObject(root, "dsp2", Realtime.DSP_Bit_2);
+			//
+			cJSON_AddNumberToObject(root, "dsppwm", Realtime.DSP_PWM);
+			//
+			cJSON_AddNumberToObject(root, "dspvol1", cfg.Vol_MPX1);
+			cJSON_AddNumberToObject(root, "dspvol2", cfg.Vol_MPX2);
+			//
+			cJSON_AddNumberToObject(root, "levelaudioon", cfg.level_audio_on);
+			cJSON_AddNumberToObject(root, "timeraudioon", cfg.timer_audio_on/(1000*60));
+			cJSON_AddNumberToObject(root, "levelaudiooff", cfg.level_audio_off);
+			cJSON_AddNumberToObject(root, "timeraudiooff", cfg.timer_audio_off/(1000*60));
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /setAUDIOVOL=", 17) == 0)) {
 			// MPX1 VOL
@@ -1175,142 +1826,49 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 
 			flag_telemetry = 2;
 		}
-		else if((strncmp(buf, "GET /setRDS=", 12) == 0)) {
-			sprintf(buf_html, "%s OK", http_200_OK);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
-
-        	rds.enable =  buf[12] - '0';
-            rds.enable_station = buf[12] - '0';
-            rds.enable_text = buf[12] - '0';
-            rds.type = buf[14] - '0';
-            rds.ct = buf[16] - '0';
-
-            // clear
-			for(x = 0; x < 10; x++){
-				rds.ps[x] = ' ';
-				rds.ptyn[x] = ' ';
-			}
-			rds.ps[8] = 0;
-			rds.ptyn[8] = 0;
-
-			strstr_substring(buf, "STATION:", "PI:", 8);
-            decode_string(out, out1);
-			for(x = 0; x < strlen(out1); x++) {
-				rds.ps[x] = out1[x];
-            }
-            rds.ps[x] = 0;
-
-            for(x = 0; x < 72; x++) {
-				rds.rt1[x] = 0;
-            	rds.dps1[x] = 0;
-            }
-            rds.rt1[71] = 0;
-            rds.dps1[71] = 0;
-
-            //PI
-            strstr_substring(buf, "PI:", "PTY:", 3);
-            decode_string(out, out1);
-            rds.pi[0] = out1[0];
-            rds.pi[1] = out1[1];
-            rds.pi[2] = out1[2];
-            rds.pi[3] = out1[3];
-
-            // PTY
-            strstr_substring(buf, "PTY:", "PTYN:", 4);
-            decode_string(out, out1);
-            rds.pty = out1[0] - '0';
-
-            // PTYN
-            strstr_substring(buf, "PTYN:", "MS:", 5);
-            decode_string(out, out1);
-            for(x = 0; x < strlen(out1); x++) {
-				rds.ptyn[x] = out1[x];
-            }
-            rds.ptyn[x] = 0;
-
-			// Music / Speech
-            strstr_substring(buf, "MS:", "AF1:", 3);
-            decode_string(out, out1);
-            rds.ms = out1[0] - '0';
-            // AF1
-            strstr_substring(buf, "AF1:", "AF2:", 4);
-            decode_string(out, out1);
-            val = atoi(out1);
-            rds.af[0] = val;
-            // AF2
-            strstr_substring(buf, "AF2:", "AF3:", 4);
-            decode_string(out, out1);
-            val = atoi(out1);
-            rds.af[1] = val;
-            // AF3
-            strstr_substring(buf, "AF3:", "AF4:", 4);
-            decode_string(out, out1);
-            val = atoi(out1);
-            rds.af[2] = val;
-            // AF4
-            strstr_substring(buf, "AF4:", "AF5:", 4);
-            decode_string(out, out1);
-            val = atoi(out1);
-            rds.af[3] = val;
-            // AF5
-            strstr_substring(buf, "AF5:", "TESTE:", 4);
-            decode_string(out, out1);
-            val = atoi(out1);
-            rds.af[4] = val;
-            // RT1
-            strstr_substring(buf, "TEXT:", "DPS1:", 5);
-            decode_string(out, out1);
-            for(x = 0; x < strlen(out1); x++) {
-				rds.rt1[x] = out1[x];
-			}
-			rds.rt1[x] = 0;
-
-			// DPS1
-			strstr_substring(buf, "DPS1:", "REMOTE:", 5);
-			decode_string(out, out1);
-            for(x = 0; x < strlen(out1); x++) {
-				rds.dps1[x] = out1[x];
-			}
-			rds.dps1[x] = 0;
-
-			// UDP
-			strstr_substring(buf, "REMOTE:", "PORT_UDP:", 7);
-            decode_string(out, out1);
-            // Port
-            strstr_substring(buf, "PORT_UDP:", "FIM:", 9);
-            decode_string(out, out1);
-
-            flag_telemetry = 5;
-		}
-		else if((strncmp(buf, "GET /readRDS", 12) == 0) ) {
-			if( (falha & (1ULL << FAIL_SYNCRDS)) ) {
-				sprintf(str_rds, "No");
-			}
-			else {
-				sprintf(str_rds, "Yes");
-			}
-			sprintf(buf_html, "%s ENABLE:%d;CT:%d;RDS:%d;STATION:%s;PI:%C%C%C%C;PTY:%d;PTYN:%s;MS:%d;AF1:%d;AF2:%d;AF3:%d;AF4:%d;AF5:%d;TEXT:%s;DPS1:%s;VER:%s;SYNC:%s;REMOTE:%d;PORT_UDP:%d;FIM:\n",
-								http_200_OK,
-								rds.enable, rds.ct, rds.type,	rds.ps, rds.pi[0], rds.pi[1], rds.pi[2], rds.pi[3], rds.pty,
-								rds.ptyn, rds.ms, rds.af[0], rds.af[1], rds.af[2], rds.af[3], rds.af[4],
-								rds.rt1, rds.dps1, rds.version, str_rds, 0, 0);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
-		}
-		else if((strncmp(buf, "GET /readRDSSYNC", 16) == 0)) {
-			//
-			if( (falha & (1ULL << FAIL_SYNCRDS)) ) {
-				sprintf(str_rds, "Sync: No");
-			}
-			else {
-				sprintf(str_rds, "Sync: Yes");
-			}
-			sprintf(buf_html, "%s RDSSYNC:%s;%s;FIM\n", http_200_OK, str_rds, rds.version);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
-		}
 		else if((strncmp(buf, "GET /readAdvSet", 15) == 0)) {
-			sprintf(buf_html, "%s RSSI1:%1.2f;RSSI2:%1.2f;MPX:%1.2f;LEFT:%1.2f;RIGHT:%1.2f;FIM",
-								http_200_OK, adv.GainRSSI1, adv.GainRSSI2, adv.GainMPX, adv.GainLeft, adv.GainRight);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Advanced Settings ===
+			cJSON_AddNumberToObject(root, "rssi1", adv.GainRSSI1);
+			cJSON_AddNumberToObject(root, "rssi2", adv.GainRSSI2);
+			cJSON_AddNumberToObject(root, "mpx", adv.GainMPX);
+			cJSON_AddNumberToObject(root, "left", adv.GainLeft);
+			cJSON_AddNumberToObject(root, "right", adv.GainRight);
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
         else if((strncmp(buf, "GET /setAdvSet=", 15) == 0)) {
 			resp_http_200(conn);
@@ -1352,13 +1910,49 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 			flag_telemetry = 11;
 		}
 		else if((strncmp(buf, "GET /readMaxSN", 14) == 0)) {
-			sprintf(str_sn, "%d%d%d%d%d%d%d%d", cfg.SerialNumber[0], cfg.SerialNumber[1],
-        			                            cfg.SerialNumber[2], cfg.SerialNumber[3],
-												cfg.SerialNumber[4], cfg.SerialNumber[5],
-												cfg.SerialNumber[6], cfg.SerialNumber[7]);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
 
-			sprintf(buf_html, "%s SN:%s;FIM", http_200_OK, str_sn);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Serial Number (String) ===
+		    char str_sn[32] = {0};
+			sprintf(str_sn, "%d%d%d%d%d%d%d%d", cfg.SerialNumber[0], cfg.SerialNumber[1],
+					                            cfg.SerialNumber[2], cfg.SerialNumber[3],
+												cfg.SerialNumber[4], cfg.SerialNumber[5],
+												cfg.SerialNumber[6], cfg.SerialNumber[7] );
+			cJSON_AddStringToObject(root, "serialnumber", str_sn);
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /setService=", 16) == 0)) {
 			resp_http_200(conn);
@@ -1398,27 +1992,126 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 			flag_telemetry = 17;
 		}
 		else if((strncmp(buf, "GET /readService", 16) == 0)) {
-			sprintf(str_sn, "%d%d%d%d%d%d%d%d", cfg.SerialNumber[0], cfg.SerialNumber[1],
-        			                            cfg.SerialNumber[2], cfg.SerialNumber[3],
-												cfg.SerialNumber[4], cfg.SerialNumber[5],
-												cfg.SerialNumber[6], cfg.SerialNumber[7]);
-			sprintf(buf_html, "%s SN:%s;PWM:%d;BAT:%d;FM:%d;STMO:%d;BW:%d;ATN:%0.1f;DSPSEL:%d;DSP1:%d;DSP2:%d;RST:%s;ADC0: 0x%X [ %d ] mV: %0.2f;ADC1: 0x%X [ %d ] mV: %0.2f;ADC2: 0x%X [ %d ] mV: %0.2f;ADC3: 0x%X [ %d ] mV: %0.2f;ADC4: 0x%X [ %d ] mV: %0.2f;ADC5: 0x%X [ %d ] mV: %0.2f;ADC6: 0x%X [ %d ] mV: %0.2f;ADC7: 0x%X [ %d ] mV: %0.2f;FIM",
-						http_200_OK, str_sn, Realtime.DSP_PWM, Status_Battery, Status_FMDem, Status_Stereo, cfg.BW, cfg.Atten, Realtime.DSP_Cfg, Realtime.DSP_Bit_1, Realtime.DSP_Bit_2,
-						reset_cause_get_name(reset_cause),
-						adc_values[0], adc_values[0], (float)((3000.0/65535)*adc_values[0]),
-						adc_values[1], adc_values[1], (float)((3000.0/65535)*adc_values[1]),
-						adc_values[2], adc_values[2], (float)((3000.0/65535)*adc_values[2]),
-						adc_values[3], adc_values[3], (float)((3000.0/65535)*adc_values[3]),
-						adc_values[4], adc_values[4], (float)((3000.0/65535)*adc_values[4]),
-						adc_values[5], adc_values[5], (float)((3000.0/65535)*adc_values[5]),
-						adc_values[6], adc_values[6], (float)((3000.0/65535)*adc_values[6]),
-						adc_values[7], adc_values[7], (float)((3000.0/65535)*adc_values[7]) );
+//			sprintf(str_sn, "%d%d%d%d%d%d%d%d", cfg.SerialNumber[0], cfg.SerialNumber[1],
+//        			                            cfg.SerialNumber[2], cfg.SerialNumber[3],
+//												cfg.SerialNumber[4], cfg.SerialNumber[5],
+//												cfg.SerialNumber[6], cfg.SerialNumber[7]);
+//			sprintf(buf_html, "%s SN:%s;PWM:%d;BAT:%d;FM:%d;STMO:%d;BW:%d;ATN:%0.1f;DSPSEL:%d;DSP1:%d;DSP2:%d;RST:%s;ADC0: 0x%X [ %d ] mV: %0.2f;ADC1: 0x%X [ %d ] mV: %0.2f;ADC2: 0x%X [ %d ] mV: %0.2f;ADC3: 0x%X [ %d ] mV: %0.2f;ADC4: 0x%X [ %d ] mV: %0.2f;ADC5: 0x%X [ %d ] mV: %0.2f;ADC6: 0x%X [ %d ] mV: %0.2f;ADC7: 0x%X [ %d ] mV: %0.2f;FIM",
+//						http_200_OK, str_sn, Realtime.DSP_PWM, Status_Battery, Status_FMDem, Status_Stereo, cfg.BW, cfg.Atten, Realtime.DSP_Cfg, Realtime.DSP_Bit_1, Realtime.DSP_Bit_2,
+//						reset_cause_get_name(reset_cause),
+//						adc_values[0], adc_values[0], (float)((3000.0/65535)*adc_values[0]),
+//						adc_values[1], adc_values[1], (float)((3000.0/65535)*adc_values[1]),
+//						adc_values[2], adc_values[2], (float)((3000.0/65535)*adc_values[2]),
+//						adc_values[3], adc_values[3], (float)((3000.0/65535)*adc_values[3]),
+//						adc_values[4], adc_values[4], (float)((3000.0/65535)*adc_values[4]),
+//						adc_values[5], adc_values[5], (float)((3000.0/65535)*adc_values[5]),
+//						adc_values[6], adc_values[6], (float)((3000.0/65535)*adc_values[6]),
+//						adc_values[7], adc_values[7], (float)((3000.0/65535)*adc_values[7]) );
+//
+//			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+//
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
 
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados Service ===
+		    char str_sn[32] = {0};
+			sprintf(str_sn, "%d%d%d%d%d%d%d%d", cfg.SerialNumber[0], cfg.SerialNumber[1],
+					                            cfg.SerialNumber[2], cfg.SerialNumber[3],
+												cfg.SerialNumber[4], cfg.SerialNumber[5],
+												cfg.SerialNumber[6], cfg.SerialNumber[7] );
+			cJSON_AddStringToObject(root, "serialnumber", str_sn);
+			cJSON_AddStringToObject(root, "reset", reset_cause_get_name(reset_cause));
+			cJSON_AddNumberToObject(root, "pwm", Realtime.DSP_PWM);
+			cJSON_AddBoolToObject(root, "battery", Status_Battery);
+			cJSON_AddBoolToObject(root, "demulador", Status_FMDem);
+			cJSON_AddBoolToObject(root, "stereo", Status_Stereo);
+			cJSON_AddBoolToObject(root, "band", cfg.BW);
+			cJSON_AddNumberToObject(root, "atennuador", cfg.Atten);
+			cJSON_AddNumberToObject(root, "dsp_cfg", Realtime.DSP_Cfg);
+			cJSON_AddNumberToObject(root, "dspbit1", Realtime.DSP_Bit_1);
+			cJSON_AddNumberToObject(root, "dspbit2", Realtime.DSP_Bit_2);
+			cJSON_AddNumberToObject(root, "adc0", adc_values[0]);
+			cJSON_AddNumberToObject(root, "adc1", adc_values[1]);
+			cJSON_AddNumberToObject(root, "adc2", adc_values[2]);
+			cJSON_AddNumberToObject(root, "adc3", adc_values[3]);
+			cJSON_AddNumberToObject(root, "adc4", adc_values[4]);
+			cJSON_AddNumberToObject(root, "adc5", adc_values[5]);
+			cJSON_AddNumberToObject(root, "adc6", adc_values[6]);
+			cJSON_AddNumberToObject(root, "adc7", adc_values[7]);
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /readRF", 11) == 0)) {
-			sprintf(buf_html, "%s BW:%d;ATN:%0.2f;FIM", http_200_OK, cfg.BW, cfg.Atten);
-			netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+			cJSON *root = cJSON_CreateObject();
+			char *json_string = NULL;
+
+			if (root == NULL) {
+		         // Erro ao criar JSON - fallback para resposta simples
+		         sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON creation failed\"}", http_200_OK_JSON);
+		         netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		         return;
+		     }
+
+		    // === Dados RF ===
+			cJSON_AddBoolToObject(root, "band", cfg.BW);
+			cJSON_AddNumberToObject(root, "attenuation", cfg.Atten);
+
+		    // Converter JSON para string
+		    json_string = cJSON_PrintUnformatted(root);
+
+		    if(json_string != NULL) {
+		        // Montar resposta HTTP
+		        int json_len = strlen(json_string);
+		        int response_len = strlen(http_200_OK_JSON) + json_len + 1;
+		        char *response = (char*)malloc(response_len);
+
+		        if(response != NULL) {
+		            snprintf(response, response_len, "%s%s", http_200_OK_JSON, json_string);
+		            netconn_write(conn, response, strlen(response), NETCONN_COPY);
+		            free(response);
+		        } else {
+		            // Fallback se malloc falhar
+		            sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"memory allocation failed\"}", http_200_OK_JSON);
+		            netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		        }
+		        free(json_string);
+		    } else {
+		        // Fallback se cJSON_Print falhar
+		        sprintf(buf_html, "%s {\"status\":\"error\",\"message\":\"JSON serialization failed\"}", http_200_OK_JSON);
+		        netconn_write(conn, buf_html, strlen(buf_html), NETCONN_COPY);
+		    }
+		    cJSON_Delete(root);
 		}
 		else if((strncmp(buf, "GET /setRF=", 11) == 0)) {
 			resp_http_200(conn);
@@ -1555,8 +2248,14 @@ static void http_server_netconn_thread(void *arg)
                 continue;
             }
 
-            /* Process this connection */
-            process_http_connection(newconn);
+            netconn_set_recvtimeout(newconn, HTTP_SOCKET_TIMEOUT_MS);
+
+//            if (osSemaphoreAcquire(BinarySemHTTPDHandle, osWaitForever) == osOK) {
+            	/* Process this connection */
+            	process_http_connection(newconn);
+                /* Liberar semáforo */
+//                osSemaphoreRelease(BinarySemHTTPDHandle);
+//            }
 
             /* Immediate cleanup */
             netconn_close(newconn);
@@ -1589,7 +2288,8 @@ void print_memp_stats(void)
 	//logI("=== Detailed TCP Stats ===\n");
 	//logI("TCP_PCB: %d/%d used\n", lwip_stats.memp[MEMP_TCP_PCB]->used, lwip_stats.memp[MEMP_TCP_PCB]->max);
 	//logI("TCP_PCB_LISTEN: %d/%d used\n", lwip_stats.memp[MEMP_TCP_PCB_LISTEN]->used, lwip_stats.memp[MEMP_TCP_PCB_LISTEN]->max);
-
+	//logI("NETCONN pool: %d used, %d max ever\n",lwip_stats.memp[MEMP_NETCONN]->used, lwip_stats.memp[MEMP_NETCONN]->max);
+	//logI("PBUF pool: %d used\n", lwip_stats.memp[MEMP_PBUF]->used);
 #if LWIP_STATS
 	//logI("TCP Connections: %ld\n", lwip_stats.tcp.);
 	//logI("TCP Closed: %ld\n", lwip_stats.tcp.);
@@ -1597,6 +2297,8 @@ void print_memp_stats(void)
 	//logI("TCP Mem Err: %ld\n", lwip_stats.tcp.memerr);
 	//logI("MEM Avail.: %ld/%ld used\n", lwip_stats.mem.avail, lwip_stats.mem.used);
 #endif
+	//logI("FreeRTOS Heap: %d free\n", xPortGetFreeHeapSize());
+	//logI("MQTT State: %d/%d\n", mqttClient.isconnected, Telemetry_State);
 
 	//logI("===========================\n");
 }

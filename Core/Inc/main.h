@@ -289,14 +289,14 @@ typedef struct {
 } SYS_DateTime;
 
 typedef struct {
-	float Forward;
-	float Reflected;
-	float VPA;
-	float IPA;
-	float Temperature;
-	float SWR;
-	float Load_MisMatch;
-	float Return_Loss;
+	volatile float Forward;
+	volatile float Reflected;
+	volatile float VPA;
+	volatile float IPA;
+	volatile float Temperature;
+	volatile float SWR;
+	volatile float Load_MisMatch;
+	volatile float Return_Loss;
 	uint8_t  DSP_Cfg;
 	uint8_t	 DSP_Bit_1;
 	uint8_t	 DSP_Bit_2;
@@ -305,7 +305,6 @@ typedef struct {
 	uint16_t pwm_fan;
 	uint8_t  Relay1;
 	uint8_t  Relay2;
-
 } SYS_Realtime;
 
 enum LEDS_STATE {
