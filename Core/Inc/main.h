@@ -211,6 +211,8 @@ typedef struct {
 	uint8_t		level_audio_on;
 	uint8_t 	level_audio_off;
 	uint32_t    Frequencia;
+	// Volume Headphone
+	uint8_t		Vol_HeadPhone;
 	// Network
 	uint8_t		EnableSNMP;
 	uint16_t	PortWEB;

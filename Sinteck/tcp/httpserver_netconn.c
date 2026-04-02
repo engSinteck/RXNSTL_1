@@ -41,6 +41,8 @@
 #include "../Sinteck/src/eeprom.h"
 #include "../Sinteck/src/PE43711.h"
 #include "../Sinteck/src/AD5242.h"
+#include "../Sinteck/src/TPA6130A2.h"
+#include "../Sinteck/src/mb1501.h"
 #include "../Sinteck/src/defines.h"
 #include "../Sinteck/src/PowerControl.h"
 #include "../Sinteck/src/audio.h"
@@ -897,11 +899,13 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 					x = 5;
 				}
 			}
-			if(atoi(rasc_freq) >= 937500 && atoi(rasc_freq) <= 960000)
+			if(atoi(rasc_freq) >= 937500 && atoi(rasc_freq) <= 960000) {
 				cfg.Frequencia = (long int)atoi(rasc_freq);
-			// Desliga RF Power
-			__HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 0);
-			flag_telemetry = 7;
+				// Desliga RF Power
+				__HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_1, 0);
+				mb1501(cfg.Frequencia);		// Update PLL
+				flag_telemetry = 7;
+			}
 		}
 		else if((strncmp(buf, "GET /resetpassword=yes", 22) == 0)) {
 			sprintf(buf_html, "OK");
@@ -1088,7 +1092,7 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 		    }
 		    cJSON_Delete(root);
 		}
-		else if((strncmp(buf, "GET /Password=", 17) == 0)) {
+		else if((strncmp(buf, "GET /setPassword=", 17) == 0)) {
 			resp_http_200(conn);
 			if( (buf[17] >= '0' && buf[17] <= '9') && (buf[18] >= '0' && buf[18] <= '9')  &&
     	        (buf[19] >= '0' && buf[19] <= '9') && (buf[20] >= '0' && buf[20] <= '9') ) {
@@ -1706,8 +1710,9 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 			//
 			cJSON_AddNumberToObject(root, "dsppwm", Realtime.DSP_PWM);
 			//
-			cJSON_AddNumberToObject(root, "dspvol1", cfg.Vol_MPX1);
-			cJSON_AddNumberToObject(root, "dspvol2", cfg.Vol_MPX2);
+			cJSON_AddNumberToObject(root, "dspvol1",    cfg.Vol_MPX1);
+			cJSON_AddNumberToObject(root, "dspvol2",    cfg.Vol_MPX2);
+			cJSON_AddNumberToObject(root, "dspvolfone", cfg.Vol_HeadPhone);
 			//
 			cJSON_AddNumberToObject(root, "levelaudioon", cfg.level_audio_on);
 			cJSON_AddNumberToObject(root, "timeraudioon", cfg.timer_audio_on/(1000*60));
@@ -1745,25 +1750,36 @@ static void handle_http_request(struct netconn *conn, const char *buf, uint16_t 
 			resp_http_200(conn);
 			strstr_substring(buf, "MPX1:", "MPX2:", 5);
 			cfg.Vol_MPX1 = atoi(out);
-			if(cfg.Vol_MPX1 >= 0 && cfg.Vol_MPX1 <= 60) {
+			if(cfg.Vol_MPX1 >= 0 && cfg.Vol_MPX1 <= 255) {
 				cfg.Vol_MPX1 = atoi(out);
 			}
 			else {
-				cfg.Vol_MPX1 = 48;
+				cfg.Vol_MPX1 = 128;
 			}
 			// MPX2-VOL
-			strstr_substring(buf, "MPX2:", "MPX3:", 5);
+			strstr_substring(buf, "MPX2:", "PHONE:", 5);
 			cfg.Vol_MPX2 = atoi(out);
-			if(cfg.Vol_MPX2 >= 0 && cfg.Vol_MPX2 <= 60) {
+			if(cfg.Vol_MPX2 >= 0 && cfg.Vol_MPX2 <= 255) {
 				cfg.Vol_MPX2 = atoi(out);
 			}
 			else {
-				cfg.Vol_MPX2 = 48;
+				cfg.Vol_MPX2 = 128;
 			}
-
+			// Volume Head-Phone
+			strstr_substring(buf, "PHONE:", "FIM", 6);
+			cfg.Vol_HeadPhone = atoi(out);
+			if(cfg.Vol_HeadPhone >= 0 && cfg.Vol_HeadPhone <= 255) {
+				cfg.Vol_HeadPhone = atoi(out);
+			}
+			else {
+				cfg.Vol_HeadPhone = 32;
+			}
 			// Atualiza Valores
 			Write_AD5242(AD524X_RDAC0, cfg.Vol_MPX1, 0, 0);
 			Write_AD5242(AD524X_RDAC1, cfg.Vol_MPX2, 0, 0);
+
+			// Atualiza Volume HeadPhone
+			tpa6130_set_volume(cfg.Vol_HeadPhone);
 
 			flag_telemetry = 6;
 		}

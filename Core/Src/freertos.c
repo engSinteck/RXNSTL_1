@@ -50,6 +50,7 @@
 #include "../Sinteck/display/Drv_SSD1963.h"
 #include "../Sinteck/src/stm32_qspi_512.h"
 #include "../Sinteck/src/SAA6579.h"
+#include "../Sinteck/src/TPA6130A2.h"
 #include "../Sinteck/lvgl/lvgl.h"
 #include "../Sinteck/lv_fs_if/lv_fs_if.h"
 #include "../Sinteck/tcp/httpserver_netconn.h"
@@ -58,6 +59,7 @@
 #include "../Sinteck/tcp/mqtt_client.h"
 
 #include "../Sinteck/src/audio.h"
+#include "../Sinteck/src/sine_generator.h"
 #include "../Sinteck/src/keys.h"
 #include "../Sinteck/src/buzzer.h"
 #include "../Sinteck/src/eeprom.h"
@@ -444,6 +446,9 @@ void StartTaskMain(void *argument)
   memset(Profile.State, 0, 50);
   memset(Profile.Country, 0, 50);
 
+  // TPA6130A2
+  tpa6130_init();
+
   ReadIdEeprom();
   if(cfg.EepromID != 0x55AA || cfg.prg_rev != PRG_REVISION || cfg.model_type != MODELO) {
 	  Carrega_Prog_Default();
@@ -463,6 +468,20 @@ void StartTaskMain(void *argument)
   Realtime.Return_Loss = 0.0f;
   Realtime.VPA = 20.4f;
   Realtime.IPA = 3.4f;
+
+  // Calcula parâmetros otimizados
+  SineParameters_t sine_params;
+  CalculateOptimalParameters(&sine_params);
+
+  // Para 192kHz e 1020Hz, tabela de 1882 amostras dá aproximadamente 1020.1Hz
+  // Usaremos 2048 amostras para alinhamento com DMA
+
+  // Inicializa gerador de senoide
+  SineGenerator_t sine_gen;
+  SineGenerator_Init(&sine_gen, 192000, 2048);  // 2048 amostras
+  sine_gen.frequency = 1020.0f;
+  sine_gen.amplitude = 0.8f;
+  GenerateOptimalSineTable(&sine_gen, &sine_params);
 
   Get_UUID();
 
@@ -499,6 +518,9 @@ void StartTaskMain(void *argument)
   /* Infinite loop */
   for(;;)
   {
+	  // Teste I2S
+	  atualiza_buffer(&sine_gen);
+
 	  if(HAL_GetTick() - timer_read_rtc > 1000) {
 		  timer_read_rtc = HAL_GetTick();
 		  // Get the RTC current Time

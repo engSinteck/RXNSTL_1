@@ -110,8 +110,9 @@
         <h3></h3>
         <p style="background-color:LightGray;"></p>
         <h3>Level Adjust: </h3>
-        <h4><label>MPX 1:&nbsp&nbsp&nbsp<input type="number" id="volmpx1" name="volmpx1" min="0" max="60"</input>
-		<label>&nbsp&nbsp&nbsp MPX 2:&nbsp&nbsp<input type="number" id="volmpx2" name="volmpx2" min="0" max="60"</input></h4>
+        <h4><label>MPX 1:&nbsp&nbsp&nbsp<input type="number" id="volmpx1" name="volmpx1" min="0" max="255"</input>
+		<label>&nbsp&nbsp&nbsp MPX 2:&nbsp&nbsp<input type="number" id="volmpx2" name="volmpx2" min="0" max="255"</input>
+		<label>&nbsp&nbsp&nbsp HeadPhone:&nbsp&nbsp<input type="number" id="volphone" name="volphone" min="0" max="255"</input></h4>
      	<h3></h3>
         <button type="button" class="myButton" onclick="sendDataVol()">Submit</button>
         <h3></h3>
@@ -223,9 +224,10 @@
 			// Source Audio    
 			var mpxvol1 = document.getElementById("volmpx1").value;
 			var mpxvol2 = document.getElementById("volmpx2").value;
+			var volfone1 = document.getElementById("volphone").value;
 				
 			var resp1 = "setAUDIOVOL=";
-			var resp = resp1.concat("", "MPX1:", mpxvol1, ";MPX2:", mpxvol2, ";FIM");
+			var resp = resp1.concat("", "MPX1:", mpxvol1, ";MPX2:", mpxvol2, ";PHONE:", volfone1, ";FIM");
 			if (confirm("Confirm !")) {
 				xhttp.open("GET", resp, true);
 				xhttp.send();
@@ -322,6 +324,7 @@
 					//
 					volmpx1.value = data.dspvol1;
 					volmpx2.value = data.dspvol2;
+					volphone.value = data.dspvolfone;
 					//
 					mpx_value.value = data.levelaudioon;
 					mpx_timer.value = data.timeraudioon;

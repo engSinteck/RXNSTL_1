@@ -10,8 +10,10 @@
 #include "../Sinteck/src/mb1501.h"
 #include "../Sinteck/src/delay.h"
 
+extern volatile uint8_t Status_pll_lock_pin;
+
 uint8_t debounce_pll = 0, flag_pll_power = 0;
-uint8_t Status_pll_lock_pin = 0, pll_lock_status = 0;
+uint8_t  pll_lock_status = 0;
 
 void giraclk(void)
 {
@@ -32,9 +34,13 @@ void mb1501ref(void)
 	HAL_GPIO_WritePin(CLK_IO_GPIO_Port, CLK_IO_Pin, GPIO_PIN_RESET);
 	MicroDelay(100);
 
-	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_SET);		// CTRL = 1
+	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_SET);			// CTRL = 1
 	giraclk();
-	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_RESET);		// MSB  = 0
+	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_RESET);			// MSB  = 0
+	giraclk();
+	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_RESET);
+	giraclk();
+	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_RESET);
 	giraclk();
 	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_RESET);
 	giraclk();
@@ -42,11 +48,7 @@ void mb1501ref(void)
 	giraclk();
 	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_SET);
 	giraclk();
-	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_SET);
-	giraclk();
-	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_SET);
-	giraclk();
-	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_RESET);
 	giraclk();
 
 	HAL_GPIO_WritePin(DATA_IO_GPIO_Port, DATA_IO_Pin, GPIO_PIN_RESET);
@@ -94,7 +96,7 @@ void mb1501(long int tempfreq)
 	MicroDelay(100);
 
 	// transforma calculo
-	mbfreq = tempfreq * 2;
+	mbfreq = (tempfreq * 1000) / 25000;
 	nfreq = mbfreq / 64;            // extrair o numero N
 	swa = (mbfreq - (nfreq * 64));  // extrair o numero Swallow
 
@@ -212,10 +214,8 @@ void status_pll(void)
 	if( Status_pll_lock_pin == 0 ) {
 		debounce_pll = 0;
 		HAL_GPIO_WritePin(LED_LOCK_GPIO_Port, LED_LOCK_Pin, LED_ON);
-
-#ifdef DEMO
-		HAL_GPIO_WritePin(LED_RFON_GPIO_Port, LED_RFON_Pin, LED_ON);			// LED RF ON
-#endif
+		//HAL_GPIO_WritePin(LED_RFON_GPIO_Port, LED_RFON_Pin, LED_ON);			// Enable RF PLL
+		//HAL_GPIO_WritePin(FE_IO_GPIO_Port, FE_IO_Pin, GPIO_PIN_SET);		// Enable RF PLL
 
 		if(pll_lock_status) {
 			pll_lock_status = 0;
@@ -225,6 +225,8 @@ void status_pll(void)
 	}
 	else {
 		HAL_GPIO_WritePin(LED_LOCK_GPIO_Port, LED_LOCK_Pin, LED_OFF);			// LED OFF
+		//HAL_GPIO_WritePin(LED_RFON_GPIO_Port, LED_RFON_Pin, LED_OFF);			// LED RF OFF
+		//HAL_GPIO_WritePin(FE_IO_GPIO_Port, FE_IO_Pin, GPIO_PIN_RESET);	// Disable RF PLL
 		pll_lock_status = 255;
 		debounce_pll++;
 	}

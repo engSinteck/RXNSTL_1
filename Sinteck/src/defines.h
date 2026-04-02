@@ -8,7 +8,7 @@
 #ifndef SRC_DEFINES_H_
 #define SRC_DEFINES_H_
 
-#define		PRG_REVISION		7
+#define		PRG_REVISION		9
 #define		MODELO				0
 
 // Enderecos EEPROM
@@ -42,7 +42,7 @@
 #define ADDR_LEVELOFF			31			// 1
 #define	ADDR_SWITCHMOD			32			// 1
 #define ADDR_TIMERON			33			// 4
-#define ADDR_VAGO_1				37			// 1
+#define ADDR_VOLPHONE			37			// 1
 #define ADDR_VAGO_2				38			// 1
 #define ADDR_VAGO_3				39			// 1
 #define ADDR_TIMEROFF			40			// 4

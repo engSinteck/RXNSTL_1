@@ -18,6 +18,7 @@
 #include "../Sinteck/src/audio.h"
 #include "../Sinteck/src/PE43711.h"
 #include "../Sinteck/src/AD5242.h"
+#include "../Sinteck/src/TPA6130A2.h"
 
 extern osMutexId_t MutexI2CHandle;
 
@@ -257,13 +258,16 @@ void Carrega_Prog_Default(void)
     cfg.Emphase = 0;
     cfg.AES192 = 0;
     cfg.AudioSource = 1;
-	cfg.Vol_MPX1 = 48;
-	cfg.Vol_MPX2 = 48;
+	cfg.Vol_MPX1 = 128;
+	cfg.Vol_MPX2 = 128;
 	// Switch Ausencia Audio
 	cfg.timer_audio_on = 1000 * 60 * 3;
 	cfg.timer_audio_off = 1000 * 60 * 5;
 	cfg.level_audio_on = 0;
 	cfg.level_audio_off = 0;
+
+	// Volume HeadPhone
+	cfg.Vol_HeadPhone = 32;
 
 	// frequencia
 	cfg.Frequencia = 937500;
@@ -352,6 +356,8 @@ void Carrega_Prog_Default(void)
 	EEPROM_Write(ADDR_TIMEROFF,  (uint8_t*)&cfg.timer_audio_off,   4);
 	EEPROM_Write(ADDR_LEVELON,   (uint8_t*)&cfg.level_audio_on,    1);
 	EEPROM_Write(ADDR_LEVELOFF,  (uint8_t*)&cfg.level_audio_off,   1);
+	// Volume HeadPhone
+	EEPROM_Write(ADDR_VOLPHONE,  (uint8_t*)&cfg.Vol_HeadPhone,     1);
 	// frequencia
 	EEPROM_Write(ADDR_FREQ,      (uint8_t*)&cfg.Frequencia,        4);
 	// NetWork
@@ -430,6 +436,8 @@ void ReadConfig(void)
 	EEPROM_Read(ADDR_TIMEROFF,  (uint8_t*)&cfg.timer_audio_off,   4);
 	EEPROM_Read(ADDR_LEVELON,   (uint8_t*)&cfg.level_audio_on,    1);
 	EEPROM_Read(ADDR_LEVELOFF,  (uint8_t*)&cfg.level_audio_off,   1);
+	// Volume HeadPhone
+	EEPROM_Read(ADDR_VOLPHONE,  (uint8_t*)&cfg.Vol_HeadPhone,     1);
 	// frequencia
 	EEPROM_Read(ADDR_FREQ,      (uint8_t*)&cfg.Frequencia,        4);
 	// NetWork
@@ -549,6 +557,9 @@ void UpdateValores(void)
 	PE43711(cfg.Atten);
 	Write_AD5242(AD524X_RDAC0, cfg.Vol_MPX1, 0, 0);
 	Write_AD5242(AD524X_RDAC1, cfg.Vol_MPX2, 0, 0);
+
+	// Atualiza Volume HeadPhone
+	tpa6130_set_volume(cfg.Vol_HeadPhone);
 }
 
 void Read_Enviroment(void)
@@ -653,6 +664,7 @@ void Telemetry_save(void)
 		case 6:
 			EEPROM_Write(ADDR_VOLMPX1,   (uint8_t*)&cfg.Vol_MPX1,          1);
 			EEPROM_Write(ADDR_VOLMPX2,   (uint8_t*)&cfg.Vol_MPX2,          1);
+			EEPROM_Write(ADDR_VOLPHONE,  (uint8_t*)&cfg.Vol_HeadPhone,     1);
 			flag_telemetry = 0;
 			break;
 		case 7:
