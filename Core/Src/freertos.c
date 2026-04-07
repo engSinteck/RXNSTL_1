@@ -22,6 +22,7 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
+#include "i2s.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -68,6 +69,8 @@
 #include <GUI/screen_main_TX.h>
 #include <GUI/screen_main_RX.h>
 
+#include "mp3dec.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -113,10 +116,16 @@ extern void MX_USB_DEVICE_Init(void);
 extern void MCU_Temperature(void);
 void Mount_FATFS(void);
 void my_loglvgl(lv_log_level_t level, const char *file, uint32_t line, const char *dsc);
+void Audio_Decode_Loop(void);
 
 volatile unsigned long ulHighFrequencyTimerTicks = 0;
 
 double STM32_Temp = 0;
+
+HMP3Decoder hMP3Decoder;
+MP3FrameInfo mp3FrameInfo;
+unsigned char readBuffer[8192]; 						// Buffer de leitura (SD/Flash)
+short outBuffer[MAX_NCHAN * MAX_NGRAN * MAX_NSAMP]; 	// Buffer PCM de saída
 
 lv_disp_buf_t disp_buf;
 
@@ -469,20 +478,6 @@ void StartTaskMain(void *argument)
   Realtime.VPA = 20.4f;
   Realtime.IPA = 3.4f;
 
-  // Calcula parâmetros otimizados
-  SineParameters_t sine_params;
-  CalculateOptimalParameters(&sine_params);
-
-  // Para 192kHz e 1020Hz, tabela de 1882 amostras dá aproximadamente 1020.1Hz
-  // Usaremos 2048 amostras para alinhamento com DMA
-
-  // Inicializa gerador de senoide
-  SineGenerator_t sine_gen;
-  SineGenerator_Init(&sine_gen, 192000, 2048);  // 2048 amostras
-  sine_gen.frequency = 1020.0f;
-  sine_gen.amplitude = 0.8f;
-  GenerateOptimalSineTable(&sine_gen, &sine_params);
-
   Get_UUID();
 
   // Start Ethernet Stack
@@ -515,11 +510,16 @@ void StartTaskMain(void *argument)
   	initialize_snmp();
   }
 
+  // Teste I2S @ 48KHz - 16Bit
+  generate_sine_table();
+  fill_i2s_buffer();
+  Send_I2S_buffer();
+
   /* Infinite loop */
   for(;;)
   {
-	  // Teste I2S
-	  atualiza_buffer(&sine_gen);
+	  // MP3
+	  Audio_Decode_Loop();
 
 	  if(HAL_GetTick() - timer_read_rtc > 1000) {
 		  timer_read_rtc = HAL_GetTick();
@@ -591,8 +591,8 @@ void StartTaskGUI(void *argument)
   // SSD1963
   disp_drv.hor_res = 480;               		// Set the horizontal resolution
   disp_drv.ver_res = 128;               		// Set the vertical resolution
-  //disp_drv.flush_cb = drv_ssd1963_flush_3;		// Set your driver function
-  disp_drv.flush_cb = ssd1963_flush_dma;		// Set your driver function
+  disp_drv.flush_cb = drv_ssd1963_flush_3;		// Set your driver function
+  //disp_drv.flush_cb = ssd1963_flush_dma;		// Set your driver function
   //disp_drv.flush_cb = ssd1963_flush_dma_d;		// Set your driver function
 
   disp_drv.buffer = &disp_buf;          		// Assign the buffer to display
@@ -834,6 +834,47 @@ void Mount_FATFS(void)
 
 void my_loglvgl(lv_log_level_t level, const char *file, uint32_t line, const char *dsc)
 {
+}
+
+
+// Callback de half transfer (opcional)
+void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
+    // Metade da tabela foi transmitida
+}
+
+// Callback de transfer complete (opcional)
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s) {
+    // Tabela toda transmitida (se não estiver em modo circular)
+}
+
+void Audio_Decode_Loop(void)
+{
+    hMP3Decoder = MP3InitDecoder();
+    const unsigned char *readPtr = readBuffer;
+    size_t bytesLeft = 0;
+
+    while (1) {
+        // 1. Refill do readBuffer se necessário
+        if (bytesLeft < MAINBUF_SIZE) {
+            // Lógica para carregar mais dados do arquivo/stream
+        }
+
+        // 2. Encontrar o próximo frame de sincronia
+        int offset = MP3FindSyncWord(readPtr, bytesLeft);
+        if (offset < 0) break;
+
+        readPtr += offset;
+        bytesLeft -= offset;
+
+        // 3. Decodificar o frame
+        int err = MP3Decode(hMP3Decoder, (const unsigned char **)&readPtr, &bytesLeft, outBuffer, 0);
+
+        if (err == ERR_MP3_NONE) {
+            MP3GetLastFrameInfo(hMP3Decoder, &mp3FrameInfo);
+            // 4. Enviar 'outBuffer' para o I2S via DMA
+            // Dica: Espere o callback do DMA (Half-transfer ou Complete)
+        }
+    }
 }
 /* USER CODE END Application */
 

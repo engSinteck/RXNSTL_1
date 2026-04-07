@@ -709,7 +709,7 @@ void HAL_MDMA_ErrorCallback(MDMA_HandleTypeDef *hmdma)
 void SSD1963_Flush_DMA2D(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)
 {
 	uint32_t width  = area->x2 - area->x1 + 1;
-	    uint32_t height = area->y2 - area->y1 + 1;
+	    //uint32_t height = area->y2 - area->y1 + 1;
 	    //uint32_t num_pixels = width * height;
 	    static uint8_t rgb888_buf[800*3]; // 1 linha máx (ajuste conforme necessário)
 
