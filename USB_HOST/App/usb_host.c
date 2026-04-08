@@ -25,7 +25,7 @@
 #include "usbh_msc.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "../Sinteck/src/file_handling.h"
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
@@ -102,10 +102,17 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
 
   case HOST_USER_DISCONNECTION:
   Appli_state = APPLICATION_DISCONNECT;
+
+  Unmount_USB();
   break;
 
   case HOST_USER_CLASS_ACTIVE:
   Appli_state = APPLICATION_READY;
+
+  Mount_USB();
+  Check_USB_Details();
+  Read_MP3_File();
+
   break;
 
   case HOST_USER_CONNECTION:

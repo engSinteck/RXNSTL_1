@@ -114,7 +114,7 @@ void Read_Remote(void);
 extern void MX_LWIP_Init(void);
 extern void MX_USB_DEVICE_Init(void);
 extern void MCU_Temperature(void);
-void Mount_FATFS(void);
+void Mount_FATFS_QSPI(void);
 void my_loglvgl(lv_log_level_t level, const char *file, uint32_t line, const char *dsc);
 void Audio_Decode_Loop(void);
 
@@ -149,11 +149,13 @@ uint32_t totalSpace, freeSpace, SpaceUsed;
 extern uint8_t retUSER;    /* Return value for USER */
 extern FATFS USERFatFS;    /* File system object for USER  cal drive */
 extern FIL USERFile;       /* File object for USER */
+extern char USERPath[4];
 
 // USB HOST
 extern uint8_t retUSBH;    /* Return value for USBH */
 extern FATFS USBHFatFS;    /* File system object for USBH logical drive */
 extern FIL USBHFile;       /* File object for USBH */
+extern char USBHPath[4];
 
 lv_mem_monitor_t mon;
 
@@ -577,7 +579,7 @@ void StartTaskGUI(void *argument)
   qspi_ret = BSP_QSPI_Init();
   // Mount Flash FATFS
   MX_FATFS_Init();
-  Mount_FATFS();
+  Mount_FATFS_QSPI();
 
   lv_disp_buf_init(&disp_buf, lvgl_buf_1, lvgl_buf_2, LV_HOR_RES_MAX * 16);    // Initialize the display buffer
   lv_init(0);
@@ -763,9 +765,9 @@ void StartTaskNTP(void *argument)
 
 /* Private application code --------------------------------------------------*/
 /* USER CODE BEGIN Application */
-void Mount_FATFS(void)
+void Mount_FATFS_QSPI(void)
 {
-	  if(retUSER != 0 || retUSBH != 0) {
+	  if(retUSER != 0) {
 		  // Erro FATFS
 		  printf("Erro MX_FATFS_Init !!\n");
 	  }
@@ -774,13 +776,14 @@ void Mount_FATFS(void)
 	  }
 
 	  // Mount FileSystem FLASH QSPI
-	  fr = f_mount(&USERFatFS, "", 0);
+	  fr = f_mount(&USERFatFS, USERPath, 1);
 	  if(fr != FR_OK) {
 		  printf("Erro f_mount !!\n");
 	  }
 	  else {
 		  printf("f_mount OK !!\n");
 	  }
+
 	  // Check freeSpace space
 	  fr = f_getfree("0:", &fre_clust, &pfs);
 	  if(fr != FR_OK){
@@ -793,6 +796,7 @@ void Mount_FATFS(void)
 		  freeSpace = (uint32_t)(fre_clust * pfs->csize * 0.5);
 		  SpaceUsed = totalSpace - freeSpace;
 	  }
+
 	  // Test Open config.txt
 	  fr = f_open(&USERFile, "/Config.bin", FA_READ);
 	  if(fr != FR_OK) {

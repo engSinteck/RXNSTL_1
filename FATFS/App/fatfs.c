@@ -19,12 +19,12 @@
 #include "fatfs.h"
 
 uint8_t retUSBH = 0;    	/* Return value for USBH */
-char USBHPath[4] = {0};   	/* USBH logical drive path */
+char USBHPath[4];   	/* USBH logical drive path */
 FATFS USBHFatFS;    		/* File system object for USBH logical drive */
 FIL USBHFile;       		/* File object for USBH */
 
 uint8_t retUSER = 0;    	/* Return value for USER */
-char USERPath[4] = {0};   	/* USER logical drive path */
+char USERPath[4];   	/* USER logical drive path */
 FATFS USERFatFS;    		/* File system object for USER logical drive */
 FIL USERFile;       		/* File object for USER */
 
