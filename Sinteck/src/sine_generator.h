@@ -14,5 +14,6 @@
 void generate_sine_table(void);
 void fill_i2s_buffer(void);
 void Send_I2S_buffer(void);
+void Send_teste_1khz(void);
 
 #endif /* SRC_SINE_GENERATOR_H_ */

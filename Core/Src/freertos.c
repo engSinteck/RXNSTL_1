@@ -61,10 +61,12 @@
 
 #include "../Sinteck/src/audio.h"
 #include "../Sinteck/src/sine_generator.h"
+#include "../Sinteck/src/file_handling.h"
 #include "../Sinteck/src/keys.h"
 #include "../Sinteck/src/buzzer.h"
 #include "../Sinteck/src/eeprom.h"
 #include "../Sinteck/src/defines.h"
+#include "../Sinteck/src/wav_player.h"
 
 #include <GUI/screen_main_TX.h>
 #include <GUI/screen_main_RX.h>
@@ -116,14 +118,14 @@ extern void MX_USB_DEVICE_Init(void);
 extern void MCU_Temperature(void);
 void Mount_FATFS_QSPI(void);
 void my_loglvgl(lv_log_level_t level, const char *file, uint32_t line, const char *dsc);
-void Audio_Decode_Loop(void);
+void FillI2SBuffer(int32_t *i2s_buffer, short *pcm);
+void TaskDecoder(void *argument);
+void TaskAudio(void *argument);
 
 volatile unsigned long ulHighFrequencyTimerTicks = 0;
 
 double STM32_Temp = 0;
 
-HMP3Decoder hMP3Decoder;
-MP3FrameInfo mp3FrameInfo;
 unsigned char readBuffer[8192]; 						// Buffer de leitura (SD/Flash)
 short outBuffer[MAX_NCHAN * MAX_NGRAN * MAX_NSAMP]; 	// Buffer PCM de saída
 
@@ -409,6 +411,8 @@ void MX_FREERTOS_Init(void) {
   /* add events, ... */
   /* USER CODE END RTOS_EVENTS */
 
+  Audio_Player_Init();
+  //Send_teste_1khz();
 }
 
 /* USER CODE BEGIN Header_StartTaskMain */
@@ -512,17 +516,9 @@ void StartTaskMain(void *argument)
   	initialize_snmp();
   }
 
-  // Teste I2S @ 48KHz - 16Bit
-  generate_sine_table();
-  fill_i2s_buffer();
-  Send_I2S_buffer();
-
   /* Infinite loop */
   for(;;)
   {
-	  // MP3
-	  Audio_Decode_Loop();
-
 	  if(HAL_GetTick() - timer_read_rtc > 1000) {
 		  timer_read_rtc = HAL_GetTick();
 		  // Get the RTC current Time
@@ -840,45 +836,5 @@ void my_loglvgl(lv_log_level_t level, const char *file, uint32_t line, const cha
 {
 }
 
-
-// Callback de half transfer (opcional)
-void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s) {
-    // Metade da tabela foi transmitida
-}
-
-// Callback de transfer complete (opcional)
-void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s) {
-    // Tabela toda transmitida (se não estiver em modo circular)
-}
-
-void Audio_Decode_Loop(void)
-{
-    hMP3Decoder = MP3InitDecoder();
-    const unsigned char *readPtr = readBuffer;
-    size_t bytesLeft = 0;
-
-    while (1) {
-        // 1. Refill do readBuffer se necessário
-        if (bytesLeft < MAINBUF_SIZE) {
-            // Lógica para carregar mais dados do arquivo/stream
-        }
-
-        // 2. Encontrar o próximo frame de sincronia
-        int offset = MP3FindSyncWord(readPtr, bytesLeft);
-        if (offset < 0) break;
-
-        readPtr += offset;
-        bytesLeft -= offset;
-
-        // 3. Decodificar o frame
-        int err = MP3Decode(hMP3Decoder, (const unsigned char **)&readPtr, &bytesLeft, outBuffer, 0);
-
-        if (err == ERR_MP3_NONE) {
-            MP3GetLastFrameInfo(hMP3Decoder, &mp3FrameInfo);
-            // 4. Enviar 'outBuffer' para o I2S via DMA
-            // Dica: Espere o callback do DMA (Half-transfer ou Complete)
-        }
-    }
-}
 /* USER CODE END Application */
 

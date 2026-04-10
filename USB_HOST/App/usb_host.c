@@ -26,6 +26,8 @@
 
 /* USER CODE BEGIN Includes */
 #include "../Sinteck/src/file_handling.h"
+#include "../Sinteck/src/mp3_id.h"
+#include "../Sinteck/src/wav_player.h"
 /* USER CODE END Includes */
 
 /* USER CODE BEGIN PV */
@@ -110,8 +112,7 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
   Appli_state = APPLICATION_READY;
 
   Mount_USB();
-  Check_USB_Details();
-  Read_MP3_File();
+  Audio_Player_Start("1:1KHz.wav");
 
   break;
 

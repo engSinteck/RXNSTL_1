@@ -213,7 +213,7 @@ void status_pll(void)
 	// PLL LOCK
 	if( Status_pll_lock_pin == 0 ) {
 		debounce_pll = 0;
-		HAL_GPIO_WritePin(LED_LOCK_GPIO_Port, LED_LOCK_Pin, LED_ON);
+//		HAL_GPIO_WritePin(LED_LOCK_GPIO_Port, LED_LOCK_Pin, LED_ON);
 		//HAL_GPIO_WritePin(LED_RFON_GPIO_Port, LED_RFON_Pin, LED_ON);			// Enable RF PLL
 		//HAL_GPIO_WritePin(FE_IO_GPIO_Port, FE_IO_Pin, GPIO_PIN_SET);		// Enable RF PLL
 
@@ -224,7 +224,7 @@ void status_pll(void)
 		}
 	}
 	else {
-		HAL_GPIO_WritePin(LED_LOCK_GPIO_Port, LED_LOCK_Pin, LED_OFF);			// LED OFF
+//		HAL_GPIO_WritePin(LED_LOCK_GPIO_Port, LED_LOCK_Pin, LED_OFF);			// LED OFF
 		//HAL_GPIO_WritePin(LED_RFON_GPIO_Port, LED_RFON_Pin, LED_OFF);			// LED RF OFF
 		//HAL_GPIO_WritePin(FE_IO_GPIO_Port, FE_IO_Pin, GPIO_PIN_RESET);	// Disable RF PLL
 		pll_lock_status = 255;

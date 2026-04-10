@@ -1,0 +1,348 @@
+// ============================================================================
+// wav_player_fixed.c
+// ============================================================================
+
+#include "main.h"
+#include "fatfs.h"
+#include "cmsis_os.h"
+#include "semphr.h"
+#include "i2s.h"
+#include "fatfs.h"
+#include <math.h>
+
+#include "wav_player.h"
+
+// Configurações
+#define SAMPLE_RATE     48000
+#define SAMPLES_PER_BUFFER  1024   // Número de samples por half-buffer
+#define HALF_BUFFER_WORDS    (SAMPLES_PER_BUFFER * 2)  // 2048 words (L+R)
+#define TOTAL_BUFFER_WORDS   (HALF_BUFFER_WORDS * 2)   // 4096 words total
+
+// Buffers na RAM_D2 (mesma seção que funcionou)
+__attribute__((section(".RAM_D2"))) static int32_t audio_ping[HALF_BUFFER_WORDS];
+__attribute__((section(".RAM_D2"))) static int32_t audio_pong[HALF_BUFFER_WORDS];
+
+// Controle do player
+typedef struct {
+    FIL file;
+    uint32_t data_remaining;
+    uint8_t is_playing;
+    uint8_t file_open;
+    uint32_t total_bytes_read;
+} wav_player_t;
+
+static wav_player_t player = {0};
+static TaskHandle_t player_task_handle = NULL;
+
+// Semáforos
+static SemaphoreHandle_t dma_semaphore = NULL;
+
+// ============================================================================
+// Leitura e conversão do WAV
+// ============================================================================
+static uint32_t read_and_convert_wav(int32_t* buffer, uint32_t max_frames)
+{
+    if(!player.is_playing || !player.file_open) {
+        return 0;
+    }
+
+    if(player.data_remaining == 0) {
+        return 0;
+    }
+
+    uint32_t bytes_needed = max_frames * 4;  // 4 bytes por frame (2 canais x 16 bits)
+    uint32_t bytes_to_read = (bytes_needed > player.data_remaining) ?
+                              player.data_remaining : bytes_needed;
+
+    if(bytes_to_read == 0) {
+        return 0;
+    }
+
+    // Buffer temporário
+    uint8_t pcm_buffer[4096];
+    if(bytes_to_read > sizeof(pcm_buffer)) {
+        bytes_to_read = sizeof(pcm_buffer);
+    }
+
+    // Lê do arquivo
+    UINT bytes_read;
+    FRESULT result = f_read(&player.file, pcm_buffer, bytes_to_read, &bytes_read);
+
+    if(result != FR_OK || bytes_read == 0) {
+        return 0;
+    }
+
+    // Converte PCM 16-bit para formato I2S
+    uint16_t* pcm16 = (uint16_t*)pcm_buffer;
+    uint32_t frames_read = bytes_read / 4;
+
+    // DEBUG: Mostra primeiros valores do arquivo
+    static uint32_t debug_count = 0;
+    if(debug_count < 3) {
+        printf("Arquivo - Frame 0: L=%d, R=%d\n",
+               (int16_t)pcm16[0], (int16_t)pcm16[1]);
+        debug_count++;
+    }
+
+    for(uint32_t i = 0; i < frames_read && i < max_frames; i++) {
+        int16_t left = (int16_t)pcm16[i * 2];
+        int16_t right = (int16_t)pcm16[i * 2 + 1];
+
+        // Mesmo formato do teste que funcionou
+        buffer[i * 2]     = ((int32_t)left) << 16;
+        buffer[i * 2 + 1] = ((int32_t)right) << 16;
+    }
+
+    player.data_remaining -= bytes_read;
+    player.total_bytes_read += bytes_read;
+
+    return frames_read;
+}
+
+// ============================================================================
+// Callback do DMA - VERSÃO SIMPLIFICADA (sem double buffer complexo)
+// ============================================================================
+void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Metade do buffer terminou - sinaliza para preencher a PRIMEIRA metade
+    static uint32_t half_count = 0;
+    half_count++;
+
+    if(half_count % 100 == 0) {
+        // Debug a cada 100 callbacks
+    }
+
+    xSemaphoreGiveFromISR(dma_semaphore, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Buffer completo terminou - sinaliza para preencher a SEGUNDA metade
+    xSemaphoreGiveFromISR(dma_semaphore, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+// ============================================================================
+// Task do Player - VERSÃO CORRIGIDA
+// ============================================================================
+static void vAudioPlayerTask(void *pvParameters)
+{
+    uint32_t frames_written;
+    uint32_t half_buffer_frames = SAMPLES_PER_BUFFER;
+    uint32_t toggle = 0;
+
+    printf("Task do player iniciada\n");
+
+    // 1. PRÉ-ENCHE AMBOS OS BUFFERS COMPLETAMENTE
+    printf("Pré-enchendo buffer PING...\n");
+    frames_written = read_and_convert_wav(audio_ping, half_buffer_frames);
+    if(frames_written < half_buffer_frames) {
+        // Completa com silêncio
+        for(uint32_t i = frames_written; i < half_buffer_frames; i++) {
+            audio_ping[i * 2] = 0;
+            audio_ping[i * 2 + 1] = 0;
+        }
+    }
+
+    printf("Pré-enchendo buffer PONG...\n");
+    frames_written = read_and_convert_wav(audio_pong, half_buffer_frames);
+    if(frames_written < half_buffer_frames) {
+        for(uint32_t i = frames_written; i < half_buffer_frames; i++) {
+            audio_pong[i * 2] = 0;
+            audio_pong[i * 2 + 1] = 0;
+        }
+    }
+
+    // 2. LIMPA CACHE
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_ping, sizeof(audio_ping));
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_pong, sizeof(audio_pong));
+
+    // 3. INICIA DMA COM O BUFFER TOTAL (PING + PONG CONTÍNUOS)
+    // NOTA: O DMA precisa ver os dois buffers como um único bloco contínuo
+    // Para isso, PING e PONG precisam estar em memória contígua
+    // Como estão declarados separadamente, não são contíguos!
+
+    // SOLUÇÃO: Usar um único buffer grande
+    // Mas vamos tentar outra abordagem primeiro...
+
+    printf("Iniciando DMA...\n");
+    HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)audio_ping, TOTAL_BUFFER_WORDS);
+
+    printf("Player rodando...\n");
+
+    while(player.is_playing) {
+        // Aguarda callback do DMA
+        if(xSemaphoreTake(dma_semaphore, pdMS_TO_TICKS(500)) == pdTRUE) {
+
+            // Alterna entre PING e PONG baseado no toggle
+            if(toggle == 0) {
+                // Preenche PING
+                frames_written = read_and_convert_wav(audio_ping, half_buffer_frames);
+                if(frames_written < half_buffer_frames) {
+                    for(uint32_t i = frames_written; i < half_buffer_frames; i++) {
+                        audio_ping[i * 2] = 0;
+                        audio_ping[i * 2 + 1] = 0;
+                    }
+                }
+                SCB_CleanDCache_by_Addr((uint32_t*)audio_ping, sizeof(audio_ping));
+                toggle = 1;
+            } else {
+                // Preenche PONG
+                frames_written = read_and_convert_wav(audio_pong, half_buffer_frames);
+                if(frames_written < half_buffer_frames) {
+                    for(uint32_t i = frames_written; i < half_buffer_frames; i++) {
+                        audio_pong[i * 2] = 0;
+                        audio_pong[i * 2 + 1] = 0;
+                    }
+                }
+                SCB_CleanDCache_by_Addr((uint32_t*)audio_pong, sizeof(audio_pong));
+                toggle = 0;
+            }
+        } else {
+            printf("Timeout no semáforo DMA!\n");
+        }
+    }
+
+    printf("Fim do playback\n");
+    vTaskDelete(NULL);
+}
+
+// ============================================================================
+// SOLUÇÃO RECOMENDADA: Buffer Único com HalfCplt
+// ============================================================================
+
+// Buffer único contíguo (garantido!)
+__attribute__((section(".RAM_D2"))) static int32_t audio_buffer[TOTAL_BUFFER_WORDS];
+
+static SemaphoreHandle_t half_semaphore = NULL;
+static SemaphoreHandle_t full_semaphore = NULL;
+
+void HAL_I2S_TxHalfCpltCallback_Single(I2S_HandleTypeDef *hi2s)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    xSemaphoreGiveFromISR(half_semaphore, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void HAL_I2S_TxCpltCallback_Single(I2S_HandleTypeDef *hi2s)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    xSemaphoreGiveFromISR(full_semaphore, &xHigherPriorityTaskWoken);
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+static void vAudioPlayerTask_SingleBuffer(void *pvParameters)
+{
+    uint32_t frames_written;
+    uint32_t half_frames = SAMPLES_PER_BUFFER;
+
+    printf("Usando buffer único contíguo\n");
+
+    // Pré-enche ambas as metades
+    frames_written = read_and_convert_wav(&audio_buffer[0], half_frames);
+    if(frames_written < half_frames) {
+        for(uint32_t i = frames_written; i < half_frames; i++) {
+            audio_buffer[i * 2] = 0;
+            audio_buffer[i * 2 + 1] = 0;
+        }
+    }
+
+    frames_written = read_and_convert_wav(&audio_buffer[HALF_BUFFER_WORDS], half_frames);
+    if(frames_written < half_frames) {
+        for(uint32_t i = frames_written; i < half_frames; i++) {
+            audio_buffer[HALF_BUFFER_WORDS + i * 2] = 0;
+            audio_buffer[HALF_BUFFER_WORDS + i * 2 + 1] = 0;
+        }
+    }
+
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_buffer, sizeof(audio_buffer));
+
+    // Inicia DMA com o buffer único
+    HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)audio_buffer, TOTAL_BUFFER_WORDS);
+
+    while(player.is_playing) {
+        // Aguarda primeira metade
+        if(xSemaphoreTake(half_semaphore, pdMS_TO_TICKS(100)) == pdTRUE) {
+            frames_written = read_and_convert_wav(&audio_buffer[0], half_frames);
+            if(frames_written < half_frames) {
+                for(uint32_t i = frames_written; i < half_frames; i++) {
+                    audio_buffer[i * 2] = 0;
+                    audio_buffer[i * 2 + 1] = 0;
+                }
+            }
+            SCB_CleanDCache_by_Addr((uint32_t*)&audio_buffer[0], HALF_BUFFER_WORDS * 4);
+        }
+
+        // Aguarda segunda metade
+        if(xSemaphoreTake(full_semaphore, 0) == pdTRUE) {
+            frames_written = read_and_convert_wav(&audio_buffer[HALF_BUFFER_WORDS], half_frames);
+            if(frames_written < half_frames) {
+                for(uint32_t i = frames_written; i < half_frames; i++) {
+                    audio_buffer[HALF_BUFFER_WORDS + i * 2] = 0;
+                    audio_buffer[HALF_BUFFER_WORDS + i * 2 + 1] = 0;
+                }
+            }
+            SCB_CleanDCache_by_Addr((uint32_t*)&audio_buffer[HALF_BUFFER_WORDS], HALF_BUFFER_WORDS * 4);
+        }
+    }
+
+    vTaskDelete(NULL);
+}
+
+// ============================================================================
+// Inicialização
+// ============================================================================
+void Audio_Player_Init(void)
+{
+    // Usar a versão de buffer único (mais confiável)
+    half_semaphore = xSemaphoreCreateBinary();
+    full_semaphore = xSemaphoreCreateBinary();
+
+    printf("Audio Player inicializado (buffer único)\n");
+}
+
+void Audio_Player_Start(const char* filename)
+{
+    if(player.is_playing) {
+        Audio_Player_Stop();
+    }
+
+    if(f_open(&player.file, filename, FA_READ) != FR_OK) {
+        printf("Erro ao abrir: %s\n", filename);
+        return;
+    }
+
+    // Pula header WAV (44 bytes para PCM padrão)
+    f_lseek(&player.file, 44);
+
+    player.data_remaining = f_size(&player.file) - 44;
+    player.file_open = 1;
+    player.is_playing = 1;
+    player.total_bytes_read = 0;
+
+    printf("Arquivo: %s, %lu bytes de áudio\n", filename, player.data_remaining);
+
+    if(player_task_handle == NULL) {
+        xTaskCreate(vAudioPlayerTask_SingleBuffer, "AudioPlayer", 4096, NULL,
+                    configMAX_PRIORITIES - 1, &player_task_handle);
+    }
+}
+
+void Audio_Player_Stop(void)
+{
+    player.is_playing = 0;
+
+    if(player.file_open) {
+        f_close(&player.file);
+        player.file_open = 0;
+    }
+
+    HAL_I2S_DMAStop(&hi2s2);
+    memset(audio_buffer, 0, sizeof(audio_buffer));
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_buffer, sizeof(audio_buffer));
+}

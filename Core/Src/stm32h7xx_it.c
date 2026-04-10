@@ -74,7 +74,7 @@ extern ETH_HandleTypeDef heth;
 extern HCD_HandleTypeDef hhcd_USB_OTG_FS;
 extern DMA_HandleTypeDef hdma_adc1;
 extern DMA_HandleTypeDef hdma_adc3;
-extern DMA_HandleTypeDef hdma_memtomem_dma1_stream1;
+extern DMA_HandleTypeDef hdma_spi2_tx;
 extern DMA2D_HandleTypeDef hdma2d;
 extern MDMA_HandleTypeDef hmdma_mdma_channel0_dma1_stream1_tc_0;
 extern QSPI_HandleTypeDef hqspi;
@@ -121,17 +121,17 @@ void NMI_Handler(void)
 /**
   * @brief This function handles Memory management fault.
   */
-void MemManage_Handler(void)
-{
-  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
-  /* USER CODE END MemoryManagement_IRQn 0 */
-  while (1)
-  {
-    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
-    /* USER CODE END W1_MemoryManagement_IRQn 0 */
-  }
-}
+//void MemManage_Handler(void)
+//{
+//  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
+//
+//  /* USER CODE END MemoryManagement_IRQn 0 */
+//  while (1)
+//  {
+//    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
+//    /* USER CODE END W1_MemoryManagement_IRQn 0 */
+//  }
+//}
 
 /**
   * @brief This function handles Pre-fetch fault, memory access fault.
@@ -205,7 +205,7 @@ void DMA1_Stream1_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Stream1_IRQn 0 */
 
   /* USER CODE END DMA1_Stream1_IRQn 0 */
-  HAL_DMA_IRQHandler(&hdma_memtomem_dma1_stream1);
+	HAL_DMA_IRQHandler(&hdma_spi2_tx);
   /* USER CODE BEGIN DMA1_Stream1_IRQn 1 */
 
   /* USER CODE END DMA1_Stream1_IRQn 1 */

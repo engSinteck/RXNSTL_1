@@ -147,7 +147,7 @@ USBH_StatusTypeDef USBH_Init(USBH_HandleTypeDef *phost,
   phost->os_event = osMessageQueueNew(MSGQUEUE_OBJECTS, sizeof(uint32_t), NULL);
 
   /* Create USB Host Task */
-  USBH_Thread_Atrr.name = "USBH_Queue";
+  USBH_Thread_Atrr.name = "USBHOST";
 
 #if defined (USBH_PROCESS_STACK_SIZE)
   USBH_Thread_Atrr.stack_size = USBH_PROCESS_STACK_SIZE;

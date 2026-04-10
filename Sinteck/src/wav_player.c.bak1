@@ -1,0 +1,270 @@
+/*
+ * wav_player.c
+ *
+ *  Created on: 10 de abr. de 2026
+ *      Author: rinaldo.santos
+ */
+#include "FreeRTOS.h"
+#include "task.h"
+#include "cmsis_os.h"
+#include "semphr.h"
+#include "i2s.h"
+#include "fatfs.h"
+#include "wav_player.h"
+#include "../Sinteck/src/sine_generator.h"
+
+// Tamanhos de buffer (baseado no seu teste que funcionou)
+// Seu teste: TABLE_SIZE = 48 samples
+// Para player: usaremos 1024 samples por half-buffer (mais tempo para leitura do arquivo)
+#define SAMPLES_PER_HALF  1024   // 1024 frames por half-buffer
+#define HALF_BUFFER_WORDS  (SAMPLES_PER_HALF * 2)  // 2048 words (L+R)
+#define TOTAL_BUFFER_WORDS (HALF_BUFFER_WORDS * 2) // 4096 words total
+
+// Buffers na RAM_D2 (mesma seção que funcionou)
+__attribute__((section(".RAM_D2"))) int32_t audio_ping[HALF_BUFFER_WORDS];
+__attribute__((section(".RAM_D2"))) int32_t audio_pong[HALF_BUFFER_WORDS];
+
+// Semáforos
+static SemaphoreHandle_t ping_semaphore = NULL;
+static SemaphoreHandle_t pong_semaphore = NULL;
+
+// Controle do player
+typedef struct {
+    FIL file;
+    uint32_t data_remaining;
+    uint8_t is_playing;
+    uint8_t file_open;
+} wav_player_t;
+
+static wav_player_t player = {0};
+static TaskHandle_t player_task_handle = NULL;
+
+// ============================================================================
+// Leitura e conversão do WAV (MESMO FORMATO do seu teste)
+// ============================================================================
+static uint32_t read_and_convert_wav(int32_t* buffer, uint32_t max_words)
+{
+    if(!player.is_playing || !player.file_open) {
+        return 0;
+    }
+
+    if(player.data_remaining == 0) {
+        return 0;
+    }
+
+    // max_words deve ser par (L+R)
+    uint32_t max_frames = max_words / 2;
+    uint32_t bytes_needed = max_frames * 4;  // 4 bytes por frame (2 canais x 16 bits)
+    uint32_t bytes_to_read = (bytes_needed > player.data_remaining) ?
+                              player.data_remaining : bytes_needed;
+
+    if(bytes_to_read == 0) {
+        return 0;
+    }
+
+    // Buffer temporário para dados PCM
+    uint8_t pcm_buffer[4096];
+    if(bytes_to_read > sizeof(pcm_buffer)) {
+        bytes_to_read = sizeof(pcm_buffer);
+    }
+
+    // Lê do arquivo
+    UINT bytes_read;
+    FRESULT result = f_read(&player.file, pcm_buffer, bytes_to_read, &bytes_read);
+
+    if(result != FR_OK || bytes_read == 0) {
+        return 0;
+    }
+
+    // Converte PCM 16-bit little-endian para formato I2S (MESMO do seu teste)
+    uint16_t* pcm16 = (uint16_t*)pcm_buffer;
+    uint32_t frames_read = bytes_read / 4;
+
+    for(uint32_t i = 0; i < frames_read && i < max_frames; i++) {
+        int16_t left = (int16_t)pcm16[i * 2];
+        int16_t right = (int16_t)pcm16[i * 2 + 1];
+
+        // EXATAMENTE o mesmo formato do seu fill_i2s_buffer que funcionou
+        buffer[i * 2]     = ((int32_t)left) << 16;   // Left
+        buffer[i * 2 + 1] = ((int32_t)right) << 16;  // Right
+    }
+
+    player.data_remaining -= bytes_read;
+
+    return frames_read;
+}
+
+// ============================================================================
+// Callbacks do DMA (usando HalfCplt e Cplt - SEM double buffer complexo)
+// ============================================================================
+void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Metade do buffer terminou - pode preencher o PING
+    if(ping_semaphore != NULL) {
+        xSemaphoreGiveFromISR(ping_semaphore, &xHigherPriorityTaskWoken);
+    }
+
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Buffer completo terminou - pode preencher o PONG
+    if(pong_semaphore != NULL) {
+        xSemaphoreGiveFromISR(pong_semaphore, &xHigherPriorityTaskWoken);
+    }
+
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+// ============================================================================
+// Task do Player
+// ============================================================================
+static void vAudioPlayerTask(void *pvParameters)
+{
+    uint32_t frames_written;
+
+    // Pré-enche ambos os buffers antes de começar
+    frames_written = read_and_convert_wav(audio_ping, HALF_BUFFER_WORDS);
+    if(frames_written < SAMPLES_PER_HALF) {
+        // Completa com silêncio se necessário
+        memset(&audio_ping[frames_written * 2], 0,
+               (HALF_BUFFER_WORDS - frames_written * 2) * 4);
+    }
+
+    frames_written = read_and_convert_wav(audio_pong, HALF_BUFFER_WORDS);
+    if(frames_written < SAMPLES_PER_HALF) {
+        memset(&audio_pong[frames_written * 2], 0,
+               (HALF_BUFFER_WORDS - frames_written * 2) * 4);
+    }
+
+    // Limpa cache para ambos os buffers
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_ping, sizeof(audio_ping));
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_pong, sizeof(audio_pong));
+
+    // Inicia DMA com buffer PING (tamanho TOTAL = PING + PONG)
+    // Importante: DMA roda em CIRCULAR sobre TODO o buffer
+    HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)audio_ping, TOTAL_BUFFER_WORDS);
+
+    printf("Player iniciado, buffers prontos\n");
+
+    while(player.is_playing) {
+        // Aguarda PING precisar ser preenchido (HalfCplt)
+        if(xSemaphoreTake(ping_semaphore, pdMS_TO_TICKS(100)) == pdTRUE) {
+            frames_written = read_and_convert_wav(audio_ping, HALF_BUFFER_WORDS);
+
+            if(frames_written > 0) {
+                if(frames_written < SAMPLES_PER_HALF) {
+                    memset(&audio_ping[frames_written * 2], 0,
+                           (HALF_BUFFER_WORDS - frames_written * 2) * 4);
+                }
+                SCB_CleanDCache_by_Addr((uint32_t*)audio_ping, sizeof(audio_ping));
+            } else {
+                // Fim do arquivo
+                break;
+            }
+        }
+
+        // Aguarda PONG precisar ser preenchido (Cplt)
+        if(xSemaphoreTake(pong_semaphore, pdMS_TO_TICKS(100)) == pdTRUE) {
+            frames_written = read_and_convert_wav(audio_pong, HALF_BUFFER_WORDS);
+
+            if(frames_written > 0) {
+                if(frames_written < SAMPLES_PER_HALF) {
+                    memset(&audio_pong[frames_written * 2], 0,
+                           (HALF_BUFFER_WORDS - frames_written * 2) * 4);
+                }
+                SCB_CleanDCache_by_Addr((uint32_t*)audio_pong, sizeof(audio_pong));
+            } else {
+                break;
+            }
+        }
+    }
+
+    // Fim do playback
+    Audio_Player_Stop();
+    printf("Playback finalizado\n");
+
+    vTaskDelete(NULL);
+    player_task_handle = NULL;
+}
+
+// ============================================================================
+// Funções Públicas
+// ============================================================================
+void Audio_Player_Init(void)
+{
+    // Cria semáforos
+    ping_semaphore = xSemaphoreCreateBinary();
+    pong_semaphore = xSemaphoreCreateBinary();
+
+    if(ping_semaphore == NULL || pong_semaphore == NULL) {
+        printf("Erro ao criar semáforos\n");
+        return;
+    }
+
+    // Limpa buffers
+    memset(audio_ping, 0, sizeof(audio_ping));
+    memset(audio_pong, 0, sizeof(audio_pong));
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_ping, sizeof(audio_ping));
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_pong, sizeof(audio_pong));
+
+    printf("Audio Player inicializado\n");
+    printf("Buffer size: %d words (%d bytes)\n", TOTAL_BUFFER_WORDS, sizeof(audio_ping) + sizeof(audio_pong));
+}
+
+void Audio_Player_Start(const char* filename)
+{
+    if(player.is_playing) {
+        Audio_Player_Stop();
+    }
+
+    // Abre arquivo WAV
+    if(f_open(&player.file, filename, FA_READ) != FR_OK) {
+        printf("Erro ao abrir arquivo: %s\n", filename);
+        return;
+    }
+
+    // Pula header WAV (assume 44 bytes - você pode melhorar depois)
+    f_lseek(&player.file, 44);
+
+    player.data_remaining = f_size(&player.file) - 44;
+    player.file_open = 1;
+    player.is_playing = 1;
+
+    printf("Arquivo aberto: %s\n", filename);
+    printf("Data remaining: %lu bytes\n", player.data_remaining);
+
+    // Cria task do player
+    if(player_task_handle == NULL) {
+        xTaskCreate(vAudioPlayerTask, "AudioPlayer", 4096, NULL,
+                    configMAX_PRIORITIES - 1, &player_task_handle);
+    }
+}
+
+void Audio_Player_Stop(void)
+{
+    player.is_playing = 0;
+
+    if(player.file_open) {
+        f_close(&player.file);
+        player.file_open = 0;
+    }
+
+    // Para o DMA e limpa buffers
+    HAL_I2S_DMAStop(&hi2s2);
+
+    memset(audio_ping, 0, sizeof(audio_ping));
+    memset(audio_pong, 0, sizeof(audio_pong));
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_ping, sizeof(audio_ping));
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_pong, sizeof(audio_pong));
+}
+
+uint8_t Audio_Player_IsPlaying(void)
+{
+    return player.is_playing;
+}

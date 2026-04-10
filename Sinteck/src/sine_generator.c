@@ -16,7 +16,8 @@
 #define DMA_BUFFER_SIZE (TABLE_SIZE * 2)
 
 int16_t sine_table[TABLE_SIZE] __attribute__(( aligned(32)));
-__attribute__((section(".RAM_D2"))) int32_t i2s_buffer[DMA_BUFFER_SIZE];
+//__attribute__((section(".RAM_D2"))) int32_t i2s_buffer[DMA_BUFFER_SIZE];
+static int32_t i2s_buffer[DMA_BUFFER_SIZE] __attribute__((section(".RAM_D2"), aligned(32)));
 
 // Gera Senoide em 1KHz @ 48KHz - 16Bit
 void generate_sine_table(void)
@@ -44,4 +45,12 @@ void Send_I2S_buffer(void)
 {
 	SCB_CleanDCache_by_Addr((uint32_t*)i2s_buffer, sizeof(i2s_buffer));
 	HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)i2s_buffer, DMA_BUFFER_SIZE);
+}
+
+
+void Send_teste_1khz(void)
+{
+	generate_sine_table();
+	fill_i2s_buffer();
+	Send_I2S_buffer();
 }

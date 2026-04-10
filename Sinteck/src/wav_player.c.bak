@@ -1,0 +1,430 @@
+/*
+ * wav_player.c
+ *
+ *  Created on: 10 de abr. de 2026
+ *      Author: rinaldo.santos
+ */
+#include "FreeRTOS.h"
+#include "task.h"
+#include "cmsis_os.h"
+#include "semphr.h"
+#include "i2s.h"
+#include "fatfs.h"
+#include "wav_player.h"
+#include "../Sinteck/src/sine_generator.h"
+
+// Buffers de DMA
+__attribute__((section(".RAM_D2"))) int32_t audio_dma_buffer[TOTAL_BUFFER_WORDS];
+
+// Semáforos
+SemaphoreHandle_t half_buffer_ready_semaphore = NULL;
+SemaphoreHandle_t full_buffer_ready_semaphore = NULL;
+
+// Player global
+static wav_player_t wav_player = {0};
+static TaskHandle_t audio_task_handle = NULL;
+static SemaphoreHandle_t audio_start_semaphore = NULL;
+
+// Ponteiro para o half-buffer atual (0 = primeira metade, 1 = segunda metade)
+static volatile uint8_t current_half_buffer = 0;
+
+static uint32_t test_phase = 0;
+static uint8_t header_wav[44] = {0};
+
+// ============================================
+// Gerador TOM
+// ============================================
+static void generate_test_tone(int32_t* buffer, uint32_t samples)
+{
+    // Gera um tom de 440Hz (Lá) para teste
+    for(uint32_t i = 0; i < samples; i++) {
+        int16_t sample = (int16_t)(16384 * sin(2 * 3.14159 * 440 * test_phase / 48000.0));
+        test_phase++;
+
+        // Converte para formato I2S (16 bits alinhado à esquerda)
+        buffer[i] = ((uint32_t)sample << 16) | ((uint32_t)sample & 0xFFFF);
+    }
+}
+
+void Audio_StartTestTone(void)
+{
+    test_phase = 0;
+
+    // Pré-enche ambos os half-buffers com o tom de teste
+    generate_test_tone(&audio_dma_buffer[0], HALF_BUFFER_SAMPLES);
+    SCB_CleanDCache_by_Addr((uint32_t*)&audio_dma_buffer[0], HALF_BUFFER_SAMPLES * 4);
+
+    generate_test_tone(&audio_dma_buffer[HALF_BUFFER_SAMPLES], HALF_BUFFER_SAMPLES);
+    SCB_CleanDCache_by_Addr((uint32_t*)&audio_dma_buffer[HALF_BUFFER_SAMPLES], HALF_BUFFER_SAMPLES * 4);
+
+    // Inicia DMA se não estiver rodando
+    HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)audio_dma_buffer, TOTAL_BUFFER_WORDS);
+
+    wav_player.is_playing = 1;
+
+    // Cria task
+    if(audio_task_handle == NULL) {
+        xTaskCreate(vAudioPlayerTask, "WAVTone", 4096, NULL, configMAX_PRIORITIES - 1, &audio_task_handle);
+    }
+}
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
+void Audio_Init(void)
+{
+    // Cria semáforos
+    half_buffer_ready_semaphore = xSemaphoreCreateBinary();
+    full_buffer_ready_semaphore = xSemaphoreCreateBinary();
+
+    // Inicialmente, ambos semáforos estão vazios
+    // Limpa o buffer DMA
+    memset((void*)audio_dma_buffer, 0, sizeof(audio_dma_buffer));
+
+    // Limpa cache antes do DMA começar
+//    SCB_CleanDCache_by_Addr((uint32_t*)audio_dma_buffer, sizeof(audio_dma_buffer));
+
+    // Inicia DMA em modo CIRCULAR
+//    HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)audio_dma_buffer, TOTAL_BUFFER_WORDS);
+
+    // O DMA agora está rodando, mas com buffer vazio (silêncio)
+    // Os callbacks HalfCplt e Cplt serão chamados automaticamente
+
+    // Cria semáforo para controle de start
+    audio_start_semaphore = xSemaphoreCreateBinary();
+    if(audio_start_semaphore == NULL) {
+        // Erro ao criar semáforo
+        return;
+    }
+
+    // Sinaliza a task para começar (AGORA a task já está esperando)
+    xSemaphoreGive(audio_start_semaphore);
+
+    Minimal_Tone_Test();
+}
+
+// ============================================
+// PREENCHIMENTO DO BUFFER COM TOM
+// ============================================
+static uint32_t fill_audio_tom(int32_t* buffer, uint32_t max_words)
+{
+    // TESTE: Ignora arquivo e gera um tom de 440Hz
+    static uint32_t phase = 0;
+    uint32_t max_frames = max_words / 2;
+
+    for(uint32_t i = 0; i < max_frames; i++) {
+        // Gera onda senoidal
+        int16_t sample = (int16_t)(16384 * sin(2 * 3.14159 * 440 * phase / 48000.0));
+        phase++;
+
+        // Mesmo formato do tom que funciona
+        buffer[i * 2]     = ((int32_t)sample) << 16;
+        buffer[i * 2 + 1] = ((int32_t)sample) << 16;
+    }
+
+    return max_frames;  // Simula que leu todos os frames
+}
+// ============================================
+// PREENCHIMENTO DO BUFFER COM DADOS DO WAV
+// ============================================
+// audio_player.c - Versão corrigida
+static uint32_t fill_audio_buffer(int32_t* buffer, uint32_t max_words)
+{
+    if(!wav_player.is_playing || !wav_player.file_is_open) {
+        return 0;
+    }
+
+    if(wav_player.data_remaining == 0) {
+        return 0;
+    }
+
+    // max_words é o número de words (32 bits) que o buffer pode receber
+    // Cada frame estéreo = 2 words (L e R separados)
+    uint32_t max_frames = max_words / 2;
+    uint32_t bytes_needed = max_frames * 4;  // 4 bytes por frame estéreo (L+R 16bits cada)
+    uint32_t bytes_to_read = (bytes_needed > wav_player.data_remaining) ?
+                              wav_player.data_remaining : bytes_needed;
+
+    if(bytes_to_read == 0) {
+        return 0;
+    }
+
+    // Buffer temporário para dados PCM crus
+    uint8_t pcm_buffer[2048];
+    if(bytes_to_read > sizeof(pcm_buffer)) {
+        bytes_to_read = sizeof(pcm_buffer);
+    }
+
+    // Lê do arquivo FATFS
+    UINT bytes_read;
+    FRESULT result = f_read(&wav_player.file, pcm_buffer, bytes_to_read, &bytes_read);
+
+    if(result != FR_OK || bytes_read == 0) {
+        return 0;
+    }
+
+    // Converte PCM 16-bit para formato I2S (mesmo formato do tom de teste)
+    uint16_t* pcm16 = (uint16_t*)pcm_buffer;
+    uint32_t frames_read = bytes_read / 4;  // Cada frame = 2 words (L+R)
+
+    for(uint32_t i = 0; i < frames_read && i < max_frames; i++) {
+        int16_t left = (int16_t)pcm16[i * 2];
+        int16_t right = (int16_t)pcm16[i * 2 + 1];
+
+        // Formato: cada word é um canal, 16 bits alinhado à esquerda
+        buffer[i * 2]     = ((int32_t)left) << 16;   // Canal Left
+        buffer[i * 2 + 1] = ((int32_t)right) << 16;  // Canal Right
+    }
+
+    wav_player.data_remaining -= bytes_read;
+
+    return frames_read;  // Retorna número de frames (não words)
+}
+
+// ============================================
+// CALLBACKS DO DMA (INTERRUPÇÕES)
+// ============================================
+void HAL_I2S_TxHalfCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Toggle GPIO
+    HAL_GPIO_TogglePin(LED_LOCK_GPIO_Port, LED_LOCK_Pin);
+
+    // Metade do buffer terminou (primeiros HALF_BUFFER_SAMPLES words)
+    // Sinaliza para a task preencher a PRIMEIRA metade do buffer
+    current_half_buffer = 0;
+    xSemaphoreGiveFromISR(half_buffer_ready_semaphore, &xHigherPriorityTaskWoken);
+
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Toggle GPIO
+    HAL_GPIO_TogglePin(LED_RSSI_GPIO_Port, LED_RSSI_Pin);
+
+    // Buffer completo terminou (segunda metade acabou de tocar)
+    // Sinaliza para a task preencher a SEGUNDA metade do buffer
+    current_half_buffer = 1;
+    xSemaphoreGiveFromISR(full_buffer_ready_semaphore, &xHigherPriorityTaskWoken);
+
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+void vAudioPlayerTask(void *pvParameters) {
+    uint32_t frames_written;
+
+    // Pré-enche ambas as metades
+    fill_audio_buffer(&audio_dma_buffer[0], HALF_BUFFER_WORDS);
+    fill_audio_buffer(&audio_dma_buffer[HALF_BUFFER_WORDS], HALF_BUFFER_WORDS);
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_dma_buffer, sizeof(audio_dma_buffer));
+
+    while(wav_player.is_playing) {
+        // Aguarda primeira metade precisar ser preenchida
+        if(xSemaphoreTake(half_buffer_ready_semaphore, pdMS_TO_TICKS(100)) == pdTRUE) {
+            frames_written = fill_audio_buffer(&audio_dma_buffer[0], HALF_BUFFER_WORDS);
+
+            if(frames_written > 0) {
+                uint32_t words_written = frames_written * 2;
+                if(words_written < HALF_BUFFER_WORDS) {
+                    memset(&audio_dma_buffer[words_written], 0,
+                           (HALF_BUFFER_WORDS - words_written) * 4);
+                }
+                SCB_CleanDCache_by_Addr((uint32_t*)&audio_dma_buffer[0], HALF_BUFFER_WORDS * 4);
+            } else {
+                break;
+            }
+        }
+
+        // Aguarda segunda metade precisar ser preenchida
+        if(xSemaphoreTake(full_buffer_ready_semaphore, pdMS_TO_TICKS(100)) == pdTRUE) {
+            frames_written = fill_audio_buffer(&audio_dma_buffer[HALF_BUFFER_WORDS], HALF_BUFFER_WORDS);
+
+            if(frames_written > 0) {
+                uint32_t words_written = frames_written * 2;
+                if(words_written < HALF_BUFFER_WORDS) {
+                    memset(&audio_dma_buffer[HALF_BUFFER_WORDS + words_written], 0,
+                           (HALF_BUFFER_WORDS - words_written) * 4);
+                }
+                SCB_CleanDCache_by_Addr((uint32_t*)&audio_dma_buffer[HALF_BUFFER_WORDS], HALF_BUFFER_WORDS * 4);
+            } else {
+                break;
+            }
+        }
+    }
+
+    Audio_StopPlayback();
+}
+
+/*
+// ============================================
+// TASK PRINCIPAL DO PLAYER
+// ============================================
+void vAudioPlayerTask(void *pvParameters) {
+    int32_t* buffer_to_fill;
+    uint32_t frames_written;
+
+    while(1) {
+        // Aguarda sinal dos callbacks
+        if(xSemaphoreTake(half_buffer_ready_semaphore, portMAX_DELAY) == pdTRUE) {
+            buffer_to_fill = &audio_dma_buffer[0];
+        }
+        else if(xSemaphoreTake(full_buffer_ready_semaphore, 0) == pdTRUE) {
+            buffer_to_fill = &audio_dma_buffer[HALF_BUFFER_WORDS];
+        }
+        else {
+            continue;
+        }
+
+        // Preenche o buffer (cada half-buffer tem HALF_BUFFER_WORDS words)
+        frames_written = fill_audio_tom(buffer_to_fill, HALF_BUFFER_WORDS);
+
+        if(frames_written > 0) {
+            // Se não preencheu todas as frames, completa com silêncio
+            uint32_t words_written = frames_written * 2;
+            if(words_written < HALF_BUFFER_WORDS) {
+                memset((void*)&buffer_to_fill[words_written], 0,
+                       (HALF_BUFFER_WORDS - words_written) * 4);
+            }
+            SCB_CleanDCache_by_Addr((uint32_t*)buffer_to_fill, HALF_BUFFER_WORDS * 4);
+        } else {
+            // Fim do arquivo - preenche com silêncio
+            memset((void*)buffer_to_fill, 0, HALF_BUFFER_WORDS * 4);
+            SCB_CleanDCache_by_Addr((uint32_t*)buffer_to_fill, HALF_BUFFER_WORDS * 4);
+            Audio_StopPlayback();
+            break;
+        }
+    }
+}
+*/
+
+// ============================================
+// CONTROLE DO PLAYER
+// ============================================
+static uint8_t open_wav_file(const char* filename)
+{
+    FRESULT result;
+
+    // Fecha arquivo anterior se estiver aberto
+    if(wav_player.file_is_open) {
+        f_close(&wav_player.file);
+        wav_player.file_is_open = 0;
+    }
+
+    // Abre arquivo
+    result = f_open(&wav_player.file, filename, FA_READ);
+    if(result != FR_OK) {
+        return 0;
+    }
+
+    wav_player.file_is_open = 1;  // Marca como aberto
+
+    // Pula header WAV (assume formato PCM padrão)
+    f_lseek(&wav_player.file, 44);
+
+    // Calcula tamanho dos dados
+    wav_player.data_remaining = f_size(&wav_player.file) - 44;
+    wav_player.is_playing = 1;
+
+    return 1;
+}
+
+// ============================================
+// PARAR PLAYBACK (CORRIGIDO)
+// ============================================
+void Audio_StopPlayback(void) {
+    wav_player.is_playing = 0;
+
+    // Fecha arquivo se estiver aberto
+    if(wav_player.file_is_open) {
+        f_close(&wav_player.file);
+        wav_player.file_is_open = 0;
+    }
+
+    // Pausa o DMA para evitar ruídos
+    HAL_I2S_DMAPause(&hi2s2);
+
+    // Preenche buffers com silêncio
+    memset((void*)audio_dma_buffer, 0, sizeof(audio_dma_buffer));
+    SCB_CleanDCache_by_Addr((uint32_t*)audio_dma_buffer, sizeof(audio_dma_buffer));
+
+    // Retoma o DMA (tocará silêncio)
+    HAL_I2S_DMAResume(&hi2s2);
+}
+
+void Audio_StartPlayback(const char* filename)
+{
+    if(!open_wav_file(filename)) {
+        return;
+    }
+
+    // Limpa buffer com silêncio inicial
+    memset((void*)audio_dma_buffer, 0, sizeof(audio_dma_buffer));
+
+    // Pré-enche ambos os half-buffers
+    uint32_t samples_written;
+
+    // Primeira metade
+    samples_written = fill_audio_tom(&audio_dma_buffer[0], HALF_BUFFER_SAMPLES);
+    if(samples_written < HALF_BUFFER_SAMPLES) {
+        memset((void*)&audio_dma_buffer[samples_written], 0,
+               (HALF_BUFFER_SAMPLES - samples_written) * 4);
+    }
+    SCB_CleanDCache_by_Addr((uint32_t*)&audio_dma_buffer[0], HALF_BUFFER_SAMPLES * 4);
+
+    // Segunda metade
+    samples_written = fill_audio_tom(&audio_dma_buffer[HALF_BUFFER_SAMPLES], HALF_BUFFER_SAMPLES);
+    if(samples_written < HALF_BUFFER_SAMPLES) {
+        memset((void*)&audio_dma_buffer[HALF_BUFFER_SAMPLES + samples_written], 0,
+               (HALF_BUFFER_SAMPLES - samples_written) * 4);
+    }
+    SCB_CleanDCache_by_Addr((uint32_t*)&audio_dma_buffer[HALF_BUFFER_SAMPLES], HALF_BUFFER_SAMPLES * 4);
+
+    // Garante que o DMA está rodando
+    HAL_I2S_DMAResume(&hi2s2);
+
+    // Cria task do player se não existir
+    if(audio_task_handle == NULL) {
+        xTaskCreate(vAudioPlayerTask, "AudioPlayer", 4096, NULL,
+                    configMAX_PRIORITIES - 1, &audio_task_handle);
+        // Dá um pequeno delay para a task iniciar e ficar pronta
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    // Sinaliza a task para começar (AGORA a task já está esperando)
+    xSemaphoreGive(audio_start_semaphore);
+}
+
+uint8_t Audio_IsPlaying(void)
+{
+    return wav_player.is_playing;
+}
+
+// Adicione esta função para debug
+void debug_wav_header(const char* filename)
+{
+    FIL file;
+    UINT bytes_read;
+
+    if(f_open(&file, filename, FA_READ) == FR_OK) {
+        f_read(&file, header_wav, 44, &bytes_read);
+
+        //printf("RIFF: %c%c%c%c\n", header[0], header[1], header[2], header[3]);
+        //printf("Format: %c%c%c%c\n", header[8], header[9], header[10], header[11]);
+        //printf("Sample rate: %d\n", *(uint32_t*)&header[24]);
+        //printf("Bits per sample: %d\n", header[34]);
+        //printf("Channels: %d\n", header[22]);
+
+        f_close(&file);
+    }
+}
+
+void Minimal_Tone_Test(void)
+{
+    // Teste I2S @ 48KHz - 16Bit
+    generate_sine_table();
+    fill_i2s_buffer();
+    Send_I2S_buffer();
+}

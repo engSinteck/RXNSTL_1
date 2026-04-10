@@ -150,6 +150,9 @@ void Error_Handler(void);
 
 #define MAX_PWM     	4095		// Resolucao PWM 12 Bits
 
+#define PCM_FRAME_SIZE 1152   // samples por frame MP3
+#define CHANNELS 2            // stereo
+
 typedef enum reset_cause_e
 {
     RESET_CAUSE_UNKNOWN = 0,
