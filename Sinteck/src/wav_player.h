@@ -17,5 +17,6 @@ void Audio_Player_Stop(void);
 void Audio_Player_Init(void);
 void Audio_Player_Start(const char* filename);
 void fill_sine_buffer_task(int32_t* buffer, uint32_t num_words);
+void Audio_SetSampleRate(uint32_t sample_rate);
 
 #endif

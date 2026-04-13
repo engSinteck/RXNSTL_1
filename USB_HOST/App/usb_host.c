@@ -112,7 +112,7 @@ static void USBH_UserProcess  (USBH_HandleTypeDef *phost, uint8_t id)
   Appli_state = APPLICATION_READY;
 
   Mount_USB();
-  Audio_Player_Start("1:1KHz.wav");
+  Audio_Player_Start("1:wav_44.wav");
 
   break;
 

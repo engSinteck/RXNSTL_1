@@ -17,12 +17,12 @@
 // CONFIGURAÇÕES - Tamanhos reduzidos para teste
 // ============================================================================
 #define SAMPLE_RATE         48000
-#define SAFE_BUFFER_SAMPLES 4096    // REDUZIDO para 256 samples (teste)
+#define SAFE_BUFFER_SAMPLES 4096    					//
 #define SAFE_HALF_WORDS     (SAFE_BUFFER_SAMPLES * 2)   // 8192 words
 #define SAFE_TOTAL_WORDS    (SAFE_HALF_WORDS * 2)       // 16384 words
 
 // Verificação em tempo de compilação
-#if SAFE_TOTAL_WORDS > 16384
+#if SAFE_TOTAL_WORDS > 32768
     #error "Buffer muito grande"
 #endif
 
@@ -56,6 +56,15 @@ typedef struct {
     uint32_t buffer_size_words;   // Guarda tamanho do buffer para validação
 } wav_player_t;
 
+// Estrutura para armazenar a configuração calculada
+typedef struct {
+    uint8_t I2SDIV;
+    uint8_t ODD;
+    uint32_t real_freq;
+    uint32_t error_ppm;
+    float error_percent;
+} I2S_Config;
+
 static wav_player_t player = {0};
 static TaskHandle_t player_task_handle = NULL;
 
@@ -68,96 +77,55 @@ static SemaphoreHandle_t full_semaphore = NULL;
 // ============================================================================
 static uint32_t read_and_convert_wav(int32_t* buffer, uint32_t max_words)
 {
-    // VALIDAÇÕES DE SEGURANÇA
-    if(!player.is_playing || !player.file_open) {
-        return 0;
-    }
+    uint32_t total_frames = 0;
 
-    if(buffer == NULL) {
-        //printf("ERRO: buffer NULL\n");
-        return 0;
-    }
-
-    if(max_words == 0 || max_words > SAFE_HALF_WORDS) {
-        //("ERRO: max_words inválido: %lu\n", max_words);
-        return 0;
-    }
-
-    if(player.data_remaining == 0) {
-        return 0;
-    }
-
-    // Calcula bytes a ler (max_frames = max_words / 2)
-    uint32_t max_frames = max_words / 2;
-    uint32_t bytes_needed = max_frames * 4;
-    uint32_t bytes_to_read = (bytes_needed > player.data_remaining) ?
-                              player.data_remaining : bytes_needed;
-
-    // Limite adicional de segurança
-    if(bytes_to_read > 4096) {
-        bytes_to_read = 4096;
-    }
-
-    if(bytes_to_read == 0) {
-        return 0;
-    }
-
-    if(bytes_to_read > sizeof(pcm_buffer)) {
-        //printf("ERRO: bytes_to_read muito grande: %lu\n", bytes_to_read);
-        bytes_to_read = sizeof(pcm_buffer);
-    }
-
-    // LEITURA DO ARQUIVO
-    UINT bytes_read = 0;
-    FRESULT result = f_read(&player.file, pcm_buffer, bytes_to_read, &bytes_read);
-
-    if(result != FR_OK) {
-        //printf("f_read error: %d\n", result);
-        return 0;
-    }
-
-    if(bytes_read == 0) {
-        return 0;
-    }
-
-    // CONVERSÃO SEGURA (com verificação de limites)
-    uint16_t* pcm16 = (uint16_t*)pcm_buffer;
-    uint32_t frames_read = bytes_read / 4;
-
-    // Garantir que não escrevemos fora do buffer
-    if(frames_read > max_frames) {
-        frames_read = max_frames;
-    }
-
-    // Limpa o buffer antes de preencher (evita lixo)
-    //memset(buffer, 0, max_words * 4);
-
-    for(uint32_t i = 0; i < frames_read; i++) {
-        // Verificação de segurança dos índices
-        if((i * 2 + 1) >= max_words) {
-            //printf("ERRO: índice fora do buffer: i=%lu, max_words=%lu\n", i, max_words);
+    while(total_frames < (max_words / 2))
+    {
+        if(player.data_remaining == 0)
             break;
+
+        uint32_t frames_to_fill = (max_words / 2) - total_frames;
+        uint32_t bytes_needed = frames_to_fill * 4;
+
+        if(bytes_needed > sizeof(pcm_buffer))
+            bytes_needed = sizeof(pcm_buffer);
+
+        UINT bytes_read = 0;
+
+        if(f_read(&player.file, pcm_buffer, bytes_needed, &bytes_read) != FR_OK)
+            break;
+
+        if(bytes_read == 0)
+            break;
+
+        uint16_t* pcm16 = (uint16_t*)pcm_buffer;
+        uint32_t frames_read = bytes_read / 4;
+
+        for(uint32_t i = 0; i < frames_read; i++)
+        {
+            uint32_t idx = (total_frames + i) * 2;
+
+            int16_t left  = (int16_t)pcm16[i * 2];
+            int16_t right = (int16_t)pcm16[i * 2 + 1];
+
+            buffer[idx]     = ((int32_t)left) << 16;
+            buffer[idx + 1] = ((int32_t)right) << 16;
         }
 
-        int16_t left = (int16_t)pcm16[i * 2];
-        int16_t right = (int16_t)pcm16[i * 2 + 1];
-
-        // Mesmo formato do teste que funcionou
-        buffer[i * 2]     = ((int32_t)left) << 16;
-        buffer[i * 2 + 1] = ((int32_t)right) << 16;
+        total_frames += frames_read;
+        player.data_remaining -= bytes_read;
     }
 
-    player.data_remaining -= bytes_read;
-    player.bytes_read_total += bytes_read;
+    // 🔥 MUITO IMPORTANTE: zerar o restante
+    uint32_t total_words_written = total_frames * 2;
 
-    // Debug periódico
-    static uint32_t debug_counter = 0;
-    if(debug_counter++ % 100 == 0) {
-        //printf("Progresso: %lu bytes lidos, %lu restantes\n",
-        //       player.bytes_read_total, player.data_remaining);
+    if(total_words_written < max_words)
+    {
+        memset(&buffer[total_words_written], 0,
+               (max_words - total_words_written) * sizeof(int32_t));
     }
 
-    return frames_read;
+    return total_frames;
 }
 
 // ============================================================================
@@ -240,9 +208,9 @@ static void vAudioPlayerTask(void *pvParameters)
     // ========================================================================
     while(player.is_playing) {
     	// Processa Metade Inicial
-    	if(xSemaphoreTake(half_semaphore, pdMS_TO_TICKS(100)) == pdTRUE) {
-    		//frames_written = read_and_convert_wav(&audio_buffer[0], SAFE_HALF_WORDS);
-    		fill_sine_buffer_task(&audio_buffer[0], SAFE_HALF_WORDS);
+    	if(xSemaphoreTake(half_semaphore, portMAX_DELAY) == pdTRUE) {
+    		frames_written = read_and_convert_wav(&audio_buffer[0], SAFE_HALF_WORDS);
+    		//fill_sine_buffer_task(&audio_buffer[0], SAFE_HALF_WORDS);
 
     		// Garante que o dado saiu da CPU para a RAM antes do DMA ler
     		SCB_CleanDCache_by_Addr((uint32_t*)&audio_buffer[0], SAFE_HALF_WORDS * 4);
@@ -251,9 +219,9 @@ static void vAudioPlayerTask(void *pvParameters)
     	}
 
     	// Processa Metade Final
-    	if(xSemaphoreTake(full_semaphore, pdMS_TO_TICKS(100)) == pdTRUE) {
-    		//frames_written = read_and_convert_wav(&audio_buffer[SAFE_HALF_WORDS], SAFE_HALF_WORDS);
-    		fill_sine_buffer_task(&audio_buffer[SAFE_HALF_WORDS], SAFE_HALF_WORDS);
+    	if(xSemaphoreTake(full_semaphore, portMAX_DELAY) == pdTRUE) {
+    		frames_written = read_and_convert_wav(&audio_buffer[SAFE_HALF_WORDS], SAFE_HALF_WORDS);
+    		//fill_sine_buffer_task(&audio_buffer[SAFE_HALF_WORDS], SAFE_HALF_WORDS);
 
     		// Garante que o dado saiu da CPU para a RAM antes do DMA ler
     	    SCB_CleanDCache_by_Addr((uint32_t*)&audio_buffer[SAFE_HALF_WORDS], SAFE_HALF_WORDS * 4);
@@ -332,7 +300,7 @@ void Audio_Player_Start(const char* filename)
 
     // Cria task do player
     if(player_task_handle == NULL) {
-    	xTaskAudio = xTaskCreate(vAudioPlayerTask, "AudioPlayer", 1024, NULL, osPriorityRealtime, &player_task_handle);
+    	xTaskAudio = xTaskCreate(vAudioPlayerTask, "AudioPlayer", 2048, NULL, osPriorityRealtime, &player_task_handle);
     }
     printf("Task Audio: %ld\n", xTaskAudio);
 }
@@ -398,4 +366,93 @@ void fill_sine_buffer_task(int32_t* buffer, uint32_t num_words)
             sine_phase -= (2.0f * M_PI);
         }
     }
+}
+
+// ------
+// ============================================================================
+// Função correta para STM32H7 com I2S_CKIN externo
+// ============================================================================
+I2S_Config I2S_Calculate_Divider(uint32_t target_freq, uint32_t i2s_clock_freq)
+{
+    I2S_Config config;
+    float best_error = 100.0f;
+    uint32_t best_div = 2;
+    uint8_t best_odd = 0;
+
+    // I2SDIV pode ir de 2 a 255
+    for (uint32_t div = 2; div <= 255; div++) {
+        for (uint8_t odd = 0; odd <= 1; odd++) {
+            // Calcula o denominador efetivo
+            uint32_t denom = (2 * div) + odd;
+
+            // Calcula a frequência teórica resultante
+            // Fórmula: F_WS = F_CKIN / (denom * 256)
+            uint32_t calc_freq = i2s_clock_freq / (denom * 256);
+
+            // Calcula o erro percentual
+            float error = 0.0f;
+            if(calc_freq > target_freq) {
+                error = (float)(calc_freq - target_freq) / target_freq;
+            } else {
+                error = (float)(target_freq - calc_freq) / target_freq;
+            }
+
+            if (error < best_error) {
+                best_error = error;
+                best_div = div;
+                best_odd = odd;
+                config.real_freq = calc_freq;
+                config.error_percent = error * 100.0f;
+
+                // Se erro zero, para a busca
+                if (error == 0.0f) {
+                    config.I2SDIV = best_div;
+                    config.ODD = best_odd;
+                    return config;
+                }
+            }
+        }
+    }
+
+    config.I2SDIV = best_div;
+    config.ODD = best_odd;
+    return config;
+}
+// ------
+
+
+I2S_Config config;
+
+void Audio_SetSampleRate(uint32_t sample_rate)
+{
+    // Calcula os divisores
+    I2S_Config config = I2S_Calculate_Divider(sample_rate, 24576000);
+
+    printf("Configurando I2S para %lu Hz\n", sample_rate);
+    printf("  I2SDIV = %d, ODD = %d\n", config.I2SDIV, config.ODD);
+    printf("  Frequência real = %.3ld Hz\n", config.real_freq);
+    printf("  Erro = %.2ld ppm\n", config.error_ppm);
+
+    // Para o DMA antes de reconfigurar
+    HAL_I2S_DMAStop(&hi2s2);
+
+    // Desabilita o I2S
+    __HAL_I2S_DISABLE(&hi2s2);
+
+    // Aplica os valores nos registradores do I2S
+    // Limpa os bits atuais de I2SDIV e ODD
+    SPI2->I2SCFGR &= ~(0x1FF);  // Limpa bits 0-8 (I2SDIV + ODD)
+
+    // Configura novos valores
+    SPI2->I2SCFGR |= (config.ODD << 8);      // Bit ODD na posição 8
+    SPI2->I2SCFGR |= (config.I2SDIV << 0);   // I2SDIV nos bits 0-7
+
+    // Habilita o I2S novamente
+    __HAL_I2S_ENABLE(&hi2s2);
+
+    // Aguarda estabilização
+    HAL_Delay(10);
+
+    // Reinicia o DMA (se necessário)
+    // HAL_I2S_Transmit_DMA(&hi2s2, (uint16_t*)audio_buffer, TOTAL_WORDS);
 }
