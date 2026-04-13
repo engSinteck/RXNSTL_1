@@ -105,7 +105,7 @@ DSTATUS USER_status (
 }
 
 /**
-  * @brief  Reads Sector(s) 
+  * @brief  Reads Sector(s)
   * @param  pdrv: Physical drive number (0..)
   * @param  *buff: Data buffer to store read data
   * @param  sector: Sector address (LBA)
@@ -113,25 +113,21 @@ DSTATUS USER_status (
   * @retval DRESULT: Operation result
   */
 DRESULT USER_read (
-	BYTE pdrv,      /* Physical drive nmuber to identify the drive */
-	BYTE *buff,     /* Data buffer to store read data */
-	DWORD sector,   /* Sector address in LBA */
-	UINT count      /* Number of sectors to read */
+    BYTE pdrv,
+    BYTE *buff,
+    DWORD sector,
+    UINT count
 )
 {
-  /* USER CODE BEGIN READ */
-		//logI("User_Read: pdrv: %d  Sector: %ld  Count: %d\n\r", pdrv, sector, count);
-		for(;count>0;count--) {
-			if(BSP_QSPI_Read(buff, sector*FF_MIN_SS, FF_MIN_SS) != QSPI_OK) {
-				return RES_ERROR;
-			}
-			sector++;
-			buff += FF_MIN_SS;			// 512;
-		}
-		/* wait until the read operation is finished */
+    uint32_t addr = sector * FF_MIN_SS;
+    uint32_t size = count * FF_MIN_SS;
 
-	    return RES_OK;
-  /* USER CODE END READ */
+    if(BSP_QSPI_Read(buff, addr, size) != QSPI_OK)
+    {
+        return RES_ERROR;
+    }
+
+    return RES_OK;
 }
 
 /**

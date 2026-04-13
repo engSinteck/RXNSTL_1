@@ -142,7 +142,7 @@ lv_color_t lvgl_buf_2[LV_HOR_RES_MAX * 16] __attribute__((section(".RAM_D1"))) _
 lv_mem_monitor_t mon;
 
 FATFS *pfs;
-char line[100]; /* Line buffer */
+char line[1024*8]; /* Line buffer */
 FRESULT fr;     /* FatFs return code */
 DWORD fre_clust;
 uint32_t totalSpace, freeSpace, SpaceUsed;
@@ -814,22 +814,25 @@ void Mount_FATFS_QSPI(void)
 	  }
 	  // Test Open File + 8 Caracteres Tela_Main_2025.bin
 	  duracao = HAL_GetTick();
-	  fr = f_open(&USERFile, "/Img_2025/LED_VD_2.bin", FA_READ);
+	  fr = f_open(&USERFile, "0:/Tela/Tela_Principal.bin/", FA_READ);
 	  if(fr != FR_OK) {
-		  printf("Erro f_open LED_VD_2.bin !!\n");
+		  //logI("STM32H743 FatFs - Tela_Principal.bin Error...Result: %d\n\r", fr);
 	  }
 	  else {
-		 duracao = HAL_GetTick() - duracao;
-	 	 size = f_size(&USERFile);
-	      fr = f_read(&USERFile, line , 100, &ByteRead);
-	      if(fr == FR_OK) {
-	    	  printf("Erro f_read !!\n");
-	      }
-	      else {
-	    	  printf("f_read OK !!\n");
-	      }
-	      f_close(&USERFile);
-	  }
+		duracao = HAL_GetTick() - duracao;
+		size = f_size(&USERFile);
+		//logI("STM32H743 FatFs - Open File Tela_Principal.bin... Result: %d  Size:%d Duracao: %d\n\r", fr, size, duracao);
+		duracao = HAL_GetTick();
+		fr = f_read(&USERFile, line , 100, &ByteRead);
+		duracao = HAL_GetTick() - duracao;
+		if(fr == FR_OK) {
+			//logI("STM32H743 FatFs ReadFile...line: %s\n\r", line);
+		}
+		else {
+			//logI("STM32H743 FatFs ReadFile...Error:  Result: %d \n\r", fr);
+		}
+		f_close(&USERFile);
+	}
 }
 
 void my_loglvgl(lv_log_level_t level, const char *file, uint32_t line, const char *dsc)

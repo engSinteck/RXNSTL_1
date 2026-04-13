@@ -34,10 +34,10 @@ const float SAMPLE_RATE_F = 48000.0f;
 // BUFFER ÚNICO CONTÍGUO - Forçado para endereço específico e alinhado
 // ============================================================================
 // Usar atributos específicos para garantir alinhamento de cache (32 bytes)
-static int32_t audio_buffer[SAFE_TOTAL_WORDS] __attribute__((section(".RAM_D2"), aligned(32)));
+static int32_t audio_buffer[SAFE_TOTAL_WORDS] __attribute__((section(".ram_d2"), aligned(32)));
 
 // Buffer temporário
-static uint8_t pcm_buffer[8192] __attribute__((section(".RAM_D2"), aligned(32)));  // 2048 bytes = 512 samples
+static uint8_t pcm_buffer[16384] __attribute__((section(".ram_d2"), aligned(32)));  // 2048 bytes = 512 samples
 
 BaseType_t xTaskAudio;
 
@@ -300,7 +300,7 @@ void Audio_Player_Start(const char* filename)
 
     // Cria task do player
     if(player_task_handle == NULL) {
-    	xTaskAudio = xTaskCreate(vAudioPlayerTask, "AudioPlayer", 2048, NULL, osPriorityRealtime, &player_task_handle);
+    	xTaskAudio = xTaskCreate(vAudioPlayerTask, "AudioPlayer", 2048, NULL, osPriorityRealtime2, &player_task_handle);
     }
     printf("Task Audio: %ld\n", xTaskAudio);
 }
